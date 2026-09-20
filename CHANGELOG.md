@@ -1,7 +1,9 @@
 # Changelog
 
-## [6.0.2]
+## [6.0.3]
+- UI improvement
 
+## [6.0.2]
 ### Added
 - Display active game mode name on Pause and Game Over screens
 
@@ -15,7 +17,6 @@
 - Fixed unlocked achievements displaying as locked in achievements menu
 
 ## [6.0.0]
-
 ### Added
 - In-game store and coins currency system to spend on powerups, boosters, cosmetics, and perks
 - Second Chance Shield consumable to protect against game over by clearing a row or column
@@ -60,7 +61,6 @@
 - Tactician Achievement: Increased requirement to 5 Undos and 5 Swaps in a single Plus Mode game.
 
 ## [5.0.0]
-
 ### Added
 - Background Music: lo-fi background tracks from multiple artists.
 - Now Playing Footer Notification: A cross-fade track info reveal in the footer showing current track title, artist, and animated visualizer bars when a song starts playing.
@@ -76,7 +76,6 @@
 - Outline Clipping: Added rendering canvas padding to prevent menu selection pills and footer button outlines from getting cut off at certain resolutions.
 
 ## [4.0.4]
-
 ### Added
 - Continue last played game: Added an option to directly continue the last active game session from the main menu.
 
@@ -87,7 +86,6 @@
 - muOS overlays: Properly initialize the stage overlay system and register the active foreground process to show volume and brightness indicators on muOS.
 
 ## [4.0.3]
-
 ### Fixed
 - Menu Highlights: Corrected the vertical alignment and height of the selection highlight pill to perfectly center the option text and wrap descenders cleanly.
 - Footer Controls: Added the missing D-Pad Navigate icon and label to the Arcade Mode selection screen footer.
@@ -97,7 +95,6 @@
 - Glyph icon
 
 ## [4.0.2]
-
 ### Added
 - Smooth Edges: Made the splash screen logo, main menu logo, menu highlights, and all footer buttons look clean and smooth on handheld screens.
 
@@ -109,7 +106,6 @@
 - Menu Spacing: Adjusted the menu selection bar to have a cleaner height and perfectly balanced gaps above and below.
 
 ## [4.0.1]
-
 ### Added
 - Dynamic particle burst effects for achievement toasts
 - Force exit on quit to bypass deadlock
@@ -121,7 +117,6 @@
 - Minor gameplay lag during first vibration
 
 ## [4.0.0]
-
 ### Added
 - Added sound in game.
 - Added Unified Settings Menu: Sound, Text Size, and other settings under a dedicated Settings sub-menu, simplifying and cleaning up the Main Menu list.
@@ -147,7 +142,6 @@
 - Achivement section is now perfectly readable
 
 ## [3.0.0]
-
 ### Added
 - Game Selection Mode: A newly designed, beautifully animated carousel menu screen for seamlessly selecting between Classic, Plus, and Arcade modes.
 - Arcade Modes: Introduced a brand-new arcade mode with different game modes to play.
@@ -169,7 +163,6 @@
 - UI & Stability: Implemented minor user interface enhancements and general bug fixes for a smoother, more polished experience.
 
 ## [2.0.2]
-
 ### Added
 - Main menu heading logo: Re-balanced the main menu layout to include a beautifully styled, dynamically themed 2048 tile logo.
 - Version tracking: The version number is now displayed on the About screen.
@@ -178,7 +171,6 @@
 - Endless Mode layout: Fixed horizontal text overlap with the SCORE box in Large Text mode by dynamically scaling and shifting the label safely.
 
 ## [2.0.1]
-
 ### Added
 - Tactile button animations: Buttons now physically press down when changing menus or unpausing for satisfying retro click feedback.
 - Complete help footers: Rebuilt the bottom helper bars on all screens to show a complete list of every available control.
@@ -188,7 +180,6 @@
 - Spacious score boxes: Increased the SCORE and BEST box sizes in Large Text mode to give numbers plenty of breathing room.
 
 ## [2.0.0]
-
 ### Added
 - Plus Mode: A brand new game mode featuring powerful power-ups like Swap and Bomb to help you get out of tricky situations.
 - Achievements System: Added a comprehensive achievements system. Track your progress & view your completed achievements in the new dedicated Achievements menu.
