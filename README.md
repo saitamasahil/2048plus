@@ -1,7 +1,7 @@
 # 2048 Plus
 
 <p align="center">
-  <img src="banner.png" alt="2048 Plus" width="600" />
+  <img src="banner.png" alt="2048 Plus" width="300" style="border-radius: 10px;" />
 </p>
 
 A feature-packed implementation of the classic puzzle game 2048 for muOS and PortMaster, built using the LÖVE framework.
