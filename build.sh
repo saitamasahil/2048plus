@@ -92,9 +92,7 @@ build_portmaster() {
       --exclude="*.md" \
       --exclude="build*" \
       --exclude="bin" \
-      --exclude="demo.webp" \
-      --exclude="splash.webp" \
-      --exclude="screenshots" \
+      --exclude="banner.png" \
       --exclude="licenses" \
       --exclude="portmaster" \
       "$PROJECT_ROOT/" "$TMP_STAGE/gamedata/" > /dev/null

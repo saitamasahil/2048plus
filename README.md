@@ -1,7 +1,7 @@
 # 2048 Plus
 
 <p align="center">
-  <img src="demo.webp" alt="Gameplay Animation" width="400" />
+  <img src="banner.png" alt="2048 Plus" width="600" />
 </p>
 
 A feature-packed implementation of the classic puzzle game 2048 for muOS and PortMaster, built using the LÖVE framework.
@@ -41,56 +41,6 @@ This project is inspired by and references the popular open-source [2048 Android
    - **Knulli:** `/userdata/system/.local/share/PortMaster/autoinstall/`
 3. Reinsert the SD card into your device and launch the PortMaster app once.
 4. PortMaster will automatically detect the `.zip` file and complete the installation.
-
-## Visual Showcase
-
-<details>
-<summary><b>Splash Animation</b></summary>
-
-<br>
-
-<p align="center">
-  <img src="splash.webp" alt="Splash Animation" width="500" />
-</p>
-
-<p align="center">
-  Splash animation dynamically changes colors based on the selected theme.
-</p>
-
-</details>
-
-<br>
-
-<details>
-<summary><b>Screenshots</b></summary>
-
-<br>
-
-<p align="center">
-  <img src="screenshots/screenshot1.png" width="30%" />
-  <img src="screenshots/screenshot2.png" width="30%" />
-  <img src="screenshots/screenshot3.png" width="30%" />
-</p>
-
-<p align="center">
-  <img src="screenshots/screenshot4.png" width="30%" />
-  <img src="screenshots/screenshot5.png" width="30%" />
-  <img src="screenshots/screenshot6.png" width="30%" />
-</p>
-
-<p align="center">
-  <img src="screenshots/screenshot7.png" width="30%" />
-  <img src="screenshots/screenshot8.png" width="30%" />
-  <img src="screenshots/screenshot9.png" width="30%" />
-</p>
-
-<p align="center">
-  <img src="screenshots/screenshot10.png" width="30%" />
-  <img src="screenshots/screenshot11.png" width="30%" />
-  <img src="screenshots/screenshot12.png" width="30%" />
-</p>
-
-</details>
 
 ## Controls
 
