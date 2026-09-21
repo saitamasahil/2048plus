@@ -158,6 +158,10 @@ function Game.new(mode)
         self.coin_rush_active = savedState.coin_rush_active or false
         self.start_booster_val = savedState.start_booster_val
         self.runTime = savedState.runTime or 0
+        self.powerups_used_this_run = savedState.powerups_used_this_run or 0
+        if _G.achievements then
+            _G.achievements.powerups_used_this_run = self.powerups_used_this_run
+        end
     else
         -- Start a fresh game if no save state exists
         self:addStartTiles()
@@ -186,6 +190,7 @@ function Game.new(mode)
             _G.recordDogBreedPlayed(_G.active_dog_breed)
         end
 
+        self.powerups_used_this_run = 0
         if _G.achievements then
             _G.achievements.powerups_used_this_run = 0
             save.saveAchievements(_G.achievements)
@@ -250,6 +255,7 @@ function Game:saveGameState()
         runTime = self.runTime,
         undo_used_this_run = self.undo_used_this_run,
         swap_used_this_run = self.swap_used_this_run,
+        powerups_used_this_run = self.powerups_used_this_run,
         coin_rush_active = self.coin_rush_active or false,
         start_booster_val = self.start_booster_val
     }
@@ -571,7 +577,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_4096")
                     end
 
-                    if merged.value >= 1024 and _G.achievements.powerups_used_this_run == 0 and _G.unlockAchievement and self.mode ~= "huge" then
+                    if merged.value >= 1024 and (self.powerups_used_this_run or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
                         _G.unlockAchievement("ach_untouchable")
                     end
 
@@ -579,7 +585,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_2048_plus")
                     end
 
-                    if merged.value >= 2048 and _G.achievements.powerups_used_this_run == 0 and _G.unlockAchievement and self.mode ~= "huge" then
+                    if merged.value >= 2048 and (self.powerups_used_this_run or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
                         _G.unlockAchievement("ach_untouchable_2048")
                     end
 
@@ -606,7 +612,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_speedrun_2048")
                     end
 
-                    if self.mode == "plus" and merged.value >= 2048 and _G.achievements.powerups_used_this_run == 0 and _G.unlockAchievement then
+                    if self.mode == "plus" and merged.value >= 2048 and (self.powerups_used_this_run or 0) == 0 and _G.unlockAchievement then
                         _G.unlockAchievement("ach_hardcore_2048")
                     end
 
@@ -630,7 +636,7 @@ function Game:move(direction)
                             bonus = 50
                         end
                         -- Special: hitting 2048 gives a massive bonus + achievement
-                        if merged.value == 2048 then
+                        if merged.value >= 2048 then
                             if _G.unlockAchievement then
                                 _G.unlockAchievement("ach_timeattack_2048")
                             end
@@ -721,7 +727,10 @@ function Game:move(direction)
         else
             self.animationTimer = self.animationDuration
         end
-        if _G.achievements.powerups_used_this_run == nil then
+        if self.powerups_used_this_run == nil then
+            self.powerups_used_this_run = 0
+        end
+        if _G.achievements and _G.achievements.powerups_used_this_run == nil then
             _G.achievements.powerups_used_this_run = 0
         end
         if _G.unlockAchievement and self.mode ~= "huge" then
@@ -828,9 +837,9 @@ function Game:undo()
         end
     end
 
-    if _G.achievements.powerups_used_this_run then
-
-        _G.achievements.powerups_used_this_run = _G.achievements.powerups_used_this_run + 1
+    self.powerups_used_this_run = (self.powerups_used_this_run or 0) + 1
+    if _G.achievements then
+        _G.achievements.powerups_used_this_run = self.powerups_used_this_run
         save.saveAchievements(_G.achievements)
     end
     if _G.stats then
@@ -988,6 +997,7 @@ function Game:restart()
         end
         save.saveStats(_G.stats)
     end
+    self.powerups_used_this_run = 0
     if _G.achievements then
         _G.achievements.powerups_used_this_run = 0
         save.saveAchievements(_G.achievements)
@@ -1098,10 +1108,11 @@ function Game:confirmTarget()
                 end
             end
 
-            if _G.achievements.powerups_used_this_run then
-                _G.achievements.powerups_used_this_run = _G.achievements.powerups_used_this_run + 1
+            self.powerups_used_this_run = (self.powerups_used_this_run or 0) + 1
+            if _G.achievements then
+                _G.achievements.powerups_used_this_run = self.powerups_used_this_run
+                save.saveAchievements(_G.achievements)
             end
-            save.saveAchievements(_G.achievements)
 
             self.state = self.won and Game.STATE_ENDLESS or Game.STATE_PLAYING
             self:saveGameState()
@@ -1171,10 +1182,11 @@ function Game:confirmTarget()
 
 
 
-            if _G.achievements.powerups_used_this_run then
-                _G.achievements.powerups_used_this_run = _G.achievements.powerups_used_this_run + 1
+            self.powerups_used_this_run = (self.powerups_used_this_run or 0) + 1
+            if _G.achievements then
+                _G.achievements.powerups_used_this_run = self.powerups_used_this_run
+                save.saveAchievements(_G.achievements)
             end
-            save.saveAchievements(_G.achievements)
 
             self.state = self.won and Game.STATE_ENDLESS or Game.STATE_PLAYING
             self:saveGameState()
