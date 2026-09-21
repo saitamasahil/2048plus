@@ -1,5 +1,10 @@
 # Changelog
 
+## [6.0.4] (TBA)
+### Fixed
+- Fixed run timer not restoring when continuing a saved game, preventing the Speed Demon achievement timer from resetting on restart or relaunch
+- Fixed run timer and per-run powerup tracking not resetting when starting a new run via Restart
+
 ## [6.0.3]
 ### Changed
 - Refined Secret Passcode description in Store
