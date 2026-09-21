@@ -157,6 +157,7 @@ function Game.new(mode)
 
         self.coin_rush_active = savedState.coin_rush_active or false
         self.start_booster_val = savedState.start_booster_val
+        self.runTime = savedState.runTime or 0
     else
         -- Start a fresh game if no save state exists
         self:addStartTiles()
@@ -991,6 +992,9 @@ function Game:restart()
         _G.achievements.powerups_used_this_run = 0
         save.saveAchievements(_G.achievements)
     end
+    self.runTime = 0
+    self.undo_used_this_run = 0
+    self.swap_used_this_run = 0
     self:saveGameState()
 end
 
