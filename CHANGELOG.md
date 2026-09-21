@@ -2,8 +2,9 @@
 
 ## [6.0.4] (TBA)
 ### Fixed
-- Fixed run timer not restoring when continuing a saved game, preventing the Speed Demon achievement timer from resetting on restart or relaunch
-- Fixed run timer and per-run powerup tracking not resetting when starting a new run via Restart
+- Fixed run timer not restoring when resuming a saved game
+- Fixed run timer and powerup counts not resetting on restart
+- Fixed powerup counts resetting when continuing a saved game
 
 ## [6.0.3]
 ### Changed
