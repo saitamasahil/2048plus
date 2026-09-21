@@ -1,7 +1,12 @@
 # Changelog
 
 ## [6.0.3]
-- UI improvement
+### Changed
+- Refined Secret Passcode description in Store
+
+### Fixed
+- Fixed first-launch game data extraction failure on Knulli in PortMaster
+- Fixed launch crash on Rockchip devices by properly loading the Mali graphics driver
 
 ## [6.0.2]
 ### Added
