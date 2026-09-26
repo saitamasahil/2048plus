@@ -2,9 +2,9 @@
 
 ## [6.0.4] (TBA)
 ### Fixed
-- Fixed run timer not restoring when resuming a saved game
-- Fixed run timer and powerup counts not resetting on restart
-- Fixed powerup counts resetting when continuing a saved game
+- Fixed timer and powerups not restoring properly when continuing a saved game
+- Fixed Time Attack time's up state persistence on game resume
+- More minor fixes
 
 ## [6.0.3]
 ### Changed
