@@ -139,6 +139,11 @@ function Game.new(mode)
         if self.mode == "timeattack" then
             self.timeLeft = savedState.timeLeft or 60.0
             self.totalTime = savedState.totalTime or 60.0
+            if savedState.timesUp ~= nil then
+                self.timesUp = savedState.timesUp
+            else
+                self.timesUp = (self.timeLeft <= 0)
+            end
         end
 
         local saved_undo = savedState.undo_used_this_run
@@ -263,6 +268,7 @@ function Game:saveGameState()
     if self.mode == "timeattack" then
         stateTable.timeLeft = self.timeLeft
         stateTable.totalTime = self.totalTime
+        stateTable.timesUp = self.timesUp
     end
     save.saveState(stateTable, self.mode)
 end
