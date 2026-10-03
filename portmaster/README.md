@@ -7,6 +7,7 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 - **Game Modes**: Classic, Plus Mode with Bomb, Swap, and Undo powerups, and 4 Arcade Modes — Time Attack, 5x5 Huge, No Mercy, and Goose.
 - **Store & Customization**: In-game Store with Coins currency, Cat & Dog pet companions, board skins, unlockable themes, and more.
 - **Achievements & Stats**: Many unlockable achievements and comprehensive stats tracking.
+- **Jukebox & Wireless Music Manager**: In-game music player with audio visualizer, seeking, shuffle, and a built-in wireless web server to manage, upload, and stream custom music tracks directly from your Phone or PC over Wi-Fi.
 - **Quality of Life**: Auto-save & resume after every move, interactive pause menu with active perks HUD, and instant theme switching.
 
 *Note: Perhaps a well-known secret sequence of buttons might reveal something special...?*
