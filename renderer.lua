@@ -36,6 +36,7 @@ local coin_icon = nil
 local sort_icon = nil
 local vinyl_record_img = nil
 local music_manager_icon = nil
+local dino_icon = nil
 local item_icons = {}
 local icon_shader = nil
 local font_bgm = nil
@@ -3371,6 +3372,9 @@ function renderer.init()
     local ok_mm, mm_img = pcall(love.graphics.newImage, "assets/icon/music_manager.png")
     if not ok_mm then ok_mm, mm_img = pcall(love.graphics.newImage, "assets/music_manager.png") end
     if ok_mm then music_manager_icon = mm_img end
+
+    local ok_dino, d_img = pcall(love.graphics.newImage, "assets/icon/dino.png")
+    if ok_dino then dino_icon = d_img end
 
     local ok_vinyl, v_img = pcall(love.graphics.newImage, "assets/icon/vinyl_record.png")
     if ok_vinyl then vinyl_record_img = v_img end
@@ -11450,19 +11454,45 @@ function renderer.drawJukebox(selection, skip_transition)
                 love.graphics.printf("Loading QR...", qr_x, qr_y + math.floor((qr_box_size - font_help_label:getHeight()) / 2), qr_box_size, "center")
             end
         else
-            -- Offline warning card
+            -- Offline warning card with dino icon
             love.graphics.setColor(inner_box_bg)
             roundedRect("fill", qr_x, qr_y, qr_box_size, qr_box_size, math.floor(8 * scale))
             love.graphics.setColor(inner_box_border)
             love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
             roundedRect("line", qr_x, qr_y, qr_box_size, qr_box_size, math.floor(8 * scale))
 
-            love.graphics.setFont(font_help_label)
-            love.graphics.setColor(0.96, 0.37, 0.23, 0.95)
-            love.graphics.printf("No Wi-Fi", qr_x, qr_y + math.floor(qr_box_size * 0.36), qr_box_size, "center")
-            love.graphics.setFont(font_bgm or font_help_label)
-            love.graphics.setColor(text_muted)
-            love.graphics.printf("Disconnected", qr_x, qr_y + math.floor(qr_box_size * 0.54), qr_box_size, "center")
+            local dino_img = dino_icon
+            if not dino_img then
+                local ok, img = pcall(love.graphics.newImage, "assets/icon/dino.png")
+                if ok and img then
+                    dino_icon = img
+                    dino_img = img
+                end
+            end
+
+            if dino_img then
+                local dw, dh = dino_img:getDimensions()
+                local target_sz = qr_box_size - math.floor(24 * scale)
+                local s = target_sz / dw
+                local cx = qr_x + math.floor(qr_box_size / 2)
+                local cy = qr_y + math.floor(qr_box_size / 2)
+
+                if icon_shader then
+                    love.graphics.setShader(icon_shader)
+                end
+                love.graphics.setColor(text_title[1], text_title[2], text_title[3], 0.90)
+                love.graphics.draw(dino_img, cx, cy, 0, s, s, dw / 2, dh / 2)
+                if icon_shader then
+                    love.graphics.setShader()
+                end
+            else
+                love.graphics.setFont(font_help_label)
+                love.graphics.setColor(0.96, 0.37, 0.23, 0.95)
+                love.graphics.printf("No Wi-Fi", qr_x, qr_y + math.floor(qr_box_size * 0.36), qr_box_size, "center")
+                love.graphics.setFont(font_bgm or font_help_label)
+                love.graphics.setColor(text_muted)
+                love.graphics.printf("Disconnected", qr_x, qr_y + math.floor(qr_box_size * 0.54), qr_box_size, "center")
+            end
         end
 
         local right_x = qr_x + qr_box_size + math.floor(16 * scale)
