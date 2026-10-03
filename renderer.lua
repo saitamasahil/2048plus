@@ -13,6 +13,7 @@ local transition_timer = 0
 local transition_duration = 0.5
 local transition_center_x = 0
 local transition_center_y = 0
+local transition_direction = 1
 renderer.theme_button_x = nil
 renderer.theme_button_y = nil
 renderer.theme_prev_button_x = nil
@@ -5613,6 +5614,9 @@ end
 local function drawStencilCircle()
     local progress = 1 - (transition_timer / transition_duration)
     local p = 1 - math.pow(1 - progress, 3)
+    if transition_direction < 0 then
+        p = 1 - p
+    end
     local w, h = love.graphics.getDimensions()
     local dx = math.max(transition_center_x, w - transition_center_x)
     local dy = math.max(transition_center_y, h - transition_center_y)
@@ -5640,6 +5644,7 @@ function renderer.startThemeTransition(drawTarget, direction)
 
     transition_timer = transition_duration
     local dir = direction or 1
+    transition_direction = dir
     if dir < 0 then
         transition_center_x = renderer.theme_prev_button_x or (w - math.floor(180 * _G.scale))
         transition_center_y = renderer.theme_prev_button_y or (h - math.floor(30 * _G.scale))
@@ -6602,7 +6607,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -6811,7 +6816,7 @@ function renderer.drawSettings(selection, skip_transition)
     -- Theme transition overlay
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -7020,7 +7025,7 @@ function renderer.drawMainMenu(selection, skip_transition)
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -8394,7 +8399,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
     -- Transition Overlay if needed
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -8533,7 +8538,7 @@ function renderer.drawSecretMenu(selection, skip_transition)
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -8709,7 +8714,7 @@ function renderer.drawThemeSelect(skip_transition)
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -8854,7 +8859,7 @@ function renderer.draw(game, skip_transition)
     if not skip_transition and transition_timer > 0 and transition_canvas then
         -- Draw old screen outside stencil
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0) -- Draw where stencil is 0
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0) -- Draw where stencil is 0
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -9030,7 +9035,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         -- Theme transition overlay
         if not skip_transition and transition_timer > 0 and transition_canvas then
             love.graphics.stencil(drawStencilCircle, "replace", 1)
-            love.graphics.setStencilTest("equal", 0)
+            love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
             love.graphics.draw(transition_canvas, 0, 0)
             love.graphics.setStencilTest()
         end
@@ -9479,7 +9484,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
     -- Theme transition overlay
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -9704,7 +9709,7 @@ function renderer.drawAbout(skip_transition)
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -10588,7 +10593,7 @@ function renderer.drawStoreMenu(selection, skip_transition)
     -- Theme transition overlay
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
@@ -11281,7 +11286,7 @@ function renderer.drawJukebox(selection, skip_transition)
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest("equal", 0)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setBlendMode("replace", "premultiplied")
         love.graphics.draw(transition_canvas, 0, 0)
