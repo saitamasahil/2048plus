@@ -5246,7 +5246,7 @@ function renderer.drawHelp(game)
         elseif game.state == Game.STATE_TARGETING_SHIELD then
             table.insert(actions, 1, {key = "A", label = "Clear Target"})
             table.insert(actions, 1, {key = "B", label = "Cancel"})
-            table.insert(actions, 1, {key = "DPAD", label = "Row/Col"})
+            table.insert(actions, 1, {key = "DPAD", label = "Row/Column"})
         elseif game.state == Game.STATE_TARGETING_BOMB or game.state == Game.STATE_TARGETING_SWAP_1 or game.state == Game.STATE_TARGETING_SWAP_2 then
             table.insert(actions, 1, {key = "A", label = "Confirm"})
             table.insert(actions, 1, {key = "B", label = "Cancel"})
@@ -10058,34 +10058,34 @@ function renderer.getStoreItems()
         {id="extra_undo",    category="upgrade",   cost=200,  name="Extra Starting Undo",  desc="Permanently start Plus Mode with +1 Undo"},
         {id="extra_swap",    category="upgrade",   cost=350,  name="Extra Starting Swap",  desc="Permanently start Plus Mode with +1 Swap"},
         {id="extra_bomb",    category="upgrade",   cost=500,  name="Extra Starting Bomb",  desc="Permanently start Plus Mode with +1 Bomb"},
-        {id="jukebox",       category="upgrade",   cost=1000, name="Jukebox",               desc="Music Player & Wireless Track Manager"},
-        {id="coin_multiplier",category="upgrade",  cost=1200,name="2x Coin Multiplier",   desc="Permanently double all earned Coins"},
+        {id="jukebox",       category="upgrade",   cost=1000, name="Jukebox",              desc="Music Player & Manager"},
+        {id="coin_multiplier",category="upgrade",  cost=1200,name="2x Coin Multiplier",    desc="Permanently double all earned Coins"},
 
         -- Boosters & Powerups
-        {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",          desc="+1 Undo charge for Plus Mode", consumable=true, ckey="powerup_undo_count"},
-        {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",          desc="+1 Swap charge for Plus Mode", consumable=true, ckey="powerup_swap_count"},
-        {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",          desc="+1 Bomb charge for Plus Mode", consumable=true, ckey="powerup_bomb_count"},
+        {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",             desc="+1 Undo charge for Plus Mode", consumable=true, ckey="powerup_undo_count"},
+        {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",             desc="+1 Swap charge for Plus Mode", consumable=true, ckey="powerup_swap_count"},
+        {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",             desc="+1 Bomb charge for Plus Mode", consumable=true, ckey="powerup_bomb_count"},
         {id="start_128",     category="booster",   cost=60,   name="128 High-Tile Booster (x" .. booster_128 .. " owned)", desc="Next game starts with a 128 tile", consumable=true, ckey="start_128_count"},
         {id="start_256",     category="booster",   cost=120,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
         {id="start_512",     category="booster",   cost=250,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
-        {id="coin_rush",     category="booster",   cost=100,  name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",     desc="Doubles all Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
+        {id="coin_rush",     category="booster",   cost=100,  name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles all Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
         {id="second_chance", category="booster",   cost=200,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col on demand", consumable=true, ckey="second_chance_count"},
 
         -- Board Grid Skins
         {id="skin_wood",     category="skin",      cost=100,  name="Wood Board",           desc="Classic arcade cabinet wooden grid texture"},
         {id="skin_bamboo",   category="skin",      cost=150,  name="Bamboo Board",         desc="Natural woven bamboo grid texture"},
-        {id="skin_glass",    category="skin",      cost=200,  name="Glassmorphism Board", desc="Sleek translucent glass grid"},
+        {id="skin_glass",    category="skin",      cost=200,  name="Glassmorphism Board",  desc="Sleek translucent glass grid"},
         {id="skin_marble",   category="skin",      cost=200,  name="Marble Board",         desc="Polished white marble texture"},
         {id="skin_matrix",   category="skin",      cost=250,  name="Matrix Board",         desc="Animated green digital code grid"},
 
 
 
         -- Themes
-        {id="theme_cosmic",  category="theme",     cost=1000, name="Cosmic Theme",          desc="Unlock deep space theme"},
-        {id="theme_cherry",  category="theme",     cost=1000, name="Cherry Theme",          desc="Unlock sakura blossom theme"},
-        {id="theme_gold_luxe",category="theme",    cost=1500,name="Gold Luxe Theme",       desc="Unlock ultra-luxurious gold theme"},
-        {id="theme_cyber_grid",category="theme",   cost=1800,name="Cyber Neon Grid Theme",desc="Unlock futuristic cyber grid theme"},
-        {id="theme_synthwave",category="theme",    cost=2000,name="Synthwave 80s Theme",   desc="Unlock retro 80s retrowave theme"},
+        {id="theme_cosmic",  category="theme",     cost=1000, name="Cosmic Theme",           desc="Unlock deep space theme"},
+        {id="theme_cherry",  category="theme",     cost=1000, name="Cherry Theme",           desc="Unlock sakura blossom theme"},
+        {id="theme_gold_luxe",category="theme",    cost=1500,name="Gold Luxe Theme",         desc="Unlock ultra-luxurious gold theme"},
+        {id="theme_cyber_grid",category="theme",   cost=1800,name="Cyber Neon Grid Theme",   desc="Unlock futuristic cyber grid theme"},
+        {id="theme_synthwave",category="theme",    cost=2000,name="Synthwave 80s Theme",     desc="Unlock retro 80s retrowave theme"},
 
         -- Secret Master Code
         {id="secret_key",    category="secret",    cost=10000, name="Secret Passcode Reveal",desc=(_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["secret_key"]) and "Enter code on Main Menu" or "Unlock master code to access Secret Menu"}
@@ -11268,7 +11268,7 @@ function renderer.drawJukebox(selection, skip_transition)
     local actions = {
         {key = "B", label = "Back"},
         {key = "Y", label = "Theme"},
-        {key = "X", label = "Wireless Manager"},
+        {key = "X", label = "Music Manager"},
         {key = "A", label = a_label}
     }
     for _, action in ipairs(actions) do
@@ -11512,13 +11512,13 @@ function renderer.drawJukebox(selection, skip_transition)
             steps = {
                 "Connect Phone/PC to same Wi-Fi",
                 "Drag & drop songs into browser",
-                "Preview & delete custom tracks"
+                "Preview & edit custom tracks"
             }
         else
             steps = {
-                "Turn ON Wi-Fi in device settings",
+                "Open Wi-Fi in device settings",
                 "Connect to your local network",
-                "Re-open Wireless Manager (X)"
+                "Re-open Music Manager"
             }
         end
 
