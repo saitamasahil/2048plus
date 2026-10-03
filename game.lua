@@ -26,7 +26,7 @@ Game.DIR_RIGHT = 1
 Game.DIR_DOWN  = 2
 Game.DIR_LEFT  = 3
 
--- Direction vectors (dx, dy)
+-- Direction vectors
 local vectors = {
     [0] = {x =  0, y = -1},  -- up
     [1] = {x =  1, y =  0},  -- right
@@ -324,7 +324,7 @@ function Game:addStartTiles()
         end
     end
 
-    -- High-Tile Boosters: 512, 256, or 128 (consumable)
+    -- High-tile boosters
     local b512 = _G.stats and (_G.stats.start_512_count or 0) or 0
     local b256 = _G.stats and (_G.stats.start_256_count or 0) or 0
     local b128 = _G.stats and (_G.stats.start_128_count or 0) or 0
@@ -504,7 +504,7 @@ function Game:move(direction)
                         save.saveHighScore(self.highScore, self.mode)
                     end
 
-                    -- Check milestones for powerup replenishment (Plus Mode) - once per milestone value per run
+                    -- Check powerup milestone unlocks
                     if self.mode == "plus" and merged.value >= 128 then
                         local m_str = tostring(merged.value)
                         if not self.milestonesReached[m_str] then
@@ -555,7 +555,7 @@ function Game:move(direction)
                         end
                     end
 
-                    -- Check for win (target tile!)
+                    -- Check win condition
                     if merged.value == self.targetValue and self.state == Game.STATE_PLAYING and self.mode ~= "timeattack" then
                         self.won = true
                         self.state = Game.STATE_WON
@@ -605,7 +605,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_goose_2048")
                     end
 
-                    -- Trigger pet companion excitement on high tile merges (512+)
+                    -- Trigger pet excitement on high merge
                     if merged.value >= 512 then
                         _G.pet_excited_timer = 2.0
                     end
@@ -623,7 +623,7 @@ function Game:move(direction)
                     end
 
 
-                    -- Time Attack: add bonus time for merges (challenging balance)
+                    -- Add time attack merge bonus
                     if self.mode == "timeattack" and self.timeLeft then
                         local bonus = 0
                         if merged.value == 32 then
@@ -672,7 +672,7 @@ function Game:move(direction)
                 _G.stats.highest_score = self.score
             end
         end
-        -- Apply accumulated time attack bonus (capped at 30s per move for balance)
+        -- Apply move time bonus
         if self.mode == "timeattack" and self.timeLeft and (self.timeAttackBonus or 0) > 0 then
             local cap = 30.0
             -- 2048 merge bypasses cap
@@ -680,7 +680,7 @@ function Game:move(direction)
             local bonus = merged_2048 and self.timeAttackBonus or math.min(self.timeAttackBonus, cap)
             self.timeLeft = math.min(self.totalTime, self.timeLeft + bonus)
 
-            -- Trigger visual feedback (floating text + flash timer)
+            -- Show floating bonus text and flash timer
             self.timePopups = self.timePopups or {}
             table.insert(self.timePopups, {
                 text = "+" .. tostring(math.floor(bonus)) .. "s",
@@ -942,7 +942,7 @@ function Game:undo()
 end
 
 function Game:continueGame()
-    -- Continue playing after winning (endless mode)
+    -- Endless mode continuation
     if self.state == Game.STATE_WON then
         self.state = Game.STATE_ENDLESS
         self:saveGameState()

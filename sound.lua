@@ -56,7 +56,7 @@ function sound.init()
     if love.sound and love.audio then
         local sampleRate = 44100
 
-        -- 1. Achievement Sound (Retro Arpeggio)
+        -- Achievement sound
         local achDuration = 0.6
         local achLength = math.floor(sampleRate * achDuration)
         local achSoundData = love.sound.newSoundData(achLength, sampleRate, 16, 1)
@@ -84,14 +84,14 @@ function sound.init()
         achSource = love.audio.newSource(achSoundData)
         achSource:setVolume(0.60)
 
-        -- 2. Splash Sound (Logo Pop WAV File)
+        -- Splash sound
         local success, src = pcall(love.audio.newSource, "assets/sfx/logo_pop.wav", "static")
         if success then
             splashSource = src
             splashSource:setVolume(1.0)
         end
 
-        -- 3. Victory Sound (Triumphant Ascending Fanfare)
+        -- Victory sound
         local victoryDuration = 1.0
         local victoryLength = math.floor(sampleRate * victoryDuration)
         local victorySoundData = love.sound.newSoundData(victoryLength, sampleRate, 16, 1)
@@ -128,7 +128,7 @@ function sound.init()
         victorySource = love.audio.newSource(victorySoundData)
         victorySource:setVolume(0.60)
 
-        -- 4. Game Over Sound (Melancholic Descending Cadence)
+        -- Game over sound
         local gameOverDuration = 0.8
         local gameOverLength = math.floor(sampleRate * gameOverDuration)
         local gameOverSoundData = love.sound.newSoundData(gameOverLength, sampleRate, 16, 1)
@@ -153,7 +153,7 @@ function sound.init()
         gameOverSource = love.audio.newSource(gameOverSoundData)
         gameOverSource:setVolume(0.60)
 
-        -- 5. Menu Hover (Move) Sound (Soft Retro Tick)
+        -- Menu hover sound
         local menuMoveDuration = 0.04
         local menuMoveLength = math.floor(sampleRate * menuMoveDuration)
         local menuMoveSoundData = love.sound.newSoundData(menuMoveLength, sampleRate, 16, 1)
@@ -169,7 +169,7 @@ function sound.init()
         menuMoveSource = love.audio.newSource(menuMoveSoundData)
         menuMoveSource:setVolume(1.0)
 
-        -- 6. Menu Select (Confirm) Sound (Bright Double Beep)
+        -- Menu select sound
         local menuSelectDuration = 0.13
         local menuSelectLength = math.floor(sampleRate * menuSelectDuration)
         local menuSelectSoundData = love.sound.newSoundData(menuSelectLength, sampleRate, 16, 1)
@@ -191,7 +191,7 @@ function sound.init()
         menuSelectSource = love.audio.newSource(menuSelectSoundData)
         menuSelectSource:setVolume(0.40)
 
-        -- 7. Menu Back (Cancel) Sound (Descending Retro Double Beep)
+        -- Menu back sound
         local menuBackDuration = 0.13
         local menuBackLength = math.floor(sampleRate * menuBackDuration)
         local menuBackSoundData = love.sound.newSoundData(menuBackLength, sampleRate, 16, 1)
@@ -213,7 +213,7 @@ function sound.init()
         menuBackSource = love.audio.newSource(menuBackSoundData)
         menuBackSource:setVolume(0.40)
 
-        -- 8. Toast Sound (High Chime Beep)
+        -- Toast chime sound
         local toastDuration = 0.15
         local toastLength = math.floor(sampleRate * toastDuration)
         local toastSoundData = love.sound.newSoundData(toastLength, sampleRate, 16, 1)
@@ -242,17 +242,41 @@ function sound.init()
     sound.initPlaylist()
 end
 
-function sound.initPlaylist()
+local BUILTIN_TRACKS = {
+    ["all night - roa .mp3"] = true,
+    ["beloved - roa.mp3"] = true,
+    ["chillout - audiocoffee.mp3"] = true,
+    ["crescent moon - purrple cat.mp3"] = true,
+    ["day off - tokyo music walker .mp3"] = true,
+    ["downtown glow - ghostrifter official.mp3"] = true,
+    ["embrace - roa.mp3"] = true,
+    ["golden hour - purrple cat.mp3"] = true,
+    ["green tea - purrple cat.mp3"] = true,
+    ["journey - roa.mp3"] = true,
+    ["late at night - sakura girl.mp3"] = true,
+    ["missing you - purrple cat.mp3"] = true,
+    ["purple dream - ghostrifter official.mp3"] = true,
+    ["summer madness - roa.mp3"] = true,
+    ["sunset drive - tokyo music walker.mp3"] = true,
+    ["when i was a boy - tokyo music walker.mp3"] = true,
+}
+
+local server_process_running = false
+
+function sound.initPlaylist(keepSource)
     bgmPlaylist = {}
-    currentBgmIdx = 0
-    currentBgmSource = nil
+    if not keepSource then
+        currentBgmIdx = 0
+        currentBgmSource = nil
+    end
 
     -- Ensure write/save directory path exists for dynamic downloaded tracks
     love.filesystem.createDirectory("assets/music")
 
     local files = love.filesystem.getDirectoryItems("assets/music")
     for _, file in ipairs(files) do
-        if file:match("%.mp3$") or file:match("%.ogg$") then
+        local lower = file:lower()
+        if lower:match("%.mp3$") or lower:match("%.ogg$") or lower:match("%.wav$") then
             local title, artist
             local stem = file:match("^(.+)%.[^.]+$") or file
             local t_part, a_part = stem:match("^([^-]+)%s*-%s*(.+)$")
@@ -261,13 +285,17 @@ function sound.initPlaylist()
                 artist = a_part:gsub("^%s*(.-)%s*$", "%1")
             else
                 title = stem
-                artist = "Unknown Artist"
+                artist = "Custom Track"
             end
+
+            local is_builtin = BUILTIN_TRACKS[lower] or false
 
             table.insert(bgmPlaylist, {
                 path = "assets/music/" .. file,
+                filename = file,
                 title = title,
-                artist = artist
+                artist = artist,
+                is_custom = not is_builtin
             })
         end
     end
@@ -277,9 +305,215 @@ function sound.initPlaylist()
         return a.title:lower() < b.title:lower()
     end)
 
-    -- Default to track 0 so playing begins at track 1 (first A-Z track)
-    currentBgmIdx = 0
+    if not keepSource then
+        currentBgmIdx = 0
+    end
 end
+
+function sound.reloadPlaylist()
+    local old_path = (currentBgmIdx > 0 and bgmPlaylist[currentBgmIdx]) and bgmPlaylist[currentBgmIdx].path or nil
+    sound.initPlaylist(true)
+    local found = false
+    if old_path then
+        for i, t in ipairs(bgmPlaylist) do
+            if t.path == old_path then
+                currentBgmIdx = i
+                found = true
+                break
+            end
+        end
+    end
+    if not found and old_path and currentBgmSource then
+        currentBgmSource:stop()
+        currentBgmSource = nil
+        currentBgmIdx = 0
+    end
+    return #bgmPlaylist
+end
+
+local server_ip = nil
+local server_port = 8048
+local qr_image = nil
+
+function sound.getQrImage()
+    if qr_image then return qr_image end
+    local work_dir = _G.WORK_DIR or "."
+    local candidates = {
+        work_dir .. "/static/web_qr.png",
+        work_dir .. "/gamedata/static/web_qr.png",
+        "static/web_qr.png",
+        "gamedata/static/web_qr.png"
+    }
+    for _, qr_path in ipairs(candidates) do
+        local f = io.open(qr_path, "rb")
+        if f then
+            local data = f:read("*all")
+            f:close()
+            local ok, img = pcall(function()
+                local fileData = love.filesystem.newFileData(data, "qr.png")
+                local imageData = love.image.newImageData(fileData)
+                return love.graphics.newImage(imageData)
+            end)
+            if ok and img then
+                qr_image = img
+                return qr_image
+            end
+        end
+    end
+    return nil
+end
+
+function sound.get_ip_address(force_refresh)
+    if not force_refresh and server_ip and server_ip ~= "127.0.0.1" then
+        return server_ip
+    end
+    -- Try default gateway route
+    local handle = io.popen("ip route get 8.8.8.8 2>/dev/null | awk '{print $7}'")
+    if handle then
+        local res = handle:read("*a")
+        handle:close()
+        if res then
+            res = res:gsub("%s+", "")
+            if res ~= "" and not res:match("^127%.") then
+                server_ip = res
+                return res
+            end
+        end
+    end
+    -- Try hostname -I
+    local h2 = io.popen("hostname -I 2>/dev/null | awk '{print $1}'")
+    if h2 then
+        local res = h2:read("*a")
+        h2:close()
+        if res then
+            res = res:gsub("%s+", "")
+            if res ~= "" and not res:match("^127%.") then
+                server_ip = res
+                return res
+            end
+        end
+    end
+    -- Try wlan0 interface
+    local h3 = io.popen("ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'")
+    if h3 then
+        local res = h3:read("*a")
+        h3:close()
+        if res then
+            res = res:gsub("%s+", "")
+            if res ~= "" and not res:match("^127%.") then
+                server_ip = res
+                return res
+            end
+        end
+    end
+    -- Try eth0 and usb0 interfaces
+    local h4 = io.popen("ip -4 addr show eth0 2>/dev/null | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'")
+    if h4 then
+        local res = h4:read("*a")
+        h4:close()
+        if res then
+            res = res:gsub("%s+", "")
+            if res ~= "" and not res:match("^127%.") then
+                server_ip = res
+                return res
+            end
+        end
+    end
+    server_ip = "127.0.0.1"
+    return "127.0.0.1"
+end
+
+function sound.has_wifi()
+    local ip = sound.get_ip_address(true)
+    if not ip or ip == "127.0.0.1" or ip:match("^127%.") or ip == "" or ip == "0.0.0.0" then
+        return false, nil
+    end
+    return true, ip
+end
+
+function sound.startWebServer(port)
+    port = port or 8048
+    local ok_wifi, ip = sound.has_wifi()
+    if not ok_wifi then
+        ip = "127.0.0.1"
+    end
+    if server_ip ~= ip or server_port ~= port then
+        qr_image = nil
+    end
+    server_ip = ip
+    server_port = port
+    local work_dir = _G.WORK_DIR or "."
+
+    local function resolve_path(rel)
+        local candidates = {
+            work_dir .. "/" .. rel,
+            work_dir .. "/gamedata/" .. rel,
+            "gamedata/" .. rel,
+            rel
+        }
+        for _, p in ipairs(candidates) do
+            local f = io.open(p, "r")
+            if f then f:close(); return p end
+        end
+        return work_dir .. "/" .. rel
+    end
+
+    local script_path = resolve_path("scripts/jukebox_server.py")
+    local music_dir = resolve_path("assets/music")
+    local font_path = resolve_path("assets/font/ClearSans-Bold.ttf")
+
+    local static_dir = work_dir .. "/static"
+    local st_check = io.open(static_dir .. "/theme.dat", "r") or io.open(static_dir .. "/theme_state.json", "r")
+    if not st_check then
+        local g_static = work_dir .. "/gamedata/static"
+        local gst_check = io.open(g_static .. "/theme.dat", "r") or io.open(g_static .. "/theme_state.json", "r")
+        if gst_check then
+            gst_check:close()
+            static_dir = g_static
+        end
+    else
+        st_check:close()
+    end
+
+    local qr_path = static_dir .. "/web_qr.png"
+    local theme_path = static_dir .. "/theme_state.json"
+
+    -- Write initial theme state
+    if renderer and renderer.applyTheme then
+        renderer.applyTheme(true)
+    else
+        local tf = io.open(theme_path, "w")
+        if tf then
+            local t_name = renderer and renderer.getThemeDisplayName and renderer.getThemeDisplayName(_G.theme or "light", false) or (_G.theme or "light")
+            tf:write(string.format('{"theme":"%s","name":"%s","timestamp":%d}', _G.theme or "light", t_name, os.time()))
+            tf:close()
+        end
+    end
+
+    os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
+
+    local cmd = string.format('python3 "%s" --daemon --music-dir "%s" --port %d --qr-path "%s" --font-path "%s" --theme-file "%s" > /dev/null 2>&1',
+        script_path, music_dir, port, qr_path, font_path, theme_path)
+    os.execute(cmd)
+
+    server_process_running = true
+    if not qr_image then
+        sound.getQrImage()
+    end
+    return ip, port
+end
+
+function sound.stopWebServer()
+    os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
+    server_process_running = false
+    -- Cache QR code image
+    return sound.reloadPlaylist()
+end
+
+function sound.isWebServerRunning()
+    return server_process_running
+end
+
 
 function sound.stopBgm()
     if currentBgmSource then
@@ -310,6 +544,10 @@ function sound.enterJukebox()
 end
 
 function sound.exitJukebox()
+    if server_process_running then
+        sound.stopWebServer()
+    end
+    _G.jukebox_web_modal = false
     sound.stopBgm()
     _G.jukebox_prev_track = nil
     _G.jukebox_eq_states = {}
@@ -392,12 +630,60 @@ function sound.playNextBgm()
     end
 end
 
+function sound.playPrevBgm()
+    if #bgmPlaylist == 0 then return end
+
+    bgmStoppedBySystem = false
+    bgmPausedByUser = false
+
+    if currentBgmIdx > 0 and currentBgmIdx <= #bgmPlaylist then
+        _G.jukebox_prev_track = bgmPlaylist[currentBgmIdx]
+    end
+
+    if currentBgmSource then
+        currentBgmSource:stop()
+        currentBgmSource = nil
+    end
+
+    currentBgmIdx = currentBgmIdx - 1
+    if currentBgmIdx < 1 then
+        currentBgmIdx = #bgmPlaylist
+    end
+
+    local track = bgmPlaylist[currentBgmIdx]
+    local success, source = pcall(love.audio.newSource, track.path, "stream")
+    if success and source then
+        currentBgmSource = source
+        currentBgmSource:setVolume(0.55)
+        currentBgmSource:play()
+        bgmStartDelay = 0
+        _G.jukebox_card_change_time = love.timer.getTime()
+
+        if _G.appState == "JUKEBOX" and _G.stats then
+            _G.stats.played_bgm_ids = _G.stats.played_bgm_ids or {}
+            local key = track.title or track.path or tostring(currentBgmIdx)
+            if not _G.stats.played_bgm_ids[key] then
+                _G.stats.played_bgm_ids[key] = true
+                local count = 0
+                for _ in pairs(_G.stats.played_bgm_ids) do count = count + 1 end
+                if count >= 5 and _G.unlockAchievement then
+                    _G.unlockAchievement("ach_melody_maker")
+                end
+                local save = require("save")
+                if save and save.saveStats then save.saveStats(_G.stats) end
+            end
+        end
+    else
+        print("Failed to load music track: " .. tostring(track.path))
+    end
+end
+
 function sound.update(dt)
     local in_game    = _G.appState == "GAME"
     local in_jukebox = _G.appState == "JUKEBOX"
     local allowed    = sound.isBgmEnabled() and (in_game or in_jukebox)
 
-    -- ── Leaving an allowed state (e.g., in menu, settings, store) ───────────
+    -- Stop music on screen transition
     if not allowed then
         if currentBgmSource then
             currentBgmSource:stop()

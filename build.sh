@@ -3,10 +3,10 @@
 # 2048 Plus - Unified Build Script
 # ==============================================================================
 # Usage:
-#   ./build.sh              (Interactive: asks 1) muOS, 2) PortMaster, 3) Both)
-#   ./build.sh muos         (Builds muOS package only)
-#   ./build.sh portmaster   (Builds PortMaster package only)
-#   ./build.sh both         (Builds both packages)
+# ./build.sh            Interactive build menu
+# ./build.sh muos       Build muOS package
+# ./build.sh portmaster Build PortMaster package
+# ./build.sh both       Build both packages
 # ==============================================================================
 set -e
 
@@ -53,6 +53,9 @@ build_muos() {
     # Copy all assets
     cp -r "$PROJECT_ROOT/assets" "$WORKDIR/$APP_NAME/.game/"
 
+    # Copy helper scripts
+    cp -r "$PROJECT_ROOT/scripts" "$WORKDIR/$APP_NAME/.game/"
+
     # Copy LÖVE binary and libs
     cp -r "$PROJECT_ROOT/bin" "$WORKDIR/$APP_NAME/.game/"
     mkdir -p "$WORKDIR/$APP_NAME/.game/static"
@@ -84,7 +87,7 @@ build_portmaster() {
     TMP_STAGE="/tmp/pm_stage_$$"
     mkdir -p "$TMP_STAGE/gamedata"
 
-    # Stage code, sprites, icons, UI, font, SFX (exclude loose music, docs & repo meta)
+    # Stage runtime assets and scripts
     rsync -av \
       --exclude="music" \
       --exclude=".git*" \

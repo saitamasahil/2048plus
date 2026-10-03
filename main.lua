@@ -549,7 +549,7 @@ function love.update(dt)
         end
     end
 
-    -- Update timer system (drives splash animations)
+    -- Update timer system
     timer.update(dt)
 
     -- Update BGM playback and playlist states
@@ -564,7 +564,7 @@ function love.update(dt)
         if transition_delay_timer <= 0 then
             transition_delay_timer = 0
             if transition_delay_action then
-                -- Capture the current (old) screen BEFORE state changes
+                -- Snapshot previous screen for transition
                 if _G.screen_transitions then
                     captureOldScreen()
                 end
@@ -643,7 +643,7 @@ function love.update(dt)
         action()
     end
 
-    -- Update input (hold-to-repeat)
+    -- Update input repeat timers
     input.update(dt)
 
     -- Process input events
@@ -909,7 +909,7 @@ function love.update(dt)
                         return
                     end
 
-                    -- Consumables (boosters, powerup charges, shields)
+                    -- Consumables
                     if sel_item.consumable then
                         local stat_key = sel_item.ckey or (sel_item.id .. "_count")
                         local current = _G.stats[stat_key] or 0
@@ -994,6 +994,19 @@ function love.update(dt)
             end
             return
         elseif _G.appState == "JUKEBOX" then
+            if _G.jukebox_web_modal then
+                if event == input.events.BACK then
+                    sound.playMenuSelect()
+                    queueTransitionAction("B", 0.08, function()
+                        _G.jukebox_web_modal = false
+                        if sound.stopWebServer then
+                            sound.stopWebServer()
+                        end
+                    end)
+                end
+                return
+            end
+
             local playlist = sound.getBgmPlaylist and sound.getBgmPlaylist() or {}
             local total_tracks = math.max(1, #playlist)
             _G.jukebox_selection = _G.jukebox_selection or 1
@@ -1028,10 +1041,24 @@ function love.update(dt)
                 if _G.cycleTheme then
                     _G.cycleTheme()
                 end
-            elseif event == input.events.X then
+            elseif event == input.events.X or event == input.events.SELECT then
+                sound.playMenuSelect()
+                queueTransitionAction("X", 0.08, function()
+                    _G.jukebox_web_modal = true
+                    if sound.startWebServer then
+                        sound.startWebServer(8048)
+                    end
+                end)
+            elseif event == input.events.R1 then
                 sound.playMenuSelect()
                 sound.playNextBgm()
-                -- sync selection to now-playing track
+                local new_idx = sound.getCurrentBgmIndex and sound.getCurrentBgmIndex() or 1
+                _G.jukebox_selection = new_idx
+            elseif event == input.events.L1 then
+                sound.playMenuSelect()
+                if sound.playPrevBgm then
+                    sound.playPrevBgm()
+                end
                 local new_idx = sound.getCurrentBgmIndex and sound.getCurrentBgmIndex() or 1
                 _G.jukebox_selection = new_idx
             elseif event == input.events.BACK then
@@ -1576,12 +1603,12 @@ function love.update(dt)
                         game:undo()
                     end)
                 end
-            -- Pause menu (START button)
+            -- Pause menu hotkey
             elseif event == input.events.START then
                 queueTransitionAction(event, 0.08, function()
                     game:togglePause()
                 end)
-            -- Trigger footer coin notification (SELECT button)
+            -- Coin notification hotkey
             elseif event == input.events.SELECT then
                 if renderer and renderer.triggerCoinFooterToast then
                     renderer.triggerCoinFooterToast()
@@ -1785,29 +1812,29 @@ local crt_shader_code = [[
     extern vec2 screen_size;
 
     vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
-        // 1. CRT Curved Glass Barrel Distortion with Auto-Fill (Zero Blank Space Outlines!)
+        // CRT barrel distortion
         vec2 cc = texture_coords - 0.5;
         float dist = dot(cc, cc);
         
-        // Curved screen profile scaled so UV coordinates stay strictly within [0, 1]
+        // Scale UV coordinates within screen bounds
         // This eliminates all black blank corner cutouts while preserving retro glass curvature!
         vec2 distorted_coords = cc * (1.0 + dist * 0.05) * 0.965 + 0.5;
         distorted_coords = clamp(distorted_coords, 0.0, 1.0);
 
-        // 2. Chromatic Aberration (Trinitron RGB glass separation near edges)
+        // Chromatic aberration
         float ca = 0.0012 * (1.0 + dist * 1.5);
         float r = Texel(texture, distorted_coords - vec2(ca, 0.0)).r;
         float g = Texel(texture, distorted_coords).g;
         float b = Texel(texture, distorted_coords + vec2(ca, 0.0)).b;
         vec4 tex_color = vec4(r, g, b, 1.0);
 
-        // 3. Scanlines (subtle TV line raster effect)
+        // Scanline raster effect
         float scanline = sin(distorted_coords.y * screen_size.y * 1.2) * 0.045 + 0.955;
 
-        // 4. Phosphor Mask (subtle RGB triad grille effect)
+        // Phosphor triad mask
         float mask = sin(distorted_coords.x * screen_size.x * 1.5) * 0.025 + 0.975;
 
-        // 5. Smooth CRT Glass Corner Vignette (replaces ugly black cutouts with soft vintage screen falloff)
+        // Corner vignette falloff
         float vig = smoothstep(0.70, 0.30, length(cc));
         float vignette = 0.90 + 0.10 * vig;
 
@@ -1860,7 +1887,7 @@ function love.draw()
         end
 
         if screen_transition_timer > 0 then
-            -- Cubic ease-out progress (0 → 1) - starts fast, slows down smoothly
+            -- Ease-out transition curve
             local t_progress = 1 - (screen_transition_timer / screen_transition_duration)
             local p = 1 - math.pow(1 - t_progress, 3)
 
@@ -1884,19 +1911,19 @@ function love.draw()
             local shadow_w = math.floor(20 * (_G.scale or 1))
 
             if dir == 1 then
-                -- Forward transition: New screen slides in on top from right (w -> 0)
-                -- Old screen slides out underneath to the left at 30% speed (0 -> -0.3*w)
+                -- Forward screen slide
+                -- Parallax shift for old screen
                 local old_x = math.floor(-0.3 * w * p)
                 local new_x = math.floor(w * (1 - p))
 
-                -- 1. Draw old screen (underneath)
+                -- Draw old screen
                 if old_screen_canvas then
                     love.graphics.setColor(1, 1, 1, 1)
                     love.graphics.setBlendMode("replace", "premultiplied")
                     love.graphics.draw(old_screen_canvas, old_x, 0)
                     love.graphics.setBlendMode("alpha", "alphamultiply")
 
-                    -- Dim the old screen (dimming fades in from 0% to 50% opacity)
+                    -- Dim old screen overlay
                     love.graphics.setColor(0, 0, 0, 0.5 * p)
                     love.graphics.rectangle("fill", old_x, 0, w, h)
                 end
@@ -1908,36 +1935,36 @@ function love.draw()
                     love.graphics.rectangle("fill", new_x - shadow_w + i, 0, 1, h)
                 end
 
-                -- 3. Draw new screen (on top)
+                -- Draw new screen
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(screen_canvas, new_x, 0)
                 love.graphics.setBlendMode("alpha", "alphamultiply")
             else
-                -- Backward transition: Old screen slides out on top to the right (0 -> w)
-                -- New screen slides in underneath from the left at 30% speed (-0.3*w -> 0)
+                -- Backward screen slide
+                -- Parallax shift for new screen
                 local new_x = math.floor(-0.3 * w * (1 - p))
                 local old_x = math.floor(w * p)
 
-                -- 1. Draw new screen (underneath)
+                -- Draw new screen
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(screen_canvas, new_x, 0)
                 love.graphics.setBlendMode("alpha", "alphamultiply")
 
-                -- Dim the new screen (dimming fades out from 50% to 0% opacity)
+                -- Dim overlay
                 love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
                 love.graphics.rectangle("fill", new_x, 0, w, h)
 
                 if old_screen_canvas then
-                    -- 2. Draw shadow to the left of the old screen (sliding on top)
+                    -- Draw edge shadow
                     for i = 0, shadow_w - 1 do
                         local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
                         love.graphics.setColor(0, 0, 0, alpha)
                         love.graphics.rectangle("fill", old_x - shadow_w + i, 0, 1, h)
                     end
 
-                    -- 3. Draw old screen (on top)
+                    -- Draw old screen
                     love.graphics.setColor(1, 1, 1, 1)
                     love.graphics.setBlendMode("replace", "premultiplied")
                     love.graphics.draw(old_screen_canvas, old_x, 0)
@@ -1985,6 +2012,11 @@ function love.mousereleased(x, y, button, istouch, presses)
 end
 
 function love.quit()
+    if sound and sound.stopWebServer then
+        pcall(sound.stopWebServer)
+    else
+        os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
+    end
     if game then
         pcall(function() game:saveGameState() end)
     end

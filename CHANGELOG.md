@@ -1,6 +1,10 @@
 # Changelog
 
-## [6.0.4] (TBA)
+## [7.0.0] (TBA)
+### Added
+- Wireless Music Transfer in Jukebox: upload, preview, and manage custom MP3, OGG, and WAV tracks wirelessly from any phone or PC browser over Wi-Fi
+- Custom track badges in Jukebox playlist and L1/R1 shoulder buttons for quick track skipping
+
 ### Fixed
 - Fixed timer and powerups not restoring properly when continuing a saved game
 - Fixed Time Attack time's up state persistence on game resume
