@@ -360,7 +360,8 @@ function love.load(args)
         if sound and sound.playMenuMove then sound.playMenuMove() end
     end
 
-    function _G.cycleTheme()
+    function _G.cycleTheme(direction)
+        local dir = direction or 1
         local function getCurrentDrawTarget()
             if _G.appState == "GAME" and game then
                 return game
@@ -382,12 +383,14 @@ function love.load(args)
                 return function() renderer.drawStoreMenu(_G.store_selection or 1, true) end
             elseif _G.appState == "JUKEBOX" then
                 return function() renderer.drawJukebox(_G.jukebox_selection or 1, true) end
+            elseif _G.appState == "MENU" then
+                return function() renderer.drawMainMenu(menuSelection, true) end
             end
             return function() end
         end
 
         local drawTarget = getCurrentDrawTarget()
-        renderer.startThemeTransition(drawTarget)
+        renderer.startThemeTransition(drawTarget, dir)
 
         local current_idx = 1
         for i, t in ipairs(_G.unlocked_themes or {"light", "dark"}) do
@@ -396,7 +399,13 @@ function love.load(args)
                 break
             end
         end
-        local next_idx = (current_idx % #_G.unlocked_themes) + 1
+        local total_themes = #_G.unlocked_themes
+        local next_idx = current_idx + dir
+        if next_idx > total_themes then
+            next_idx = 1
+        elseif next_idx < 1 then
+            next_idx = total_themes
+        end
         _G.theme = _G.unlocked_themes[next_idx]
         if renderer and renderer.applyTheme then renderer.applyTheme() end
         if _G.appState ~= "THEME_SELECT" then
@@ -649,51 +658,11 @@ function love.update(dt)
     -- Process input events
     input.processEvents(function(event)
         if event == input.events.Y then
-            local function getCurrentDrawTarget()
-                if _G.appState == "MENU" then
-                    return function() renderer.drawMainMenu(menuSelection, true) end
-                elseif _G.appState == "GAME" and game then
-                    return game
-                elseif _G.appState == "ACHIEVEMENTS" then
-                    return function() renderer.drawAchievements(_G.achievements_scroll or 0, true) end
-                elseif _G.appState == "TUTORIAL" then
-                    return function() renderer.drawTutorial(_G.tutorial_page or 1, true) end
-                elseif _G.appState == "ABOUT" then
-                    return function() renderer.drawAbout(true) end
-                elseif _G.appState == "CHEATS_MENU" then
-                    return function() renderer.drawSecretMenu(_G.cheats_selection or 1, true) end
-                elseif _G.appState == "THEME_SELECT" then
-                    return function() renderer.drawThemeSelect(true) end
-                elseif _G.appState == "SETTINGS" then
-                    return function() renderer.drawSettings(_G.settings_selection or 1, true) end
-                elseif _G.appState == "PLAY_SELECT" then
-                    return function() renderer.drawPlaySelectMenu(_G.play_select_selection or 1, _G.arcade_selection or 1, true, menuSelection) end
-                elseif _G.appState == "ARCADE_MENU" then
-                    return function() renderer.drawPlaySelectMenu(_G.play_select_selection or 1, _G.arcade_selection or 1, true, menuSelection) end
-                elseif _G.appState == "STORE" then
-                    return function() renderer.drawStoreMenu(_G.store_selection or 1, true) end
-                elseif _G.appState == "JUKEBOX" then
-                    return function() renderer.drawJukebox(_G.jukebox_selection or 1, true) end
-                end
-                return function() end
+            if _G.appState == "THEME_SELECT" and sound and sound.playMenuMove then
+                sound.playMenuMove()
             end
-
-            local drawTarget = getCurrentDrawTarget()
-            renderer.startThemeTransition(drawTarget)
-
-            local current_idx = 1
-            for i, t in ipairs(_G.unlocked_themes) do
-                if t == _G.theme then
-                    current_idx = i
-                    break
-                end
-            end
-            local next_idx = (current_idx % #_G.unlocked_themes) + 1
-            _G.theme = _G.unlocked_themes[next_idx]
-            renderer.applyTheme()
-            if _G.appState ~= "THEME_SELECT" then
-                save.saveTheme(_G.theme)
-                if game then game:saveGameState() end
+            if _G.cycleTheme then
+                _G.cycleTheme(1)
             end
             return
         end
@@ -1342,6 +1311,16 @@ function love.update(dt)
                     renderer.applyTheme()
                     _G.appState = _G.themeSelectPrevState or "MENU"
                 end)
+            elseif event == input.events.X or event == input.events.LEFT or event == input.events.UP then
+                if sound and sound.playMenuMove then sound.playMenuMove() end
+                if _G.cycleTheme then
+                    _G.cycleTheme(-1)
+                end
+            elseif event == input.events.RIGHT or event == input.events.DOWN then
+                if sound and sound.playMenuMove then sound.playMenuMove() end
+                if _G.cycleTheme then
+                    _G.cycleTheme(1)
+                end
             end
             return
         elseif _G.appState == "SETTINGS" then

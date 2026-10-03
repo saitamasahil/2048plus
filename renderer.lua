@@ -15,6 +15,8 @@ local transition_center_x = 0
 local transition_center_y = 0
 renderer.theme_button_x = nil
 renderer.theme_button_y = nil
+renderer.theme_prev_button_x = nil
+renderer.theme_prev_button_y = nil
 
 -- Menu selection animation state
 local menu_anim_y = nil
@@ -4954,10 +4956,12 @@ local function drawKeyBadge(text, x, y, w, h)
     text = renderer.getButtonPrompt(text)
     local letter_offset_y = (text == "Y" or text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale)))
 
-    -- Save dynamically tracked coordinates for the Theme Y button
-    if text == "Y" then
+    if original_text == "Y" or text == "Y" then
         renderer.theme_button_x = x + w / 2
         renderer.theme_button_y = y + h / 2
+    elseif original_text == "X" or text == "X" then
+        renderer.theme_prev_button_x = x + w / 2
+        renderer.theme_prev_button_y = y + h / 2
     end
 
     -- Determine if this button is currently pressed for visual feedback
@@ -5742,16 +5746,16 @@ end
 -- ============================================================================
 local function drawStencilCircle()
     local progress = 1 - (transition_timer / transition_duration)
-    -- Ease out cubic: 1 - (1 - t)^3
     local p = 1 - math.pow(1 - progress, 3)
     local w, h = love.graphics.getDimensions()
-    -- Max radius needs to cover the entire screen from the bottom right
-    local max_radius = math.sqrt(w*w + h*h)
+    local dx = math.max(transition_center_x, w - transition_center_x)
+    local dy = math.max(transition_center_y, h - transition_center_y)
+    local max_radius = math.sqrt(dx*dx + dy*dy) + 20
     local radius = max_radius * p
     love.graphics.circle("fill", transition_center_x, transition_center_y, radius)
 end
 
-function renderer.startThemeTransition(drawTarget)
+function renderer.startThemeTransition(drawTarget, direction)
     if not _G.screen_transitions then
         return
     end
@@ -5759,20 +5763,24 @@ function renderer.startThemeTransition(drawTarget)
     if not transition_canvas then
         transition_canvas = love.graphics.newCanvas(w, h)
     end
-    -- Capture current screen to canvas
     love.graphics.setCanvas({transition_canvas, stencil = true})
     love.graphics.clear()
     if type(drawTarget) == "function" then
         drawTarget()
     else
-        renderer.draw(drawTarget, true) -- Pass true to skip transition drawing inside
+        renderer.draw(drawTarget, true)
     end
     love.graphics.setCanvas()
 
     transition_timer = transition_duration
-    -- The Y button coordinates are tracked dynamically!
-    transition_center_x = renderer.theme_button_x or (w - math.floor(90 * _G.scale))
-    transition_center_y = renderer.theme_button_y or (h - math.floor(30 * _G.scale))
+    local dir = direction or 1
+    if dir < 0 then
+        transition_center_x = renderer.theme_prev_button_x or (w - math.floor(180 * _G.scale))
+        transition_center_y = renderer.theme_prev_button_y or (h - math.floor(30 * _G.scale))
+    else
+        transition_center_x = renderer.theme_button_x or (w - math.floor(90 * _G.scale))
+        transition_center_y = renderer.theme_button_y or (h - math.floor(30 * _G.scale))
+    end
 end
 
 function renderer.updateTransition(dt)
@@ -8816,12 +8824,12 @@ function renderer.drawThemeSelect(skip_transition)
     local item_gap = math.floor(10 * scale)
     local label_gap = math.floor(4 * scale)
 
-    -- Action buttons: B Cancel, A Select, Y Theme
     local right_x = w - math.floor(20 * scale)
     local actions = {
         {key = "B", label = "Cancel"},
         {key = "A", label = "Select"},
-        {key = "Y", label = "Switch Theme"}
+        {key = "Y", label = "Next"},
+        {key = "X", label = "Previous"}
     }
     for _, action in ipairs(actions) do
         -- Label

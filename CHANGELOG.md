@@ -5,6 +5,9 @@
 - Wireless Music Transfer in Jukebox: upload, preview, and manage custom MP3, OGG, and WAV tracks wirelessly from any phone or PC browser over Wi-Fi
 - Custom track badges in Jukebox playlist and L1/R1 shoulder buttons for quick track skipping
 
+### Changed
+- Theme Selection navigation: Y button switches to the next theme, and X button switches to the previous theme
+
 ### Fixed
 - Fixed timer and powerups not restoring properly when continuing a saved game
 - Fixed Time Attack time's up state persistence on game resume
