@@ -2221,8 +2221,6 @@ function renderer.drawDynamicBackground(themeName)
                     if j == col.length then
                         love.graphics.setColor(0.7, 1.0, 0.7, 0.95)
                         love.graphics.print(col.chars[j], col.x, cy)
-                        love.graphics.setColor(0.0, 1.0, 0.0, 0.2)
-                        love.graphics.circle("fill", col.x + col_w/2, cy + char_h/2, 6 * scale)
                     else
                         local r = 0.0
                         local g = 0.3 + 0.7 * alpha
