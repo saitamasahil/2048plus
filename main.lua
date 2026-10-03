@@ -350,7 +350,7 @@ function love.load(args)
     end
 
     function _G.cycleStoreSortMode()
-        _G.store_sort_mode = ((_G.store_sort_mode or 0) + 1) % 11
+        _G.store_sort_mode = ((_G.store_sort_mode or 0) + 1) % 10
         _G.store_selection = 1
         _G.store_scroll = 0
         if _G.stats then
@@ -437,7 +437,7 @@ function love.load(args)
     _G.time_attack_time = save.loadTimeAttackTime() or 60
     _G.vibration = save.loadVibration()
     _G.crt_filter = save.loadCrtFilter()
-    _G.merge_fx = save.loadMergeFX() or "default"
+    _G.merge_fx = "default"
     _G.board_skin = save.loadBoardSkin() or "default"
 
     -- Load and initialize global stats
@@ -450,6 +450,7 @@ function love.load(args)
     _G.stats.purchased_items = _G.stats.purchased_items or {}
     _G.stats.claimed_achievements = _G.stats.claimed_achievements or {}
     _G.store_sort_mode = _G.stats.store_sort_mode or 0
+    if _G.store_sort_mode > 9 then _G.store_sort_mode = 0 end
 
     -- Check Coin Hoarder & Best Friend on startup
     if _G.stats.coins >= 10000 and _G.unlockAchievement then
@@ -1438,24 +1439,7 @@ function love.update(dt)
                         _G.crt_filter = not _G.crt_filter
                         save.saveCrtFilter(_G.crt_filter)
                         sound.playMenuSelect()
-                    elseif sel:match("^Merge Visual FX") then
-                        sound.playMenuSelect()
-                        local bounce_unlocked = _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["anim_bounce"]
-                        local glow_unlocked = _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["anim_glow"]
-                        if not bounce_unlocked and not glow_unlocked then
-                            renderer.showToast("Unlock Bounce Pop or Glow Pulse in Store first!")
-                        else
-                            local options_list = {"default"}
-                            if bounce_unlocked then table.insert(options_list, "bounce") end
-                            if glow_unlocked then table.insert(options_list, "glow") end
-                            local curr_idx = 1
-                            for i, opt in ipairs(options_list) do
-                                if opt == _G.merge_fx then curr_idx = i break end
-                            end
-                            local next_idx = (curr_idx % #options_list) + 1
-                            _G.merge_fx = options_list[next_idx]
-                            save.saveMergeFX(_G.merge_fx)
-                        end
+
                     elseif sel == "Back" then
                         sound.playMenuBack()
                         queueTransitionAction(event, 0.08, function()

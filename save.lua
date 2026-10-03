@@ -103,24 +103,9 @@ end
 local MERGE_FX_FILE = "merge_fx.dat"
 
 function save.saveMergeFX(fx)
-    local path = getFilePath(MERGE_FX_FILE)
-    local file = io.open(path, "w")
-    if file then
-        file:write(fx or "default")
-        file:close()
-    end
 end
 
 function save.loadMergeFX()
-    local path = getFilePath(MERGE_FX_FILE)
-    local file = io.open(path, "r")
-    if file then
-        local content = file:read("*all")
-        file:close()
-        if content and content ~= "" then
-            return content
-        end
-    end
     return "default"
 end
 

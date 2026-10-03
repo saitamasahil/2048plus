@@ -7,6 +7,7 @@
 
 ### Changed
 - Theme Selection navigation: Y button switches to the next theme, and X button switches to the previous theme
+- Removed alternative merge fx animations
 
 ### Fixed
 - Fixed timer and powerups not restoring properly when continuing a saved game

@@ -3493,7 +3493,7 @@ function renderer.init()
     -- Load store item icons & achievement icons
     item_icons = {}
     achievement_icons = {}
-    local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "bounce", "glow", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "coin_rush", "ticket", "cat", "dog" }
+    local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "coin_rush", "ticket", "cat", "dog" }
     for _, name in ipairs(item_names) do
         local ok_item, item_img = pcall(love.graphics.newImage, "assets/icon/" .. name .. ".png")
         if ok_item then
@@ -4064,46 +4064,12 @@ function renderer.drawTile(tile, slideProgress, popProgress)
         tileScaleX = popProgress
         tileScaleY = popProgress
     elseif tile.isMerged and popProgress < 1 then
-        if _G.merge_fx == "bounce" then
-            -- ═══ BOUNCE POP FX ═══
-            -- Clean 3-phase elastic squash-and-stretch. No jitter, no wobble.
-            -- The asymmetric X/Y deformation is what makes this visually distinct.
-            local p = popProgress
-            if p < 0.30 then
-                -- Phase 1: STRETCH UP — tile squeezes narrow and tall (like pulling taffy)
-                local t = p / 0.30
-                local ease = math.sin(t * math.pi * 0.5)  -- smooth ease-out
-                tileScaleX = 1.0 - 0.30 * ease   -- narrow to 0.70
-                tileScaleY = 1.0 + 0.40 * ease   -- tall to 1.40
-            elseif p < 0.60 then
-                -- Phase 2: SQUASH DOWN — tile slams flat and wide (like a pancake landing)
-                local t = (p - 0.30) / 0.30
-                local ease = math.sin(t * math.pi * 0.5)
-                tileScaleX = 0.70 + 0.55 * ease   -- widen to 1.25
-                tileScaleY = 1.40 - 0.55 * ease   -- flatten to 0.85
-            else
-                -- Phase 3: SETTLE — smooth glide back to 1.0 (no oscillation)
-                local t = (p - 0.60) / 0.40
-                local ease = t * t * (3 - 2 * t)  -- smoothstep
-                tileScaleX = 1.25 - 0.25 * ease   -- back to 1.0
-                tileScaleY = 0.85 + 0.15 * ease   -- back to 1.0
-            end
-        elseif _G.merge_fx == "glow" then
-            -- ═══ GLOW PULSE FX ═══
-            -- UNIFORM scale only — NO squash, NO stretch, NO wobble.
-            -- Just a gentle smooth pulse. All the drama comes from the light effects.
-            local p = popProgress
-            local ease = math.sin(p * math.pi)  -- single smooth arc: 0→1→0
-            tileScaleX = 1.0 + 0.18 * ease
-            tileScaleY = 1.0 + 0.18 * ease
+        if popProgress < 0.5 then
+            tileScaleX = 1 + 0.25 * (popProgress / 0.5)
+            tileScaleY = tileScaleX
         else
-            if popProgress < 0.5 then
-                tileScaleX = 1 + 0.25 * (popProgress / 0.5)
-                tileScaleY = tileScaleX
-            else
-                tileScaleX = 1.25 - 0.25 * ((popProgress - 0.5) / 0.5)
-                tileScaleY = tileScaleX
-            end
+            tileScaleX = 1.25 - 0.25 * ((popProgress - 0.5) / 0.5)
+            tileScaleY = tileScaleX
         end
     end
 
@@ -4154,63 +4120,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
         end
     end
 
-    -- ═══ GLOW PULSE FX: Energy corona and orbiting sparks ═══
-    if tile.isMerged and _G.merge_fx == "glow" and popProgress < 1 then
-        local p = popProgress
-        local tile_col_g = getTileColor(tile.value)
 
-        -- 1. OUTER CORONA BLOOM — multi-layer expanding neon halo
-        if p > 0.08 then
-            local bloom_p = math.min(1, (p - 0.08) / 0.55)
-            local bloom_alpha_base = (1 - bloom_p) * 0.8
-            for layer = 4, 1, -1 do
-                local expand = (layer * 5.5 * scale) * (0.3 + bloom_p * 1.2)
-                local layer_alpha = bloom_alpha_base * (0.18 / layer)
-                love.graphics.setColor(tile_col_g[1], tile_col_g[2], tile_col_g[3], layer_alpha)
-                roundedRect("fill", sx - expand, sy - expand, scaledW + expand * 2, scaledH + expand * 2, (cr * ((tileScaleX + tileScaleY) / 2)) + expand * 0.5)
-            end
-        end
-
-        -- 2. PULSING AURA RING — neon energy ring that expands and fades
-        if p > 0.05 and p < 0.75 then
-            local ring_p = (p - 0.05) / 0.70
-            local ring_radius = cs * 0.25 + cs * 0.65 * ring_p
-            local ring_alpha = math.sin(ring_p * math.pi) * 0.65
-            local ring_width = math.max(1.5, math.floor((4.0 - ring_p * 3.0) * scale))
-            -- Bright neon border ring
-            love.graphics.setColor(tile_col_g[1] * 0.5 + 0.5, tile_col_g[2] * 0.5 + 0.5, tile_col_g[3] * 0.5 + 0.5, ring_alpha)
-            love.graphics.setLineWidth(ring_width)
-            love.graphics.circle("line", cx, cy, ring_radius)
-            -- Inner brighter ring
-            love.graphics.setColor(1, 1, 1, ring_alpha * 0.4)
-            love.graphics.setLineWidth(math.max(1, ring_width * 0.4))
-            love.graphics.circle("line", cx, cy, ring_radius * 0.92)
-        end
-
-        -- 3. ORBITING ENERGY SPARKS — 4 bright sparks spiral around the tile
-        if p > 0.05 and p < 0.80 then
-            local spark_p = (p - 0.05) / 0.75
-            local spark_alpha = (1 - spark_p) * 0.95
-            local orbit_radius = cs * 0.35 + cs * 0.35 * spark_p
-            local spark_count = 4
-            for i = 1, spark_count do
-                local base_angle = (i - 1) * (math.pi * 2 / spark_count)
-                local spin_speed = 4.5 + i * 0.5  -- each spark spins at slightly different speed
-                local angle = base_angle + spark_p * spin_speed
-                local spx = cx + math.cos(angle) * orbit_radius
-                local spy = cy + math.sin(angle) * orbit_radius
-                local spark_size = math.max(1.5, (3.5 - spark_p * 2.5) * scale)
-
-                -- Spark glow (soft halo)
-                love.graphics.setColor(tile_col_g[1], tile_col_g[2], tile_col_g[3], spark_alpha * 0.35)
-                love.graphics.circle("fill", spx, spy, spark_size * 2.5)
-
-                -- Bright spark core
-                love.graphics.setColor(1, 1, 1, spark_alpha * 0.9)
-                love.graphics.circle("fill", spx, spy, spark_size)
-            end
-        end
-    end
 
     -- Tile background
     if tile.value == "goose" then
@@ -4224,42 +4134,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
     love.graphics.setColor(color)
     roundedRect("fill", sx, sy, scaledW, scaledH, cr * ((tileScaleX + tileScaleY) / 2))
 
-    -- ═══ GLOW PULSE FX: Chromatic surface energy ═══
-    -- Multi-phase surface flash with neon edge glow and chromatic highlight sweep
-    if tile.isMerged and _G.merge_fx == "glow" and popProgress < 1 then
-        local p = popProgress
-        local glow_col = getTileColor(tile.value)
 
-        -- Phase 2: Explosive bright flash (intense white/color wash)
-        if p > 0.10 and p < 0.50 then
-            local flash_p = (p - 0.10) / 0.40
-            local flash_a = math.sin(flash_p * math.pi) * 0.55
-            love.graphics.setColor(1, 1, 1, flash_a)
-            roundedRect("fill", sx, sy, scaledW, scaledH, cr * ((tileScaleX + tileScaleY) / 2))
-        end
-
-        -- Phase 3: Neon edge glow (pulsing bright border)
-        if p > 0.08 and p < 0.70 then
-            local edge_p = (p - 0.08) / 0.62
-            local edge_a = math.sin(edge_p * math.pi) * 0.75
-            love.graphics.setColor(glow_col[1] * 0.3 + 0.7, glow_col[2] * 0.3 + 0.7, glow_col[3] * 0.3 + 0.7, edge_a)
-            love.graphics.setLineWidth(math.max(2, math.floor(3.0 * (_G.scale or 1))))
-            roundedRect("line", sx, sy, scaledW, scaledH, cr * ((tileScaleX + tileScaleY) / 2))
-        end
-
-        -- Phase 4: Chromatic diagonal sweep (light streak crossing the tile)
-        if p > 0.15 and p < 0.65 then
-            local sweep_p = (p - 0.15) / 0.50
-            local sweep_a = math.sin(sweep_p * math.pi) * 0.35
-            local sweep_x = sx + sweep_p * scaledW * 1.4 - scaledW * 0.2
-            love.graphics.setColor(1, 1, 1, sweep_a)
-            love.graphics.push()
-            love.graphics.translate(sweep_x, sy)
-            local sw = math.floor(10 * (_G.scale or 1))
-            love.graphics.polygon("fill", 0, 0, sw, 0, sw * 0.5, scaledH, -sw * 0.5, scaledH)
-            love.graphics.pop()
-        end
-    end
 
     -- ── High-Tile Booster Visual FX: Border glow & light sweep ─────
     if is_booster_active then
@@ -4340,16 +4215,7 @@ function renderer.drawTiles(game)
         slideProgress = p
         gooseProgress = p
         spawnProgress = p
-        -- When a merge FX is active, use a slower ease-out curve so the
-        -- animation phases are readable instead of trembling blur
-        if _G.merge_fx == "bounce" or _G.merge_fx == "glow" then
-            -- Square root curve: spends more time in early phases (the visually
-            -- dramatic part) and less time settling. At 60fps with 0.12s duration,
-            -- this gives ~5 frames in the first 30% of progress instead of ~2.
-            mergePopProgress = math.sqrt(p)
-        else
-            mergePopProgress = p
-        end
+        mergePopProgress = p
     end
 
     game.grid:eachCell(function(x, y, tile)
@@ -6797,11 +6663,6 @@ function renderer.getSettingsOptions()
     local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
     local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
 
-    local merge_fx_disp = "Default"
-    if _G.merge_fx == "bounce" then merge_fx_disp = "Bounce Pop"
-    elseif _G.merge_fx == "glow" then merge_fx_disp = "Glow Pulse" end
-    local merge_fx_lbl = "Merge Visual FX: " .. merge_fx_disp
-
     return {
         "Audio & Haptics",
         "Text Size: " .. (_G.text_size == "large" and "Large" or "Normal"),
@@ -6810,7 +6671,6 @@ function renderer.getSettingsOptions()
         undo_lbl,
         ta_lbl,
         crt_lbl,
-        merge_fx_lbl,
         "Back"
     }
 end
@@ -6868,7 +6728,6 @@ function renderer.drawSettings(selection, skip_transition)
             "Undo Limit (Classic/Huge): Unlimited",
             "Time Attack Max Limit: 90s",
             "CRT Shader: Off",
-            "Merge Visual FX: Bounce Pop",
             "Back"
         }
     end
@@ -10016,18 +9875,6 @@ local function drawStoreItemIcon(item_id, cx, cy, radius, is_selected)
         love.graphics.circle("line", cx, cy, sr)
         love.graphics.line(cx - sr, cy + sr * 0.2, cx + sr, cy + sr * 0.2)
         love.graphics.line(cx - sr * 0.8, cy + sr * 0.5, cx + sr * 0.8, cy + sr * 0.5)
-    elseif item_id == "anim_bounce" then
-        -- Bouncing Spring Arrow
-        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
-        love.graphics.arc("line", "open", cx, cy + 2 * scale, radius * 0.45, math.pi * 0.2, math.pi * 1.8)
-        love.graphics.polygon("fill", cx - 2 * scale, cy - radius * 0.45 - 2 * scale, cx + 4 * scale, cy - radius * 0.45 + 1 * scale, cx - 2 * scale, cy - radius * 0.45 + 4 * scale)
-    elseif item_id == "anim_glow" then
-        -- Radiant 4-Point Star Spark
-        local sr = radius * 0.5
-        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
-        love.graphics.line(cx - sr, cy, cx + sr, cy)
-        love.graphics.line(cx, cy - sr, cx, cy + sr)
-        love.graphics.circle("fill", cx, cy, sr * 0.35)
     elseif item_id == "jukebox" then
         -- Musical Eighth Note
         local nr = radius * 0.22
@@ -10206,7 +10053,7 @@ function renderer.getStoreItems()
         {id="extra_undo",    category="upgrade",   cost=200,  name="Extra Starting Undo",  desc="Permanently start Plus Mode with +1 Undo"},
         {id="extra_swap",    category="upgrade",   cost=350,  name="Extra Starting Swap",  desc="Permanently start Plus Mode with +1 Swap"},
         {id="extra_bomb",    category="upgrade",   cost=500,  name="Extra Starting Bomb",  desc="Permanently start Plus Mode with +1 Bomb"},
-        {id="jukebox",       category="upgrade",   cost=1000, name="Jukebox",               desc="Unlock Music Player & Jukebox Control"},
+        {id="jukebox",       category="upgrade",   cost=1000, name="Jukebox",               desc="Music Player & Wireless Track Manager"},
         {id="coin_multiplier",category="upgrade",  cost=1200,name="2x Coin Multiplier",   desc="Permanently double all earned Coins"},
 
         -- Boosters & Powerups
@@ -10226,9 +10073,7 @@ function renderer.getStoreItems()
         {id="skin_marble",   category="skin",      cost=200,  name="Marble Board",         desc="Polished white marble texture"},
         {id="skin_matrix",   category="skin",      cost=250,  name="Matrix Board",         desc="Animated green digital code grid"},
 
-        -- Visual FX
-        {id="anim_bounce",   category="fx",        cost=300,  name="Bounce Pop FX",        desc="Unlock Bounce Pop Merge FX"},
-        {id="anim_glow",     category="fx",        cost=400,  name="Glow Pulse FX",        desc="Unlock Glow Pulse Merge FX"},
+
 
         -- Themes
         {id="theme_cosmic",  category="theme",     cost=1000, name="Cosmic Theme",          desc="Unlock deep space theme"},
@@ -10297,14 +10142,9 @@ function renderer.getStoreItems()
         for _, itm in ipairs(items) do if itm.category == "booster" then table.insert(filtered, itm) end end
         items = filtered
     elseif sort_mode == 8 then
-        -- Visual FX Only
-        local filtered = {}
-        for _, itm in ipairs(items) do if itm.category == "fx" then table.insert(filtered, itm) end end
-        items = filtered
-    elseif sort_mode == 9 then
         -- Price Low -> High
         table.sort(items, function(a, b) return a.cost < b.cost end)
-    elseif sort_mode == 10 then
+    elseif sort_mode == 9 then
         -- Price High -> Low
         table.sort(items, function(a, b) return a.cost > b.cost end)
     end
@@ -10370,9 +10210,8 @@ function renderer.drawStoreMenu(selection, skip_transition)
         [5] = "Companions",
         [6] = "Upgrades",
         [7] = "Boosters",
-        [8] = "Visual FX",
-        [9] = "Low → High",
-        [10] = "High → Low"
+        [8] = "Low → High",
+        [9] = "High → Low"
     }
     local mode_txt = mode_labels[sort_mode] or "Default"
     local sort_tw = font_help_label:getWidth(mode_txt)
