@@ -1,12 +1,12 @@
 # Changelog
 
-## [7.0.0] (TBA)
+## [7.0.0]
 ### Added
 - Wireless Music Transfer: upload custom songs from Phone or PC over Wi-Fi
 - Hidden Easter Egg mini-game by [SLAYKIN6_TTV](https://github.com/justaporter)
 
 ### Changed
-- Cycle themes with Y (next) and X (previous)
+- Cycle themes with Y (next) and X (previous) in theme selection
 - Removed alternative merge animations
 
 ### Fixed
