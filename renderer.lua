@@ -11345,9 +11345,42 @@ function renderer.drawJukebox(selection, skip_transition)
                 eqs.freeze_phase = nil
             end
 
-            -- Song title animation
+            -- "PAUSED" badge position on the right
+            local pause_w = 0
+            local pause_x = 0
+            if badge_p > 0.005 then
+                pause_w = font_help_label:getWidth("PAUSED")
+                pause_x = card_x + card_w - pause_w - math.floor(12 * scale)
+            end
+
+            -- Song title animation & text truncation
             local eq_push = (eq_zone_w - math.floor(4 * scale)) * slide_p
             local text_x  = card_x + math.floor(12 * scale) + eq_push
+
+            local b_font = font_bgm or font_help_label
+            local custom_w = b_font:getWidth("CUSTOM") + math.floor(10 * scale)
+            local custom_h = math.floor(17 * scale)
+            local custom_y = ry + math.floor((row_inner_h - custom_h) / 2)
+
+            local right_limit = card_x + card_w - math.floor(12 * scale)
+            if badge_p > 0.005 then
+                right_limit = math.min(right_limit, pause_x - math.floor(8 * scale))
+            end
+
+            local max_label_w = right_limit - text_x - (track.is_custom and (custom_w + math.floor(8 * scale)) or 0)
+            local label = track.title .. " — " .. track.artist
+            local display_label = label
+            if max_label_w > 0 and font_help_label:getWidth(display_label) > max_label_w then
+                while #display_label > 1 and font_help_label:getWidth(display_label .. "...") > max_label_w do
+                    local last = display_label:byte(#display_label)
+                    while #display_label > 1 and last >= 128 and last < 192 do
+                        display_label = display_label:sub(1, -2)
+                        last = display_label:byte(#display_label)
+                    end
+                    display_label = display_label:sub(1, -2)
+                end
+                display_label = display_label .. "..."
+            end
 
             love.graphics.setFont(font_help_label)
             if is_sel then
@@ -11358,35 +11391,29 @@ function renderer.drawJukebox(selection, skip_transition)
             else
                 love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.80)
             end
-            local label = track.title .. " — " .. track.artist
-            love.graphics.print(label, text_x, text_y)
+            love.graphics.print(display_label, text_x, text_y)
 
-            -- Custom track badge
+            -- Custom track badge (positioned directly along with song name, vertically centered in row)
             if track.is_custom then
-                local label_w = font_help_label:getWidth(label)
+                local label_w = font_help_label:getWidth(display_label)
                 local custom_x = text_x + label_w + math.floor(8 * scale)
                 local badge_txt = "CUSTOM"
-                local b_font = font_bgm or font_help_label
-                love.graphics.setFont(b_font)
-                local cw = b_font:getWidth(badge_txt) + math.floor(8 * scale)
-                local ch = math.floor(15 * scale)
-                local cy = text_y + math.floor((label_fh - ch) / 2)
 
-                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.22)
-                roundedRect("fill", custom_x, cy, cw, ch, math.floor(3 * scale))
+                love.graphics.setFont(b_font)
+                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.25)
+                roundedRect("fill", custom_x, custom_y, custom_w, custom_h, math.floor(4 * scale))
                 love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.85)
                 love.graphics.setLineWidth(math.floor(1 * scale))
-                roundedRect("line", custom_x, cy, cw, ch, math.floor(3 * scale))
-                love.graphics.print(badge_txt, custom_x + math.floor(4 * scale), cy + math.floor((ch - b_font:getHeight()) / 2))
+                roundedRect("line", custom_x, custom_y, custom_w, custom_h, math.floor(4 * scale))
+                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.95)
+                local txt_y = custom_y + math.floor((custom_h - b_font:getHeight()) / 2)
+                love.graphics.printf(badge_txt, custom_x, txt_y, custom_w, "center")
                 love.graphics.setFont(font_help_label)
             end
 
             -- ── "PAUSED" badge fades in/out on the right ──────────────────────
             if badge_p > 0.005 then
-                -- Slight vertical float: drops down 3px as it fades in
                 local badge_txt = "PAUSED"
-                local bw  = font_help_label:getWidth(badge_txt)
-                local bx  = card_x + card_w - bw - math.floor(12 * scale)
                 local by2 = text_y - math.floor((1 - badge_p) * 4 * scale)
                 local badge_col = renderer.getContrastTextColor(board_color, help_key_color, dark_text)
                 love.graphics.setColor(
@@ -11395,7 +11422,7 @@ function renderer.drawJukebox(selection, skip_transition)
                     badge_col[3],
                     0.95 * badge_p
                 )
-                love.graphics.print(badge_txt, bx, by2)
+                love.graphics.print(badge_txt, pause_x, by2)
             end
         end
     end

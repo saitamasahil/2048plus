@@ -374,7 +374,7 @@ class JukeboxHandler(BaseHTTPRequestHandler):
                         "is_custom": not is_builtin
                     })
 
-        tracks.sort(key=lambda x: (not x["is_custom"], x["title"].lower()))
+        tracks.sort(key=lambda x: x["title"].lower())
         self.send_json({"tracks": tracks})
 
     def stream_audio(self, filename, as_attachment=False):
@@ -5137,6 +5137,12 @@ function renderTrackList() {
         </div>
       </div>
       <div class="track-actions">
+        ${t.is_custom 
+          ? `<button class="btn-action btn-action-edit" onclick="openEditModal(${originalIndex})" title="Edit Track & Artist">
+              ${renderM3Icon('edit', 'm3-icon-sm')}
+             </button>`
+          : ''
+        }
         <button class="btn-action btn-action-play" onclick="loadTrack(${originalIndex}, true)" title="Play Track">
           ${renderM3Icon(isPlaying ? 'pause' : 'play', 'm3-icon-sm')}
         </button>
@@ -5144,10 +5150,7 @@ function renderTrackList() {
           ${renderM3Icon('download', 'm3-icon-sm')}
         </a>
         ${t.is_custom 
-          ? `<button class="btn-action btn-action-edit" onclick="openEditModal(${originalIndex})" title="Edit Track & Artist">
-              ${renderM3Icon('edit', 'm3-icon-sm')}
-             </button>
-             <button class="btn-action btn-action-del" onclick="confirmDelete('${escapeHtml(t.filename)}')" title="Delete track">
+          ? `<button class="btn-action btn-action-del" onclick="confirmDelete('${escapeHtml(t.filename)}')" title="Delete track">
               ${renderM3Icon('delete', 'm3-icon-sm')}
              </button>`
           : `<span class="btn-action" title="Built-in OST (Protected)" style="opacity:0.4; cursor:default;">
