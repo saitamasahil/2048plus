@@ -11444,18 +11444,12 @@ function renderer.drawJukebox(selection, skip_transition)
         right_x = right_x - label_gap
         local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
         right_x = right_x - key_w
+        if action.key == "Y" then
+            renderer.theme_button_x = right_x + key_w / 2
+            renderer.theme_button_y = badge_y + badge_h / 2
+        end
         drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
         right_x = right_x - item_gap
-    end
-
-    if not skip_transition and transition_timer > 0 and transition_canvas then
-        love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.setBlendMode("replace", "premultiplied")
-        love.graphics.draw(transition_canvas, 0, 0)
-        love.graphics.setBlendMode("alpha", "alphamultiply")
-        love.graphics.setStencilTest()
     end
 
     -- Wireless manager modal
@@ -11820,6 +11814,16 @@ function renderer.drawJukebox(selection, skip_transition)
         love.graphics.pop()
     end
 end
+
+    if not skip_transition and transition_timer > 0 and transition_canvas then
+        love.graphics.stencil(drawStencilCircle, "replace", 1)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.setBlendMode("replace", "premultiplied")
+        love.graphics.draw(transition_canvas, 0, 0)
+        love.graphics.setBlendMode("alpha", "alphamultiply")
+        love.graphics.setStencilTest()
+    end
 
     _G.jukebox_just_opened = false
     drawToast()
