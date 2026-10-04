@@ -992,32 +992,52 @@ function love.update(dt)
             end
             return
         elseif _G.appState == "JUKEBOX" then
-            if _G.jukebox_web_modal then
+            if _G.jukebox_web_modal or (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
                 if event == input.events.BACK then
-                    sound.playMenuSelect()
-                    queueTransitionAction("B", 0.08, function()
-                        _G.jukebox_web_modal = false
-                        if sound.stopWebServer then
-                            sound.stopWebServer()
-                        end
-                    end)
-                elseif event == input.events.CONFIRM or event == "return" or event == "a" or event == "space" then
-                    local has_wifi, ip = false, "127.0.0.1"
-                    if sound.has_wifi then
-                        has_wifi, ip = sound.has_wifi()
-                    elseif sound.get_ip_address then
-                        ip = sound.get_ip_address()
-                        has_wifi = sound.isValidLanIp and sound.isValidLanIp(ip) or (ip and ip ~= "127.0.0.1" and not ip:match("^127%.") and not ip:match("^169%.254%.") and not ip:match("^192%.168%.7%.1$"))
-                    end
-                    if not has_wifi then
+                    if not (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
                         sound.playMenuSelect()
-                        queueTransitionAction("A", 0.08, function()
-                            _G.last_dino_return_state = "JUKEBOX"
-                            _G.appState = "DINO"
-                            if dino_game and dino_game.start then
-                                dino_game.start()
+                        transition_delay_key = "B"
+                        transition_delay_timer = 0.08
+                        if _G.screen_transitions and renderer.closeJukeboxModal then
+                            renderer.closeJukeboxModal(function()
+                                _G.jukebox_web_modal = false
+                                if sound.stopWebServer then
+                                    sound.stopWebServer()
+                                end
+                            end)
+                        else
+                            _G.jukebox_web_modal = false
+                            if renderer.resetJukeboxModalAnim then
+                                renderer.resetJukeboxModalAnim()
                             end
-                        end)
+                            if sound.stopWebServer then
+                                sound.stopWebServer()
+                            end
+                        end
+                    end
+                elseif event == input.events.CONFIRM or event == "return" or event == "a" or event == "space" then
+                    if not (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
+                        local has_wifi, ip = false, "127.0.0.1"
+                        if sound.has_wifi then
+                            has_wifi, ip = sound.has_wifi()
+                        elseif sound.get_ip_address then
+                            ip = sound.get_ip_address()
+                            has_wifi = sound.isValidLanIp and sound.isValidLanIp(ip) or (ip and ip ~= "127.0.0.1" and not ip:match("^127%.") and not ip:match("^169%.254%.") and not ip:match("^192%.168%.7%.1$"))
+                        end
+                        if not has_wifi then
+                            sound.playMenuSelect()
+                            queueTransitionAction("A", 0.08, function()
+                                _G.jukebox_web_modal = false
+                                if renderer.resetJukeboxModalAnim then
+                                    renderer.resetJukeboxModalAnim()
+                                end
+                                _G.last_dino_return_state = "JUKEBOX"
+                                _G.appState = "DINO"
+                                if dino_game and dino_game.start then
+                                    dino_game.start()
+                                end
+                            end)
+                        end
                     end
                 end
                 return
@@ -1058,13 +1078,19 @@ function love.update(dt)
                     _G.cycleTheme()
                 end
             elseif event == input.events.X or event == input.events.SELECT then
-                sound.playMenuSelect()
-                queueTransitionAction("X", 0.08, function()
-                    _G.jukebox_web_modal = true
+                if not _G.jukebox_web_modal and not (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
+                    sound.playMenuSelect()
+                    transition_delay_key = (event == input.events.SELECT) and "SELECT" or "X"
+                    transition_delay_timer = 0.08
+                    if renderer.openJukeboxModal then
+                        renderer.openJukeboxModal()
+                    else
+                        _G.jukebox_web_modal = true
+                    end
                     if sound.startWebServer then
                         sound.startWebServer(8048)
                     end
-                end)
+                end
             elseif event == input.events.R1 then
                 sound.playMenuSelect()
                 sound.playNextBgm()

@@ -37,6 +37,13 @@ local sort_icon = nil
 local vinyl_record_img = nil
 local music_manager_icon = nil
 local dino_icon = nil
+local jukebox_modal_state = "closed"
+local jukebox_modal_timer = 0
+local jukebox_modal_anim = 0
+local jukebox_modal_duration_open = 0.22
+local jukebox_modal_duration_close = 0.18
+local jukebox_modal_close_cb = nil
+local prev_jukebox_web_modal = false
 local item_icons = {}
 local icon_shader = nil
 local font_bgm = nil
@@ -4823,7 +4830,7 @@ end
 -- ============================================================================
 -- Draw a key badge (rounded rectangle with text inside)
 -- ============================================================================
-local function drawKeyBadge(text, x, y, w, h)
+local function drawKeyBadge(text, x, y, w, h, alpha_override)
     local scale = _G.scale
     local visual_offset_y = -math.max(1, math.floor(1.5 * scale))
     local original_text = text
@@ -4960,20 +4967,21 @@ local function drawKeyBadge(text, x, y, w, h)
         if text == "A" or text == "B" or text == "X" or text == "Y" then
             local cx, cy = x + w/2, y + h/2
             local r = h * 0.45
+            local badge_a = alpha_override or 1.0
 
             if _G.theme == "matrix" then
                 -- Black background circle
-                love.graphics.setColor(0, 0, 0, 1)
+                love.graphics.setColor(0, 0, 0, badge_a)
                 love.graphics.circle("fill", cx, cy + press_shift_y, r)
 
                 -- Green outline circle
-                love.graphics.setColor(help_key_color)
+                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
                 love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
                 love.graphics.circle("line", cx, cy + press_shift_y, r)
 
                 -- Text letter
                 love.graphics.setFont(font_help_key)
-                love.graphics.setColor(help_key_text)
+                love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
                 local tw = font_help_key:getWidth(text)
                 local th = font_help_key:getHeight()
                 love.graphics.print(text, cx - tw/2, cy - th/2 + letter_offset_y + press_shift_y)
@@ -4981,22 +4989,22 @@ local function drawKeyBadge(text, x, y, w, h)
             end
 
             -- Button shadow (shrinks when depressed)
-            love.graphics.setColor(0, 0, 0, 0.25)
+            love.graphics.setColor(0, 0, 0, 0.25 * badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             love.graphics.circle("fill", cx, cy + sh, r)
 
             -- Button body (shifted by press_shift_y)
-            love.graphics.setColor(help_key_color)
+            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
             love.graphics.circle("fill", cx, cy + press_shift_y, r)
 
             -- Button border
-            love.graphics.setColor(1, 1, 1, 0.15)
+            love.graphics.setColor(1, 1, 1, 0.15 * badge_a)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
             love.graphics.circle("line", cx, cy + press_shift_y, r)
 
             -- Text letter
             love.graphics.setFont(font_help_key)
-            love.graphics.setColor(help_key_text)
+            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
             local tw = font_help_key:getWidth(text)
             local th = font_help_key:getHeight()
             love.graphics.print(text, cx - tw/2, cy - th/2 + letter_offset_y + press_shift_y)
@@ -5827,6 +5835,145 @@ function renderer.updateTransition(dt)
             table.remove(toast_particles, i)
         end
     end
+
+    if _G.jukebox_web_modal then
+        if not prev_jukebox_web_modal then
+            prev_jukebox_web_modal = true
+            if _G.screen_transitions then
+                jukebox_modal_state = "opening"
+                jukebox_modal_timer = 0
+                jukebox_modal_anim = 0
+            else
+                jukebox_modal_state = "open"
+                jukebox_modal_timer = jukebox_modal_duration_open
+                jukebox_modal_anim = 1
+            end
+        end
+    else
+        prev_jukebox_web_modal = false
+        if jukebox_modal_state ~= "closing" then
+            jukebox_modal_state = "closed"
+            jukebox_modal_timer = 0
+            jukebox_modal_anim = 0
+        end
+    end
+
+    if not _G.screen_transitions then
+        if jukebox_modal_state == "closing" then
+            jukebox_modal_state = "closed"
+            jukebox_modal_timer = 0
+            jukebox_modal_anim = 0
+            _G.jukebox_web_modal = false
+            if jukebox_modal_close_cb then
+                local cb = jukebox_modal_close_cb
+                jukebox_modal_close_cb = nil
+                cb()
+            end
+        elseif jukebox_modal_state == "opening" or _G.jukebox_web_modal then
+            jukebox_modal_state = "open"
+            jukebox_modal_timer = jukebox_modal_duration_open
+            jukebox_modal_anim = 1
+        else
+            jukebox_modal_state = "closed"
+            jukebox_modal_timer = 0
+            jukebox_modal_anim = 0
+        end
+    else
+        if jukebox_modal_state == "opening" then
+            jukebox_modal_timer = jukebox_modal_timer + dt
+            local p = math.min(1, jukebox_modal_timer / jukebox_modal_duration_open)
+            local inv = 1 - p
+            jukebox_modal_anim = 1 - inv * inv * inv
+            if p >= 1 then
+                jukebox_modal_state = "open"
+                jukebox_modal_anim = 1
+            end
+        elseif jukebox_modal_state == "closing" then
+            jukebox_modal_timer = jukebox_modal_timer + dt
+            local p = math.min(1, jukebox_modal_timer / jukebox_modal_duration_close)
+            local inv = 1 - p
+            jukebox_modal_anim = inv * inv
+            if p >= 1 then
+                jukebox_modal_state = "closed"
+                jukebox_modal_anim = 0
+                _G.jukebox_web_modal = false
+                if jukebox_modal_close_cb then
+                    local cb = jukebox_modal_close_cb
+                    jukebox_modal_close_cb = nil
+                    cb()
+                end
+            end
+        elseif jukebox_modal_state == "open" then
+            jukebox_modal_anim = 1
+        elseif jukebox_modal_state == "closed" then
+            jukebox_modal_anim = 0
+        end
+    end
+end
+
+function renderer.isJukeboxModalClosing()
+    return jukebox_modal_state == "closing"
+end
+
+function renderer.resetJukeboxModalAnim()
+    jukebox_modal_state = "closed"
+    jukebox_modal_timer = 0
+    jukebox_modal_anim = 0
+    jukebox_modal_close_cb = nil
+    prev_jukebox_web_modal = false
+end
+
+function renderer.openJukeboxModal()
+    _G.jukebox_web_modal = true
+    prev_jukebox_web_modal = true
+    jukebox_modal_close_cb = nil
+    if not _G.screen_transitions then
+        jukebox_modal_state = "open"
+        jukebox_modal_timer = jukebox_modal_duration_open
+        jukebox_modal_anim = 1
+    else
+        if jukebox_modal_state == "closing" then
+            local rem = math.max(0, math.min(1, 1 - jukebox_modal_anim))
+            local tau = 1 - (rem ^ (1/3))
+            jukebox_modal_timer = tau * jukebox_modal_duration_open
+        else
+            jukebox_modal_timer = 0
+            jukebox_modal_anim = 0
+        end
+        jukebox_modal_state = "opening"
+    end
+end
+
+function renderer.closeJukeboxModal(cb)
+    jukebox_modal_close_cb = cb
+    if not _G.screen_transitions then
+        jukebox_modal_state = "closed"
+        jukebox_modal_timer = 0
+        jukebox_modal_anim = 0
+        prev_jukebox_web_modal = false
+        _G.jukebox_web_modal = false
+        if cb then
+            jukebox_modal_close_cb = nil
+            cb()
+        end
+        return
+    end
+    if jukebox_modal_state == "closed" then
+        prev_jukebox_web_modal = false
+        _G.jukebox_web_modal = false
+        if cb then
+            jukebox_modal_close_cb = nil
+            cb()
+        end
+        return
+    end
+    if jukebox_modal_state == "opening" then
+        local tau = 1 - math.sqrt(math.max(0, math.min(1, jukebox_modal_anim)))
+        jukebox_modal_timer = tau * jukebox_modal_duration_close
+    else
+        jukebox_modal_timer = 0
+    end
+    jukebox_modal_state = "closing"
 end
 
 function renderer.triggerNowPlayingNotification()
@@ -11312,17 +11459,22 @@ function renderer.drawJukebox(selection, skip_transition)
     end
 
     -- Wireless manager modal
-    if _G.jukebox_web_modal then
-        -- Backdrop overlay
-        love.graphics.setColor(0, 0, 0, 0.72)
-        love.graphics.rectangle("fill", 0, 0, w, h)
+    if _G.jukebox_web_modal or jukebox_modal_state ~= "closed" or jukebox_modal_anim > 0 then
+        local t = _G.screen_transitions and jukebox_modal_anim or 1
+        if t > 0 then
+            local mw = math.min(w - math.floor(24 * scale), math.floor(552 * scale))
+            local mh = math.min(h - math.floor(20 * scale), math.floor(276 * scale))
+            local mx = math.floor((w - mw) / 2)
+            local my = math.floor((h - mh) / 2)
+            local cr = math.floor(14 * scale)
 
-        -- Modal layout
-        local mw = math.min(w - math.floor(24 * scale), math.floor(552 * scale))
-        local mh = math.min(h - math.floor(20 * scale), math.floor(276 * scale))
-        local mx = math.floor((w - mw) / 2)
-        local my = math.floor((h - mh) / 2)
-        local cr = math.floor(14 * scale)
+            love.graphics.setColor(0, 0, 0, 0.72 * t)
+            love.graphics.rectangle("fill", 0, 0, w, h)
+
+            local cur_y = (1 - t) * math.floor(14 * scale)
+
+            love.graphics.push()
+            love.graphics.translate(0, cur_y)
 
         -- Text color setup
         local br = (board_color and board_color[1]) or 0.20
@@ -11336,47 +11488,49 @@ function renderer.drawJukebox(selection, skip_transition)
         local hb = (help_key_color and help_key_color[3]) or 0.18
         local hr_lum = 0.299 * hr + 0.587 * hg + 0.114 * hb
 
+        local card_alpha = _G.screen_transitions and t or 1.0
+        local function with_a(col_tbl, base_a)
+            return {col_tbl[1], col_tbl[2], col_tbl[3], (base_a or col_tbl[4] or 1.0) * card_alpha}
+        end
+
         local text_title, text_body, text_muted, divider_col, inner_box_bg, inner_box_border, url_text_col
 
         if is_light_theme then
-            -- Light theme text colors
-            -- Dark text tones
-            text_title       = {0.12, 0.10, 0.08, 1.0}  -- Deep rich espresso-charcoal
-            text_body        = {0.18, 0.16, 0.13, 1.0}  -- Crisp readable dark text
-            text_muted       = {0.30, 0.26, 0.22, 1.0}  -- High-contrast legible secondary text
-            divider_col      = {0.12, 0.10, 0.08, 0.22}
-            inner_box_bg     = {1.0, 1.0, 1.0, 0.95}
-            inner_box_border = {0.12, 0.10, 0.08, 0.25}
+            text_title       = with_a({0.12, 0.10, 0.08}, 1.0)
+            text_body        = with_a({0.18, 0.16, 0.13}, 1.0)
+            text_muted       = with_a({0.30, 0.26, 0.22}, 1.0)
+            divider_col      = with_a({0.12, 0.10, 0.08}, 0.22)
+            inner_box_bg     = with_a({1.0, 1.0, 1.0}, 0.95)
+            inner_box_border = with_a({0.12, 0.10, 0.08}, 0.25)
             if hr_lum > 0.42 then
-                url_text_col = {math.max(0, hr * 0.62), math.max(0, hg * 0.50), math.max(0, hb * 0.30), 1.0}
+                url_text_col = with_a({math.max(0, hr * 0.62), math.max(0, hg * 0.50), math.max(0, hb * 0.30)}, 1.0)
             else
-                url_text_col = {hr, hg, hb, 1.0}
+                url_text_col = with_a({hr, hg, hb}, 1.0)
             end
         else
-            -- Dark theme text colors
-            text_title       = {0.98, 0.98, 1.0, 1.0}   -- Pure crisp white
-            text_body        = {0.90, 0.92, 0.96, 1.0}   -- High-contrast off-white
-            text_muted       = {0.76, 0.79, 0.84, 1.0}   -- Clear, high-contrast light grey
-            divider_col      = {1.0, 1.0, 1.0, 0.18}
-            inner_box_bg     = {0.08, 0.09, 0.12, 0.88}
-            inner_box_border = {hr, hg, hb, 0.45}
+            text_title       = with_a({0.98, 0.98, 1.0}, 1.0)
+            text_body        = with_a({0.90, 0.92, 0.96}, 1.0)
+            text_muted       = with_a({0.76, 0.79, 0.84}, 1.0)
+            divider_col      = with_a({1.0, 1.0, 1.0}, 0.18)
+            inner_box_bg     = with_a({0.08, 0.09, 0.12}, 0.88)
+            inner_box_border = with_a({hr, hg, hb}, 0.45)
             if hr_lum < 0.52 then
-                url_text_col = {math.min(1.0, hr + 0.35), math.min(1.0, hg + 0.35), math.min(1.0, hb + 0.35), 1.0}
+                url_text_col = with_a({math.min(1.0, hr + 0.35), math.min(1.0, hg + 0.35), math.min(1.0, hb + 0.35)}, 1.0)
             else
-                url_text_col = {hr, hg, hb, 1.0}
+                url_text_col = with_a({hr, hg, hb}, 1.0)
             end
         end
 
         -- Outer soft shadow
-        love.graphics.setColor(0, 0, 0, 0.38)
+        love.graphics.setColor(0, 0, 0, 0.38 * card_alpha)
         roundedRect("fill", mx + math.floor(3 * scale), my + math.floor(4 * scale), mw, mh, cr)
 
         -- Card background
-        love.graphics.setColor(br, bg, bb, 0.98)
+        love.graphics.setColor(br, bg, bb, 0.98 * math.min(1.0, card_alpha * 1.5))
         roundedRect("fill", mx, my, mw, mh, cr)
 
         -- Theme accent outline
-        love.graphics.setColor(hr, hg, hb, is_light_theme and 0.50 or 0.70)
+        love.graphics.setColor(hr, hg, hb, (is_light_theme and 0.50 or 0.70) * card_alpha)
         love.graphics.setLineWidth(math.max(1, math.floor(2 * scale)))
         roundedRect("line", mx, my, mw, mh, cr)
 
@@ -11451,15 +11605,15 @@ function renderer.drawJukebox(selection, skip_transition)
 
         if has_wifi then
             -- QR code card background
-            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setColor(1, 1, 1, card_alpha)
             roundedRect("fill", qr_x, qr_y, qr_box_size, qr_box_size, math.floor(8 * scale))
-            love.graphics.setColor(0, 0, 0, 0.12)
+            love.graphics.setColor(0, 0, 0, 0.12 * card_alpha)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
             roundedRect("line", qr_x, qr_y, qr_box_size, qr_box_size, math.floor(8 * scale))
 
             if qr_img then
                 local qw, qh = qr_img:getDimensions()
-                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.setColor(1, 1, 1, card_alpha)
                 love.graphics.draw(qr_img, qr_x + qr_pad, qr_y + qr_pad, 0, (qr_box_size - qr_pad * 2) / qw, (qr_box_size - qr_pad * 2) / qh)
             else
                 love.graphics.setFont(font_help_label)
@@ -11493,7 +11647,7 @@ function renderer.drawJukebox(selection, skip_transition)
                 if icon_shader then
                     love.graphics.setShader(icon_shader)
                 end
-                love.graphics.setColor(text_title[1], text_title[2], text_title[3], 0.90)
+                love.graphics.setColor(text_title[1], text_title[2], text_title[3], 0.90 * card_alpha)
                 love.graphics.draw(dino_img, cx, cy, 0, s, s, dw / 2, dh / 2)
                 if icon_shader then
                     love.graphics.setShader()
@@ -11514,13 +11668,13 @@ function renderer.drawJukebox(selection, skip_transition)
 
                 love.graphics.setColor(text_body)
                 love.graphics.print(pref, start_x, text_y)
-                drawKeyBadge("A", start_x + pw + math.floor(4 * scale), badge_y, key_w, badge_h)
+                drawKeyBadge("A", start_x + pw + math.floor(4 * scale), badge_y, key_w, badge_h, card_alpha)
                 love.graphics.setFont(prompt_font)
                 love.graphics.setColor(text_body)
                 love.graphics.print(suff, start_x + pw + math.floor(4 * scale) + key_w + math.floor(4 * scale), text_y)
             else
                 love.graphics.setFont(font_help_label)
-                love.graphics.setColor(0.96, 0.37, 0.23, 0.95)
+                love.graphics.setColor(0.96, 0.37, 0.23, 0.95 * card_alpha)
                 love.graphics.printf("No Wi-Fi", qr_x, qr_y + math.floor(qr_box_size * 0.36), qr_box_size, "center")
                 love.graphics.setFont(font_bgm or font_help_label)
                 love.graphics.setColor(text_muted)
@@ -11564,7 +11718,7 @@ function renderer.drawJukebox(selection, skip_transition)
         else
             love.graphics.print("Wi-Fi Status:", right_x + url_pad_x, qr_y + math.floor(4 * scale))
             love.graphics.setFont(font_score)
-            love.graphics.setColor(0.96, 0.37, 0.23, 0.95)
+            love.graphics.setColor(0.96, 0.37, 0.23, 0.95 * card_alpha)
             love.graphics.print("Wi-Fi Not Available", right_x + url_pad_x, qr_y + math.floor(20 * scale))
         end
 
@@ -11617,9 +11771,9 @@ function renderer.drawJukebox(selection, skip_transition)
         }
         for _, b in ipairs(format_badges) do
             local bw = fmt_font:getWidth(b.ext) + math.floor(10 * scale)
-            love.graphics.setColor(b.bg)
+            love.graphics.setColor(b.bg[1], b.bg[2], b.bg[3], (b.bg[4] or 1.0) * card_alpha)
             roundedRect("fill", cur_bx, fmt_y, bw, badge_h_mini, math.floor(4 * scale))
-            love.graphics.setColor(b.fg)
+            love.graphics.setColor(b.fg[1], b.fg[2], b.fg[3], (b.fg[4] or 1.0) * card_alpha)
             love.graphics.printf(b.ext, cur_bx, text_y_aligned, bw, "center")
             cur_bx = cur_bx + bw + math.floor(5 * scale)
         end
@@ -11631,15 +11785,15 @@ function renderer.drawJukebox(selection, skip_transition)
         local btn_y = my + mh - btn_h - math.floor(12 * scale)
 
         if is_light_theme then
-            love.graphics.setColor(1.0, 1.0, 1.0, 0.70)
+            love.graphics.setColor(1.0, 1.0, 1.0, 0.70 * card_alpha)
             roundedRect("fill", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
-            love.graphics.setColor(0.12, 0.10, 0.08, 0.28)
+            love.graphics.setColor(0.12, 0.10, 0.08, 0.28 * card_alpha)
             love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
             roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
         else
-            love.graphics.setColor(hr, hg, hb, 0.18)
+            love.graphics.setColor(hr, hg, hb, 0.18 * card_alpha)
             roundedRect("fill", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
-            love.graphics.setColor(hr, hg, hb, 0.85)
+            love.graphics.setColor(hr, hg, hb, 0.85 * card_alpha)
             love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
             roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
         end
@@ -11655,14 +11809,17 @@ function renderer.drawJukebox(selection, skip_transition)
         local total_content_w = k_sz + gap + btn_label_w
         local start_btn_x = btn_x + math.floor((btn_w - total_content_w) / 2)
 
-        drawKeyBadge("B", start_btn_x, ky, k_sz, k_sz)
+        drawKeyBadge("B", start_btn_x, ky, k_sz, k_sz, card_alpha)
 
         local label_fh = font_help_label:getHeight()
         local label_y = pill_center_y - math.floor(label_fh / 2) - math.max(1, math.floor(1 * scale))
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(text_title)
         love.graphics.print(btn_label, start_btn_x + k_sz + gap, label_y)
+
+        love.graphics.pop()
     end
+end
 
     _G.jukebox_just_opened = false
     drawToast()

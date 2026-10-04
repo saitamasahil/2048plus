@@ -594,6 +594,9 @@ function sound.exitJukebox()
         sound.stopWebServer()
     end
     _G.jukebox_web_modal = false
+    if renderer and renderer.resetJukeboxModalAnim then
+        renderer.resetJukeboxModalAnim()
+    end
     sound.stopBgm()
     _G.jukebox_prev_track = nil
     _G.jukebox_eq_states = {}
