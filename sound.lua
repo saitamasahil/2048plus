@@ -474,34 +474,28 @@ function sound.get_ip_address(force_refresh)
     if not force_refresh and server_ip and is_valid_lan_ip(server_ip) then
         return server_ip
     end
-    for _, iface in ipairs({"wlan0", "wlan1", "mlan0", "ra0"}) do
-        local h = io.popen(string.format("ip -4 addr show %s 2>/dev/null", iface))
-        if h then
-            local res = h:read("*a")
-            h:close()
-            if res then
-                local candidate = res:match("inet%s+(%d+%.%d+%.%d+%.%d+)")
-                if is_valid_lan_ip(candidate) then
-                    server_ip = candidate
-                    return candidate
+
+    -- 1. Fast, non-blocking UDP socket route check via LuaSocket (microseconds, 0 subshells)
+    local ok_sock, socket = pcall(require, "socket")
+    if ok_sock and socket and socket.udp then
+        local u = socket.udp()
+        if u then
+            u:settimeout(0)
+            local ok_peer = pcall(function() u:setpeername("8.8.8.8", 80) end)
+            if ok_peer then
+                local ip = u:getsockname()
+                pcall(function() u:close() end)
+                if is_valid_lan_ip(ip) then
+                    server_ip = ip
+                    return ip
                 end
+            else
+                pcall(function() u:close() end)
             end
         end
     end
-    for _, iface in ipairs({"eth0", "eth1"}) do
-        local h = io.popen(string.format("ip -4 addr show %s 2>/dev/null", iface))
-        if h then
-            local res = h:read("*a")
-            h:close()
-            if res then
-                local candidate = res:match("inet%s+(%d+%.%d+%.%d+%.%d+)")
-                if is_valid_lan_ip(candidate) then
-                    server_ip = candidate
-                    return candidate
-                end
-            end
-        end
-    end
+
+    -- 2. Single consolidated query for all active interface IPs on Linux
     local h_all = io.popen("ip -4 -o addr show 2>/dev/null")
     if h_all then
         local res = h_all:read("*a")
@@ -516,19 +510,8 @@ function sound.get_ip_address(force_refresh)
             end
         end
     end
-    local handle = io.popen("ip route get 8.8.8.8 2>/dev/null")
-    if handle then
-        local res = handle:read("*a")
-        handle:close()
-        if res then
-            local dev = res:match("dev%s+([%w%-_]+)")
-            local candidate = res:match("src%s+(%d+%.%d+%.%d+%.%d+)")
-            if dev and not is_gadget_iface(dev) and is_valid_lan_ip(candidate) then
-                server_ip = candidate
-                return candidate
-            end
-        end
-    end
+
+    -- 3. Fallback: hostname -I
     local h2 = io.popen("hostname -I 2>/dev/null")
     if h2 then
         local res = h2:read("*a")
@@ -542,13 +525,14 @@ function sound.get_ip_address(force_refresh)
             end
         end
     end
+
     server_ip = "127.0.0.1"
     return "127.0.0.1"
 end
 
 function sound.has_wifi(force)
     local now = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
-    if not force and cached_wifi_ip and (now - last_ip_check < 1.0) then
+    if not force and (now - last_ip_check < 1.5) then
         return cached_has_wifi, cached_wifi_ip
     end
     last_ip_check = now
