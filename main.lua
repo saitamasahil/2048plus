@@ -656,6 +656,10 @@ function love.update(dt)
                 sound.playMenuBack()
                 queueTransitionAction("B", 0.08, function()
                     _G.appState = _G.last_dino_return_state or "JUKEBOX"
+                    if _G.last_dino_return_modal then
+                        _G.last_dino_return_modal = nil
+                        _G.jukebox_web_modal = true
+                    end
                 end)
                 return
             end
@@ -1027,11 +1031,8 @@ function love.update(dt)
                         if not has_wifi then
                             sound.playMenuSelect()
                             queueTransitionAction("A", 0.08, function()
-                                _G.jukebox_web_modal = false
-                                if renderer.resetJukeboxModalAnim then
-                                    renderer.resetJukeboxModalAnim()
-                                end
                                 _G.last_dino_return_state = "JUKEBOX"
+                                _G.last_dino_return_modal = true
                                 _G.appState = "DINO"
                                 if dino_game and dino_game.start then
                                     dino_game.start()
