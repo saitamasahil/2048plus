@@ -11438,7 +11438,7 @@ function renderer.drawJukebox(selection, skip_transition)
             has_wifi, ip = sound_mod.has_wifi()
         elseif sound_mod.get_ip_address then
             ip = sound_mod.get_ip_address()
-            has_wifi = (ip and ip ~= "127.0.0.1" and not ip:match("^127%."))
+            has_wifi = sound_mod.isValidLanIp and sound_mod.isValidLanIp(ip) or (ip and ip ~= "127.0.0.1" and not ip:match("^127%.") and not ip:match("^169%.254%.") and not ip:match("^192%.168%.7%.1$"))
         end
         local url = has_wifi and ("http://" .. ip .. ":8048") or nil
         local qr_img = has_wifi and sound_mod.getQrImage and sound_mod.getQrImage() or nil

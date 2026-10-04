@@ -363,59 +363,99 @@ function sound.getQrImage()
     return nil
 end
 
+local function is_valid_lan_ip(ip)
+    if not ip or type(ip) ~= "string" or ip == "" then return false end
+    local o1, o2, o3, o4 = ip:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)$")
+    if not (o1 and o2 and o3 and o4) then return false end
+    o1, o2, o3, o4 = tonumber(o1), tonumber(o2), tonumber(o3), tonumber(o4)
+    if not (o1 and o2 and o3 and o4) then return false end
+    if o1 > 255 or o2 > 255 or o3 > 255 or o4 > 255 then return false end
+    if o1 == 0 and o2 == 0 and o3 == 0 and o4 == 0 then return false end
+    if o1 == 127 then return false end
+    if o1 == 169 and o2 == 254 then return false end
+    if o1 == 192 and o2 == 168 and o3 == 7 and o4 == 1 then return false end -- ArkOS usb gadget
+    return true
+end
+
+local function is_gadget_iface(iface)
+    if not iface then return true end
+    iface = iface:lower()
+    return iface:match("^lo") or iface:match("^usb") or iface:match("^rndis") or iface:match("^dummy")
+end
+
+function sound.isValidLanIp(ip)
+    return is_valid_lan_ip(ip)
+end
+
 function sound.get_ip_address(force_refresh)
-    if not force_refresh and server_ip and server_ip ~= "127.0.0.1" then
+    if not force_refresh and server_ip and is_valid_lan_ip(server_ip) then
         return server_ip
     end
-    -- Try default gateway route
-    local handle = io.popen("ip route get 8.8.8.8 2>/dev/null | awk '{print $7}'")
+    for _, iface in ipairs({"wlan0", "wlan1", "mlan0", "ra0"}) do
+        local h = io.popen(string.format("ip -4 addr show %s 2>/dev/null", iface))
+        if h then
+            local res = h:read("*a")
+            h:close()
+            if res then
+                local candidate = res:match("inet%s+(%d+%.%d+%.%d+%.%d+)")
+                if is_valid_lan_ip(candidate) then
+                    server_ip = candidate
+                    return candidate
+                end
+            end
+        end
+    end
+    for _, iface in ipairs({"eth0", "eth1"}) do
+        local h = io.popen(string.format("ip -4 addr show %s 2>/dev/null", iface))
+        if h then
+            local res = h:read("*a")
+            h:close()
+            if res then
+                local candidate = res:match("inet%s+(%d+%.%d+%.%d+%.%d+)")
+                if is_valid_lan_ip(candidate) then
+                    server_ip = candidate
+                    return candidate
+                end
+            end
+        end
+    end
+    local h_all = io.popen("ip -4 -o addr show 2>/dev/null")
+    if h_all then
+        local res = h_all:read("*a")
+        h_all:close()
+        if res then
+            for line in res:gmatch("[^\r\n]+") do
+                local iface, ip = line:match("%d+:%s+([%w%-_]+)%s+inet%s+(%d+%.%d+%.%d+%.%d+)")
+                if iface and ip and not is_gadget_iface(iface) and is_valid_lan_ip(ip) then
+                    server_ip = ip
+                    return ip
+                end
+            end
+        end
+    end
+    local handle = io.popen("ip route get 8.8.8.8 2>/dev/null")
     if handle then
         local res = handle:read("*a")
         handle:close()
         if res then
-            res = res:gsub("%s+", "")
-            if res ~= "" and not res:match("^127%.") then
-                server_ip = res
-                return res
+            local dev = res:match("dev%s+([%w%-_]+)")
+            local candidate = res:match("src%s+(%d+%.%d+%.%d+%.%d+)")
+            if dev and not is_gadget_iface(dev) and is_valid_lan_ip(candidate) then
+                server_ip = candidate
+                return candidate
             end
         end
     end
-    -- Try hostname -I
-    local h2 = io.popen("hostname -I 2>/dev/null | awk '{print $1}'")
+    local h2 = io.popen("hostname -I 2>/dev/null")
     if h2 then
         local res = h2:read("*a")
         h2:close()
         if res then
-            res = res:gsub("%s+", "")
-            if res ~= "" and not res:match("^127%.") then
-                server_ip = res
-                return res
-            end
-        end
-    end
-    -- Try wlan0 interface
-    local h3 = io.popen("ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'")
-    if h3 then
-        local res = h3:read("*a")
-        h3:close()
-        if res then
-            res = res:gsub("%s+", "")
-            if res ~= "" and not res:match("^127%.") then
-                server_ip = res
-                return res
-            end
-        end
-    end
-    -- Try eth0 and usb0 interfaces
-    local h4 = io.popen("ip -4 addr show eth0 2>/dev/null | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'")
-    if h4 then
-        local res = h4:read("*a")
-        h4:close()
-        if res then
-            res = res:gsub("%s+", "")
-            if res ~= "" and not res:match("^127%.") then
-                server_ip = res
-                return res
+            for token in res:gmatch("%S+") do
+                if is_valid_lan_ip(token) and token ~= "192.168.7.1" then
+                    server_ip = token
+                    return token
+                end
             end
         end
     end
@@ -425,7 +465,7 @@ end
 
 function sound.has_wifi()
     local ip = sound.get_ip_address(true)
-    if not ip or ip == "127.0.0.1" or ip:match("^127%.") or ip == "" or ip == "0.0.0.0" then
+    if not is_valid_lan_ip(ip) then
         return false, nil
     end
     return true, ip
@@ -433,15 +473,6 @@ end
 
 function sound.startWebServer(port)
     port = port or 8048
-    local ok_wifi, ip = sound.has_wifi()
-    if not ok_wifi then
-        ip = "127.0.0.1"
-    end
-    if server_ip ~= ip or server_port ~= port then
-        qr_image = nil
-    end
-    server_ip = ip
-    server_port = port
     local work_dir = _G.WORK_DIR or "."
 
     local function resolve_path(rel)
@@ -478,6 +509,21 @@ function sound.startWebServer(port)
     local qr_path = static_dir .. "/web_qr.png"
     local theme_path = static_dir .. "/theme_state.json"
 
+    local ok_wifi, ip = sound.has_wifi()
+    if not ok_wifi then
+        server_ip = "127.0.0.1"
+        server_port = port
+        qr_image = nil
+        os.remove(qr_path)
+        return "127.0.0.1", port
+    end
+
+    if server_ip ~= ip or server_port ~= port then
+        qr_image = nil
+    end
+    server_ip = ip
+    server_port = port
+
     -- Write initial theme state
     if renderer and renderer.applyTheme then
         renderer.applyTheme(true)
@@ -492,8 +538,8 @@ function sound.startWebServer(port)
 
     os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
 
-    local cmd = string.format('python3 "%s" --daemon --music-dir "%s" --port %d --qr-path "%s" --font-path "%s" --theme-file "%s" > /dev/null 2>&1',
-        script_path, music_dir, port, qr_path, font_path, theme_path)
+    local cmd = string.format('python3 "%s" --daemon --host "%s" --music-dir "%s" --port %d --qr-path "%s" --font-path "%s" --theme-file "%s" > /dev/null 2>&1',
+        script_path, ip, music_dir, port, qr_path, font_path, theme_path)
     os.execute(cmd)
 
     server_process_running = true

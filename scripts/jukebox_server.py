@@ -58,16 +58,62 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-def get_local_ip():
-    """Detects the primary LAN IP address."""
+def is_valid_lan_ip(ip):
+    if not ip or not isinstance(ip, str):
+        return False
+    parts = ip.strip().split(".")
+    if len(parts) != 4:
+        return False
+    try:
+        octets = [int(p) for p in parts]
+    except ValueError:
+        return False
+    if any(o < 0 or o > 255 for o in octets):
+        return False
+    if octets == [0, 0, 0, 0]:
+        return False
+    if octets[0] == 127:
+        return False
+    if octets[0] == 169 and octets[1] == 254:
+        return False
+    if octets[0] == 192 and octets[1] == 168 and octets[2] == 7 and octets[3] == 1:  # ArkOS usb gadget
+        return False
+    return True
+
+def get_local_ip(preferred=None):
+    if preferred and is_valid_lan_ip(preferred):
+        return preferred.strip()
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
-        return ip
+        if is_valid_lan_ip(ip):
+            return ip
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    for probe in ("192.168.1.1", "192.168.0.1", "10.0.0.1"):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((probe, 80))
+            ip = s.getsockname()[0]
+            s.close()
+            if is_valid_lan_ip(ip):
+                return ip
+        except Exception:
+            pass
+
+    try:
+        import subprocess
+        output = subprocess.check_output(["hostname", "-I"], timeout=1).decode("utf-8")
+        for token in output.split():
+            if is_valid_lan_ip(token):
+                return token
+    except Exception:
+        pass
+
+    return "127.0.0.1"
 
 def parse_track_meta(filename):
     """Extracts title and artist from 'Title - Artist.ext'."""
@@ -108,6 +154,7 @@ class JukeboxHandler(BaseHTTPRequestHandler):
     font_path = ""
     theme_file = ""
     server_port = 8048
+    server_host = ""
 
     def log_message(self, format, *args):
         pass
@@ -228,7 +275,7 @@ class JukeboxHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def serve_dashboard(self):
-        ip = get_local_ip()
+        ip = JukeboxHandler.server_host or get_local_ip()
         theme_info = self.get_current_theme()
         current_theme = theme_info.get("theme", "light")
         current_name = theme_info.get("name", "Classic Light")
@@ -289,7 +336,7 @@ class JukeboxHandler(BaseHTTPRequestHandler):
         self.serve_logo_png()
 
     def api_get_status(self):
-        ip = get_local_ip()
+        ip = JukeboxHandler.server_host or get_local_ip()
         total, used, free = shutil.disk_usage(self.music_dir if os.path.exists(self.music_dir) else ".")
         theme_info = self.get_current_theme()
         self.send_json({
@@ -839,10 +886,39 @@ html[data-theme="light"] .brand-title span.accent {
 }
 
 @media (max-width: 540px) {
+  .jukebox-console {
+    padding: 12px 14px;
+    gap: 10px;
+  }
   .console-top {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
+    gap: 12px;
+  }
+  .deck-details {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+  }
+  .now-playing-tag {
+    justify-content: center;
+  }
+  .deck-title {
+    font-size: 17px;
+    width: 100%;
+    text-align: center;
+  }
+  .deck-artist {
+    font-size: 13px;
+    width: 100%;
+    text-align: center;
+  }
+  .eq-container {
+    width: 100%;
+    height: 48px;
+    padding: 6px 8px;
+    gap: 2.5px;
   }
 }
 
@@ -1027,22 +1103,24 @@ html[data-theme="light"] .brand-title span.accent {
   align-items: flex-end;
   justify-content: space-between;
   gap: 3.5px;
-  height: 42px;
-  padding: 5px 8px;
+  height: 48px;
+  padding: 6px 10px;
   background: var(--c-pill-bg);
   border-radius: var(--radius-md);
   border: 1px solid var(--c-card-border);
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .eq-col {
   flex: 1;
   display: flex;
   flex-direction: column-reverse;
-  gap: 2px;
+  gap: 1.5px;
   height: 100%;
   position: relative;
+  box-sizing: border-box;
 }
 
 .eq-block {
@@ -1051,6 +1129,7 @@ html[data-theme="light"] .brand-title span.accent {
   border-radius: 1px;
   background: rgba(255,255,255,0.06);
   transition: background-color 0.08s ease;
+  box-sizing: border-box;
 }
 
 .eq-block.active {
@@ -1067,7 +1146,8 @@ html[data-theme="light"] .brand-title span.accent {
   background: #ffffff;
   border-radius: 1px;
   pointer-events: none;
-  transition: bottom 0.06s linear;
+  opacity: 0;
+  transition: bottom 0.06s linear, opacity 0.15s ease;
 }
 
 /* ─── Timeline Scrubber & Minimal Material 3 Controls ─────────── */
@@ -4576,6 +4656,7 @@ function updateVisualizer() {
       c.blocks.forEach(b => b.classList.remove("active"));
       peakCaps[idx] = Math.max(0, peakCaps[idx] - 0.8);
       c.peak.style.bottom = `${peakCaps[idx]}px`;
+      c.peak.style.opacity = peakCaps[idx] > 0.5 ? "1" : "0";
     });
     requestAnimationFrame(updateVisualizer);
     return;
@@ -4605,13 +4686,14 @@ function updateVisualizer() {
         b.classList.toggle("active", bIdx < level);
       });
 
-      const targetPeak = level * 4.8;
+      const targetPeak = level > 0 ? (level * 4.0 - 0.5) : 0;
       if (targetPeak >= peakCaps[idx]) {
         peakCaps[idx] = targetPeak;
       } else {
         peakCaps[idx] = Math.max(0, peakCaps[idx] - 0.45);
       }
       colObj.peak.style.bottom = `${peakCaps[idx]}px`;
+      colObj.peak.style.opacity = peakCaps[idx] > 0.5 ? "1" : "0";
     }
   });
 
@@ -7126,6 +7208,7 @@ def daemonize(log_file="/tmp/jukebox_server.log"):
 
 def main():
     parser = argparse.ArgumentParser(description="2048 Plus Jukebox Wireless Music Server")
+    parser.add_argument("--host", default="", help="Detected host IP for display and QR code")
     parser.add_argument("--music-dir", default="assets/music", help="Path to assets/music folder")
     parser.add_argument("--port", type=int, default=8048, help="Port to listen on (default 8048)")
     parser.add_argument("--qr-path", default="", help="Path where to save web_qr.png")
@@ -7148,7 +7231,12 @@ def main():
     if font_path:
         JukeboxHandler.font_path = font_path
 
-    ip = get_local_ip()
+    host_ip = args.host.strip() if args.host else ""
+    if not is_valid_lan_ip(host_ip):
+        host_ip = get_local_ip()
+    JukeboxHandler.server_host = host_ip
+
+    ip = host_ip
     url = f"http://{ip}:{args.port}"
 
     if args.qr_path:

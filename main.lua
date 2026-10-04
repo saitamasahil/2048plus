@@ -1007,7 +1007,7 @@ function love.update(dt)
                         has_wifi, ip = sound.has_wifi()
                     elseif sound.get_ip_address then
                         ip = sound.get_ip_address()
-                        has_wifi = (ip and ip ~= "127.0.0.1" and not ip:match("^127%."))
+                        has_wifi = sound.isValidLanIp and sound.isValidLanIp(ip) or (ip and ip ~= "127.0.0.1" and not ip:match("^127%.") and not ip:match("^169%.254%.") and not ip:match("^192%.168%.7%.1$"))
                     end
                     if not has_wifi then
                         sound.playMenuSelect()
