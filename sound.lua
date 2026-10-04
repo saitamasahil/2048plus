@@ -333,6 +333,10 @@ end
 
 local server_ip = nil
 local server_port = 8048
+local server_process_running = false
+local server_active_ip = nil
+local server_active_port = 8048
+local last_server_start_time = 0
 local qr_image = nil
 local qr_image_url = nil
 local last_qr_check = 0
@@ -381,6 +385,25 @@ function sound.getQrImage(expected_url)
         return nil
     end
 
+    local exp_ip, exp_port = expected_url:match("^https?://([^:/]+):?(%d*)/?")
+    exp_port = (exp_port and exp_port ~= "") and (tonumber(exp_port) or 8048) or 8048
+
+    -- If Wi-Fi changed or connected while popup is open, restart server on the new IP
+    local now = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
+    if exp_ip and is_valid_lan_ip(exp_ip) then
+        local needs_restart = false
+        if server_process_running and (server_active_ip ~= exp_ip or (server_active_port and server_active_port ~= exp_port)) then
+            needs_restart = true
+        elseif not server_process_running and _G.jukebox_web_modal then
+            needs_restart = true
+        end
+
+        if needs_restart and (now - last_server_start_time > 1.2) then
+            sound.startWebServer(exp_port)
+            return nil
+        end
+    end
+
     if qr_image and qr_image_url == expected_url then
         return qr_image
     end
@@ -390,7 +413,6 @@ function sound.getQrImage(expected_url)
         qr_image_url = nil
     end
 
-    local now = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
     if (now - last_qr_check) < 0.1 then
         return qr_image
     end
@@ -534,6 +556,9 @@ function sound.has_wifi(force)
     if not is_valid_lan_ip(ip) then
         cached_has_wifi = false
         cached_wifi_ip = nil
+        if server_process_running and _G.jukebox_web_modal then
+            sound.stopWebServer()
+        end
         return false, nil
     end
     cached_has_wifi = true
@@ -543,6 +568,7 @@ end
 
 function sound.startWebServer(port)
     port = port or 8048
+    last_server_start_time = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
     local work_dir = _G.WORK_DIR or "."
 
     local function resolve_path(rel)
@@ -584,6 +610,8 @@ function sound.startWebServer(port)
     if not ok_wifi then
         server_ip = "127.0.0.1"
         server_port = port
+        server_active_ip = nil
+        server_process_running = false
         qr_image = nil
         qr_image_url = nil
         os.remove(qr_path)
@@ -598,6 +626,8 @@ function sound.startWebServer(port)
     end
     server_ip = ip
     server_port = port
+    server_active_ip = ip
+    server_active_port = port
 
     -- If existing QR on disk doesn't match target_url, remove it immediately so stale QR is never shown
     local uf = io.open(url_path, "r")
@@ -642,6 +672,7 @@ end
 function sound.stopWebServer()
     os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
     server_process_running = false
+    server_active_ip = nil
     -- Cache QR code image
     return sound.reloadPlaylist()
 end
