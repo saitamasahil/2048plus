@@ -7155,8 +7155,18 @@ def generate_qr(url, output_path):
         parent_dir = os.path.dirname(os.path.abspath(output_path))
         if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
-        with open(output_path, 'wb') as f:
+        tmp_output = output_path + ".tmp"
+        with open(tmp_output, 'wb') as f:
             f.write(png)
+        os.replace(tmp_output, output_path)
+        try:
+            meta_path = output_path + ".url"
+            tmp_meta = meta_path + ".tmp"
+            with open(tmp_meta, 'w') as mf:
+                mf.write(url.strip())
+            os.replace(tmp_meta, meta_path)
+        except Exception:
+            pass
         return True
     except Exception as e:
         sys.stderr.write(f"Pure python QR generation failed: {e}\n")
@@ -7164,7 +7174,17 @@ def generate_qr(url, output_path):
     try:
         import qrcode
         img = qrcode.make(url)
-        img.save(output_path)
+        tmp_output = output_path + ".tmp"
+        img.save(tmp_output)
+        os.replace(tmp_output, output_path)
+        try:
+            meta_path = output_path + ".url"
+            tmp_meta = meta_path + ".tmp"
+            with open(tmp_meta, 'w') as mf:
+                mf.write(url.strip())
+            os.replace(tmp_meta, meta_path)
+        except Exception:
+            pass
         return True
     except Exception:
         return False
@@ -7264,6 +7284,11 @@ def main():
         if args.qr_path and os.path.exists(args.qr_path):
             try:
                 os.remove(args.qr_path)
+            except Exception:
+                pass
+        if args.qr_path and os.path.exists(args.qr_path + ".url"):
+            try:
+                os.remove(args.qr_path + ".url")
             except Exception:
                 pass
 

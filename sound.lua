@@ -334,34 +334,12 @@ end
 local server_ip = nil
 local server_port = 8048
 local qr_image = nil
+local qr_image_url = nil
+local last_qr_check = 0
 
-function sound.getQrImage()
-    if qr_image then return qr_image end
-    local work_dir = _G.WORK_DIR or "."
-    local candidates = {
-        work_dir .. "/static/web_qr.png",
-        work_dir .. "/gamedata/static/web_qr.png",
-        "static/web_qr.png",
-        "gamedata/static/web_qr.png"
-    }
-    for _, qr_path in ipairs(candidates) do
-        local f = io.open(qr_path, "rb")
-        if f then
-            local data = f:read("*all")
-            f:close()
-            local ok, img = pcall(function()
-                local fileData = love.filesystem.newFileData(data, "qr.png")
-                local imageData = love.image.newImageData(fileData)
-                return love.graphics.newImage(imageData)
-            end)
-            if ok and img then
-                qr_image = img
-                return qr_image
-            end
-        end
-    end
-    return nil
-end
+local last_ip_check = 0
+local cached_wifi_ip = nil
+local cached_has_wifi = false
 
 local function is_valid_lan_ip(ip)
     if not ip or type(ip) ~= "string" or ip == "" then return false end
@@ -377,14 +355,97 @@ local function is_valid_lan_ip(ip)
     return true
 end
 
+function sound.isValidLanIp(ip)
+    return is_valid_lan_ip(ip)
+end
+
 local function is_gadget_iface(iface)
     if not iface then return true end
     iface = iface:lower()
     return iface:match("^lo") or iface:match("^usb") or iface:match("^rndis") or iface:match("^dummy")
 end
 
-function sound.isValidLanIp(ip)
-    return is_valid_lan_ip(ip)
+function sound.getQrImage(expected_url)
+    if not expected_url then
+        if server_ip and is_valid_lan_ip(server_ip) then
+            expected_url = string.format("http://%s:%d", server_ip, server_port or 8048)
+        else
+            local ok_wifi, ip = sound.has_wifi()
+            if ok_wifi and ip then
+                expected_url = string.format("http://%s:%d", ip, server_port or 8048)
+            end
+        end
+    end
+
+    if not expected_url then
+        return nil
+    end
+
+    if qr_image and qr_image_url == expected_url then
+        return qr_image
+    end
+
+    if qr_image and qr_image_url ~= expected_url then
+        qr_image = nil
+        qr_image_url = nil
+    end
+
+    local now = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
+    if (now - last_qr_check) < 0.1 then
+        return qr_image
+    end
+    last_qr_check = now
+
+    local work_dir = _G.WORK_DIR or "."
+    local candidates = {
+        work_dir .. "/static/web_qr.png",
+        work_dir .. "/gamedata/static/web_qr.png",
+        "static/web_qr.png",
+        "gamedata/static/web_qr.png"
+    }
+
+    local seen = {}
+    for _, qr_path in ipairs(candidates) do
+        if not seen[qr_path] then
+            seen[qr_path] = true
+            local url_path = qr_path .. ".url"
+            local uf = io.open(url_path, "r")
+            if uf then
+                local file_url = uf:read("*all")
+                uf:close()
+                if file_url then
+                    file_url = file_url:gsub("^%s+", ""):gsub("%s+$", "")
+                end
+                if file_url == expected_url then
+                    local f = io.open(qr_path, "rb")
+                    if f then
+                        local data = f:read("*all")
+                        f:close()
+                        local ok, img = pcall(function()
+                            local fileData = love.filesystem.newFileData(data, "qr.png")
+                            local imageData = love.image.newImageData(fileData)
+                            return love.graphics.newImage(imageData)
+                        end)
+                        if ok and img then
+                            qr_image = img
+                            qr_image_url = expected_url
+                            return qr_image
+                        end
+                    end
+                else
+                    os.remove(qr_path)
+                    os.remove(url_path)
+                end
+            else
+                local f = io.open(qr_path, "rb")
+                if f then
+                    f:close()
+                    os.remove(qr_path)
+                end
+            end
+        end
+    end
+    return nil
 end
 
 function sound.get_ip_address(force_refresh)
@@ -463,11 +524,20 @@ function sound.get_ip_address(force_refresh)
     return "127.0.0.1"
 end
 
-function sound.has_wifi()
+function sound.has_wifi(force)
+    local now = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
+    if not force and cached_wifi_ip and (now - last_ip_check < 1.0) then
+        return cached_has_wifi, cached_wifi_ip
+    end
+    last_ip_check = now
     local ip = sound.get_ip_address(true)
     if not is_valid_lan_ip(ip) then
+        cached_has_wifi = false
+        cached_wifi_ip = nil
         return false, nil
     end
+    cached_has_wifi = true
+    cached_wifi_ip = ip
     return true, ip
 end
 
@@ -507,22 +577,42 @@ function sound.startWebServer(port)
     end
 
     local qr_path = static_dir .. "/web_qr.png"
+    local url_path = qr_path .. ".url"
     local theme_path = static_dir .. "/theme_state.json"
 
-    local ok_wifi, ip = sound.has_wifi()
+    local ok_wifi, ip = sound.has_wifi(true)
     if not ok_wifi then
         server_ip = "127.0.0.1"
         server_port = port
         qr_image = nil
+        qr_image_url = nil
         os.remove(qr_path)
+        os.remove(url_path)
         return "127.0.0.1", port
     end
 
-    if server_ip ~= ip or server_port ~= port then
+    local target_url = string.format("http://%s:%d", ip, port)
+    if qr_image_url ~= target_url then
         qr_image = nil
+        qr_image_url = nil
     end
     server_ip = ip
     server_port = port
+
+    -- If existing QR on disk doesn't match target_url, remove it immediately so stale QR is never shown
+    local uf = io.open(url_path, "r")
+    local existing_url = nil
+    if uf then
+        existing_url = uf:read("*all")
+        uf:close()
+        if existing_url then
+            existing_url = existing_url:gsub("^%s+", ""):gsub("%s+$", "")
+        end
+    end
+    if existing_url ~= target_url then
+        os.remove(qr_path)
+        os.remove(url_path)
+    end
 
     -- Write initial theme state
     if renderer and renderer.applyTheme then
@@ -544,7 +634,7 @@ function sound.startWebServer(port)
 
     server_process_running = true
     if not qr_image then
-        sound.getQrImage()
+        sound.getQrImage(target_url)
     end
     return ip, port
 end
