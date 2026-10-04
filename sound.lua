@@ -642,7 +642,7 @@ function sound.startWebServer(port)
 
     os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
 
-    local cmd = string.format('python3 "%s" --daemon --host "%s" --music-dir "%s" --port %d --qr-path "%s" --font-path "%s" --theme-file "%s" > /dev/null 2>&1',
+    local cmd = string.format('python3 -B "%s" --daemon --host "%s" --music-dir "%s" --port %d --qr-path "%s" --font-path "%s" --theme-file "%s" > /dev/null 2>&1',
         script_path, ip, music_dir, port, qr_path, font_path, theme_path)
     os.execute(cmd)
 
