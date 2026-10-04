@@ -37,6 +37,7 @@ local sort_icon = nil
 local vinyl_record_img = nil
 local music_manager_icon = nil
 local dino_icon = nil
+local playlist_icon = nil
 local jukebox_modal_state = "closed"
 local jukebox_modal_timer = 0
 local jukebox_modal_anim = 0
@@ -3378,6 +3379,9 @@ function renderer.init()
 
     local ok_music, m_img = pcall(love.graphics.newImage, "assets/icon/music.png")
     if ok_music then music_icon = m_img end
+
+    local ok_playlist, pl_img = pcall(love.graphics.newImage, "assets/icon/playlist.png")
+    if ok_playlist then playlist_icon = pl_img end
 
     local ok_mm, mm_img = pcall(love.graphics.newImage, "assets/icon/music_manager.png")
     if not ok_mm then ok_mm, mm_img = pcall(love.graphics.newImage, "assets/music_manager.png") end
@@ -10778,6 +10782,22 @@ function renderer.drawJukebox(selection, skip_transition)
     -- Global animation state for vinyl rotation and peak caps
     if not _G.jukebox_peaks then _G.jukebox_peaks = {} end
 
+    -- ── Sound state ─────────────────────────────────────────────────────────
+    local sound_mod = require("sound")
+    local playlist           = sound_mod.getBgmPlaylist and sound_mod.getBgmPlaylist() or {}
+    local current_track      = sound_mod.getCurrentTrack and sound_mod.getCurrentTrack()
+    local curr_idx           = sound_mod.getCurrentBgmIndex and sound_mod.getCurrentBgmIndex() or 0
+    local pos, dur           = 0, 0
+    if sound_mod.getBgmProgress then pos, dur = sound_mod.getBgmProgress() end
+    local is_actively_playing = sound_mod.isBgmPlaying and sound_mod.isBgmPlaying() or false
+    local is_playing          = current_track ~= nil
+
+    local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
+
+    -- Dynamic card layout
+    local card_w  = w - math.floor(32 * scale)
+    local card_x  = math.floor(16 * scale)
+
     -- Title Header
     love.graphics.setFont(font_title)
     love.graphics.setColor(ui_text)
@@ -10786,14 +10806,51 @@ function renderer.drawJukebox(selection, skip_transition)
     local title_y = math.floor(14 * scale)
     love.graphics.print(title, (w - tw) / 2, title_y)
 
-    -- ── Sound state ─────────────────────────────────────────────────────────
-    local sound_mod = require("sound")
-    local current_track      = sound_mod.getCurrentTrack and sound_mod.getCurrentTrack()
-    local curr_idx           = sound_mod.getCurrentBgmIndex and sound_mod.getCurrentBgmIndex() or 0
-    local pos, dur           = 0, 0
-    if sound_mod.getBgmProgress then pos, dur = sound_mod.getBgmProgress() end
-    local is_actively_playing = sound_mod.isBgmPlaying and sound_mod.isBgmPlaying() or false
-    local is_playing          = current_track ~= nil
+    -- Song count pill badge in header
+    local total_songs = #playlist
+    local count_str = tostring(total_songs) .. (total_songs == 1 and " Song" or " Songs")
+    local count_font = font_bgm or font_help_label
+    love.graphics.setFont(count_font)
+    local text_w = count_font:getWidth(count_str)
+    local p_icon = playlist_icon or music_icon
+    if not p_icon then
+        local ok_pl, pl_img = pcall(love.graphics.newImage, "assets/icon/playlist.png")
+        if ok_pl then
+            playlist_icon = pl_img
+            p_icon = pl_img
+        end
+    end
+
+    local icon_sz = math.floor(13 * scale)
+    local has_icon = p_icon ~= nil
+    local pill_pad_h = math.floor(9 * scale)
+    local icon_gap = math.floor(5 * scale)
+    local pill_w = pill_pad_h * 2 + text_w + (has_icon and (icon_sz + icon_gap) or 0)
+    local pill_h = math.floor(22 * scale)
+    local pill_x = card_x + card_w - pill_w
+    local pill_y = title_y + math.floor((font_title:getHeight() - pill_h) / 2)
+
+    love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.85)
+    roundedRect("fill", pill_x, pill_y, pill_w, pill_h, math.floor(6 * scale))
+    love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.70)
+    love.graphics.setLineWidth(math.floor(1 * scale))
+    roundedRect("line", pill_x, pill_y, pill_w, pill_h, math.floor(6 * scale))
+
+    if has_icon then
+        local icon_x = pill_x + pill_pad_h
+        local icon_y = pill_y + math.floor((pill_h - icon_sz) / 2)
+        if icon_shader then love.graphics.setShader(icon_shader) end
+        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.90)
+        local sw = icon_sz / p_icon:getWidth()
+        local sh = icon_sz / p_icon:getHeight()
+        love.graphics.draw(p_icon, icon_x, icon_y, 0, sw, sh)
+        if icon_shader then love.graphics.setShader() end
+    end
+
+    local count_text_x = has_icon and (pill_x + pill_pad_h + icon_sz + icon_gap) or (pill_x + pill_pad_h)
+    local count_text_y = pill_y + math.floor((pill_h - count_font:getHeight()) / 2) - math.max(1, math.floor(1 * scale))
+    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.95)
+    love.graphics.print(count_str, count_text_x, count_text_y)
 
     -- Update vinyl rotation angle
     if is_actively_playing then
@@ -10818,9 +10875,6 @@ function renderer.drawJukebox(selection, skip_transition)
     local prev_track    = _G.jukebox_prev_track
     local current_track = sound_mod.getCurrentTrack and sound_mod.getCurrentTrack()
 
-    -- Dynamic card layout
-    local card_w  = w - math.floor(32 * scale)
-    local card_x  = math.floor(16 * scale)
     local card_y  = title_y + font_title:getHeight() + math.floor(8 * scale)
     local pad_v   = math.floor(8  * scale)   -- vertical padding top/bottom
     local pad_h   = math.floor(14 * scale)   -- horizontal padding sides
@@ -10851,7 +10905,7 @@ function renderer.drawJukebox(selection, skip_transition)
     love.graphics.setLineWidth(math.floor(1.5 * scale))
     roundedRect("line", card_x, card_y, card_w, card_h, math.floor(10 * scale))
 
-    local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
+    base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
 
     -- Vinyl disc
     local disc_r  = math.floor(18 * scale)
@@ -11077,8 +11131,7 @@ function renderer.drawJukebox(selection, skip_transition)
     love.graphics.print(pos_str, pbar_x, time_y)
     love.graphics.print(dur_str, pbar_x + pbar_w - font_help_label:getWidth(dur_str), time_y)
 
-    -- Playlist Section
-    local playlist = sound_mod.getBgmPlaylist and sound_mod.getBgmPlaylist() or {}
+    playlist = sound_mod.getBgmPlaylist and sound_mod.getBgmPlaylist() or {}
     local playlist_y = card_y + card_h + math.floor(10 * scale)
     local row_h = math.floor(34 * scale)
     local row_inner_h = math.floor(28 * scale)
