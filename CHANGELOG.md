@@ -2,17 +2,17 @@
 
 ## [7.0.0] (TBA)
 ### Added
-- Wireless Music Transfer in Jukebox: upload, preview, and manage custom MP3, OGG, and WAV tracks wirelessly from any phone or PC browser over Wi-Fi
-- Custom track badges in Jukebox playlist and L1/R1 shoulder buttons for quick track skipping
+- Wireless Music Transfer: upload custom songs from Phone or PC over Wi-Fi
+- Hidden Easter Egg mini-game by [SLAYKIN6_TTV](https://github.com/justaporter)
 
 ### Changed
-- Theme Selection navigation: Y button switches to the next theme, and X button switches to the previous theme
-- Removed alternative merge fx animations
+- Cycle themes with Y (next) and X (previous)
+- Removed alternative merge animations
 
 ### Fixed
-- Fixed timer and powerups not restoring properly when continuing a saved game
-- Fixed Time Attack time's up state persistence on game resume
-- More minor fixes
+- Fixed timer and powerups not restoring when resuming a saved game
+- Fixed Time Attack state when resuming a game
+- Minor bug fixes and improvements
 
 ## [6.0.3]
 ### Changed

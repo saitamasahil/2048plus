@@ -3354,6 +3354,9 @@ function renderer.init()
     font_help_key   = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_help_label = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_bgm        = love.graphics.newFont(font_path, math.floor(13 * scale))
+    renderer.font_help_key   = font_help_key
+    renderer.font_help_label = font_help_label
+    renderer.font_bgm        = font_bgm
     logo_2048 = love.graphics.newImage("assets/logo/logo_2048.png")
 
     -- Load UI header icons directly from assets/icon/
@@ -4857,6 +4860,8 @@ local function drawKeyBadge(text, x, y, w, h)
         else
             if original_text == "START" then
                 is_pressed = (Input.state["space"] == true) or (Input.state["rshift"] == true) or (Input.state["return"] == true)
+            elseif original_text == "DOWN" then
+                is_pressed = (Input.state["down"] == true) or (Input.state["dpdown"] == true) or (Input.state["s"] == true) or (Input.state["v"] == true) or (Input.events and Input.state[Input.events.DOWN] == true)
             else
                 local event_map = {
                     A = Input.events and Input.events.CONFIRM,
@@ -4998,7 +5003,7 @@ local function drawKeyBadge(text, x, y, w, h)
             return
         end
 
-        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" or original_text == "START" or original_text == "SELECT" or (love.system.getOS() == "Web" and string.len(text) > 1) then
+        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" or original_text == "START" or original_text == "SELECT" or original_text == "DOWN" or (love.system.getOS() == "Web" and string.len(text) > 1) then
             local cr = math.floor(h * 0.4)
 
             if _G.theme == "matrix" then
@@ -5121,6 +5126,8 @@ local function drawKeyBadge(text, x, y, w, h)
     love.graphics.draw(badge_canvas, badge_quad, x - pad, y - pad, 0, 0.5, 0.5)
     love.graphics.setBlendMode("alpha", "alphamultiply")
 end
+
+renderer.drawKeyBadge = drawKeyBadge
 
 -- ============================================================================
 -- Draw controls help section
@@ -9607,6 +9614,12 @@ function renderer.drawAbout(skip_transition)
     local _, lines_icons = font_help_label:getWrap(s_icons, w)
     cur_y = cur_y + #lines_icons * font_help_label:getHeight() + section_gap
 
+    -- Section 3d: Easter egg credit
+    local s_dino = "Easter Egg mini-game by SLAYKIN6_TTV"
+    love.graphics.printf(s_dino, 0, cur_y, w, "center")
+    local _, lines_dino = font_help_label:getWrap(s_dino, w)
+    cur_y = cur_y + #lines_dino * font_help_label:getHeight() + section_gap
+
     -- Special thanks section
     local s_thanks = "Special Thanks to Egggdoggo & d98jay\nfor early feedback, playtesting & incredible support!"
     love.graphics.printf(s_thanks, 0, cur_y, w, "center")
@@ -11472,10 +11485,10 @@ function renderer.drawJukebox(selection, skip_transition)
 
             if dino_img then
                 local dw, dh = dino_img:getDimensions()
-                local target_sz = qr_box_size - math.floor(24 * scale)
+                local target_sz = qr_box_size - math.floor(52 * scale)
                 local s = target_sz / dw
                 local cx = qr_x + math.floor(qr_box_size / 2)
-                local cy = qr_y + math.floor(qr_box_size / 2)
+                local cy = qr_y + math.floor(46 * scale)
 
                 if icon_shader then
                     love.graphics.setShader(icon_shader)
@@ -11485,6 +11498,26 @@ function renderer.drawJukebox(selection, skip_transition)
                 if icon_shader then
                     love.graphics.setShader()
                 end
+
+                local prompt_font = font_bgm or font_help_label
+                love.graphics.setFont(prompt_font)
+                local pref = "Press "
+                local suff = " to Play"
+                local pw = prompt_font:getWidth(pref)
+                local sw = prompt_font:getWidth(suff)
+                local badge_h = math.floor(26 * scale)
+                local key_w = badge_h
+                local total_w = pw + key_w + math.floor(8 * scale) + sw
+                local start_x = qr_x + math.floor((qr_box_size - total_w) / 2)
+                local badge_y = qr_y + math.floor(96 * scale)
+                local text_y = badge_y + math.floor((badge_h - prompt_font:getHeight()) / 2)
+
+                love.graphics.setColor(text_body)
+                love.graphics.print(pref, start_x, text_y)
+                drawKeyBadge("A", start_x + pw + math.floor(4 * scale), badge_y, key_w, badge_h)
+                love.graphics.setFont(prompt_font)
+                love.graphics.setColor(text_body)
+                love.graphics.print(suff, start_x + pw + math.floor(4 * scale) + key_w + math.floor(4 * scale), text_y)
             else
                 love.graphics.setFont(font_help_label)
                 love.graphics.setColor(0.96, 0.37, 0.23, 0.95)
@@ -11597,28 +11630,23 @@ function renderer.drawJukebox(selection, skip_transition)
         local btn_x = mx + math.floor((mw - btn_w) / 2)
         local btn_y = my + mh - btn_h - math.floor(12 * scale)
 
-        -- Button press offset
-        local ok_in, Inp = pcall(require, "input")
-        local is_b_pressed = (ok_in and Inp and Inp.state and (Inp.state["B"] == true or Inp.state["b"] == true or Inp.state["escape"] == true))
-        local press_shift_y = is_b_pressed and math.max(1, math.floor(1.5 * scale)) or 0
-
         if is_light_theme then
             love.graphics.setColor(1.0, 1.0, 1.0, 0.70)
-            roundedRect("fill", btn_x, btn_y + press_shift_y, btn_w, btn_h, math.floor(btn_h / 2))
+            roundedRect("fill", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
             love.graphics.setColor(0.12, 0.10, 0.08, 0.28)
             love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-            roundedRect("line", btn_x, btn_y + press_shift_y, btn_w, btn_h, math.floor(btn_h / 2))
+            roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
         else
             love.graphics.setColor(hr, hg, hb, 0.18)
-            roundedRect("fill", btn_x, btn_y + press_shift_y, btn_w, btn_h, math.floor(btn_h / 2))
+            roundedRect("fill", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
             love.graphics.setColor(hr, hg, hb, 0.85)
             love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-            roundedRect("line", btn_x, btn_y + press_shift_y, btn_w, btn_h, math.floor(btn_h / 2))
+            roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
         end
 
         local k_sz = math.floor(24 * scale)
         local ky = btn_y + math.floor((btn_h - k_sz) / 2)
-        local pill_center_y = btn_y + math.floor(btn_h / 2) + press_shift_y
+        local pill_center_y = btn_y + math.floor(btn_h / 2)
 
         local btn_label = "Close"
         love.graphics.setFont(font_help_label)

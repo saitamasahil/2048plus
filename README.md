@@ -89,6 +89,7 @@ To build the packages yourself, make sure you are in a Linux or macOS environmen
 - Original Concept By: [Gabriele Cirulli](https://github.com/gabrielecirulli/2048)
 - Android Port Reference: [tpcstld - 2048](https://github.com/tpcstld/2048)
 - Built using the [LÖVE Framework](https://love2d.org/)
+- Easter Egg mini-game by: [SLAYKIN6_TTV](https://github.com/justaporter)
 - Adorable Animal Sprites by: [Elthen](https://elthen.itch.io/) and [Pixelcave](https://pixelcave.itch.io/)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
 - Icons provided by [Flaticon](https://www.flaticon.com/)

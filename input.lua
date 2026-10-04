@@ -170,9 +170,11 @@ function love.keypressed(key)
 end
 
 function love.keyreleased(key)
+    input.state[key] = false
+
     for _, k in pairs(input.events) do
         if key == k then
-            input.state[key] = false
+            input.state[k] = false
         end
     end
 
@@ -182,12 +184,32 @@ function love.keyreleased(key)
             input.state["backspace"] = false
             input.state["b"] = false
             input.state[k] = false
+        elseif key == "tab" or key == "rshift" or key == "lshift" or key == "v" or key == "s" then
+            local k = input.events.SELECT
+            input.state["tab"] = false
+            input.state["rshift"] = false
+            input.state["lshift"] = false
+            input.state["v"] = false
+            input.state["s"] = false
+            input.state[k] = false
+        elseif key == "p" or key == "space" then
+            local k = input.events.START
+            input.state["p"] = false
+            input.state["space"] = false
+            input.state[k] = false
         end
     end
 
     if key == holding.dir then
         holding.dir = nil
         holding.started = false
+    end
+
+    if _G.appState == "DINO" then
+        local dg = package.loaded["dino_game"]
+        if dg and dg.keyreleased then
+            dg.keyreleased(key)
+        end
     end
 end
 
@@ -213,6 +235,13 @@ function love.gamepadreleased(js, button)
         if event == holding.dir then
             holding.dir = nil
             holding.started = false
+        end
+    end
+
+    if _G.appState == "DINO" then
+        local dg = package.loaded["dino_game"]
+        if dg and dg.gamepadreleased then
+            dg.gamepadreleased(button)
         end
     end
 end

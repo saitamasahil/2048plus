@@ -9,6 +9,7 @@ local renderer = require("renderer")
 local save     = require("save")
 local splash   = require("splash")
 local sound    = require("sound")
+local dino_game = require("dino_game")
 
 _G.appState = "MENU" -- "MENU", "GAME", "ARCADE_MENU", "SERVER_ACTIVE", etc.
 local menuSelection = 1 -- 1: Classic, 2: Plus, 3: Theme Selection, 4: Achievements, 5: Tutorial, 6: Text, 7: About, 8: Quit
@@ -49,6 +50,8 @@ local STATE_DEPTH = {
     THEME_SELECT  = 1,
     CHEATS_MENU   = 1,
     SETTINGS      = 1,
+    JUKEBOX       = 1,
+    DINO          = 2,
 }
 
 -- Forward declaration (defined later in the file, after love.update's helper logic)
@@ -511,6 +514,11 @@ function love.load(args)
     local w, h = love.graphics.getDimensions()
     screen_canvas = love.graphics.newCanvas(w, h)
 
+    -- Initialize dino game
+    if dino_game and dino_game.init then
+        dino_game.init()
+    end
+
     -- Load splash screen
     splash.load()
 end
@@ -590,6 +598,9 @@ function love.update(dt)
         if game then
             game:update(dt)
         end
+        if _G.appState == "DINO" and dino_game and dino_game.update then
+            dino_game.update(dt)
+        end
         renderer.updateTransition(dt)
         input.update(dt)
         return
@@ -634,6 +645,23 @@ function love.update(dt)
                 splash.skip()
             end
         end)
+        return
+    end
+
+    if _G.appState == "DINO" then
+        input.update(dt)
+        input.processEvents(function(event)
+            local is_back = (event == input.events.BACK or event == "b" or event == "backspace")
+            if is_back then
+                sound.playMenuBack()
+                queueTransitionAction("B", 0.08, function()
+                    _G.appState = _G.last_dino_return_state or "JUKEBOX"
+                end)
+                return
+            end
+            dino_game.handleEvent(event)
+        end)
+        dino_game.update(dt)
         return
     end
 
@@ -973,6 +1001,24 @@ function love.update(dt)
                             sound.stopWebServer()
                         end
                     end)
+                elseif event == input.events.CONFIRM or event == "return" or event == "a" or event == "space" then
+                    local has_wifi, ip = false, "127.0.0.1"
+                    if sound.has_wifi then
+                        has_wifi, ip = sound.has_wifi()
+                    elseif sound.get_ip_address then
+                        ip = sound.get_ip_address()
+                        has_wifi = (ip and ip ~= "127.0.0.1" and not ip:match("^127%."))
+                    end
+                    if not has_wifi then
+                        sound.playMenuSelect()
+                        queueTransitionAction("A", 0.08, function()
+                            _G.last_dino_return_state = "JUKEBOX"
+                            _G.appState = "DINO"
+                            if dino_game and dino_game.start then
+                                dino_game.start()
+                            end
+                        end)
+                    end
                 end
                 return
             end
@@ -1766,6 +1812,8 @@ drawCurrentScreen = function()
         renderer.drawStoreMenu(_G.store_selection or 1)
     elseif _G.appState == "JUKEBOX" then
         renderer.drawJukebox(_G.jukebox_selection or 1)
+    elseif _G.appState == "DINO" then
+        dino_game.draw()
     elseif _G.appState == "GAME" and game then
         renderer.draw(game)
     end
