@@ -1,5 +1,9 @@
 # Changelog
 
+## [7.0.1] (TBA)
+### Fixed
+- Fixed delayed tile merge animation in Goose mode
+
 ## [7.0.0]
 ### Added
 - Wireless Music Transfer: upload custom songs from Phone or PC over Wi-Fi

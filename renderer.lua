@@ -4222,12 +4222,12 @@ function renderer.drawTiles(game)
             slideProgress = (2 * d - t) / d
             gooseProgress = 0
             spawnProgress = 0
-            mergePopProgress = 0
+            mergePopProgress = slideProgress
         else
             slideProgress = 1
             gooseProgress = 1 - (t / d)
             spawnProgress = 1 - (t / d)
-            mergePopProgress = 1 - (t / d)
+            mergePopProgress = 1
         end
     else
         local p = game:getAnimationProgress()
