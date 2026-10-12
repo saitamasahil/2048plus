@@ -63,6 +63,7 @@ local pet_cat_stretch_frames = {}
 local pet_dog_breed_frames = {}
 local pet_goose_sprites = {}
 local sandclock_frames = {}
+local skull_frames = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3544,6 +3545,15 @@ function renderer.init()
         if ok_sc and sc_img then
             sc_img:setFilter("nearest", "nearest")
             table.insert(sandclock_frames, sc_img)
+        end
+    end
+
+    skull_frames = {}
+    for i = 1, 2 do
+        local ok_sk, sk_img = pcall(love.graphics.newImage, "assets/icon/skull/" .. i .. ".png")
+        if ok_sk and sk_img then
+            sk_img:setFilter("nearest", "nearest")
+            table.insert(skull_frames, sk_img)
         end
     end
 
@@ -8104,6 +8114,31 @@ local function drawSkull(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     local is_selected = select_factor > 0.4
     local t = love.timer.getTime()
 
+    if skull_frames and #skull_frames > 0 then
+        love.graphics.push("all")
+        local f_idx = is_selected and ((math.floor(t * 5) % #skull_frames) + 1) or 1
+        local img = skull_frames[f_idx]
+
+        if img then
+            local icon_s = (28 * scale) / 416
+            local ox = 268
+            local oy = 232
+
+            -- Shadow
+            love.graphics.setColor(0, 0, 0, 0.22)
+            local shadow_w = 9.5 * scale
+            local shadow_h = 2.4 * scale
+            love.graphics.ellipse("fill", cx, cy + 14 * scale, shadow_w, shadow_h)
+
+            local alpha = 0.70 + 0.30 * select_factor
+            love.graphics.setColor(1, 1, 1, alpha)
+            love.graphics.draw(img, cx, cy, 0, icon_s, icon_s, ox, oy)
+            love.graphics.pop()
+            return
+        end
+        love.graphics.pop()
+    end
+
     love.graphics.push("all")
 
     local br_r = 0.50 + (r_acc - 0.50) * select_factor
@@ -9979,7 +10014,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nSandclock Sprite by NYKNCK\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nSandclock & Skull Sprites by NYKNCK\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap
