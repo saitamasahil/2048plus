@@ -1,6 +1,13 @@
 # Changelog
 
 ## [7.0.1] (TBA)
+### Added
+- Added smooth board cascade animation when starting or continuing a game
+
+### Changed
+- Refined Arcade menu card layout with uniform title font sizing and improved BEST badge clearance
+- Redesigned mode selection icons
+
 ### Fixed
 - Fixed delayed tile merge animation in Goose mode
 
