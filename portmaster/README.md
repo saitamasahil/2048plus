@@ -36,6 +36,7 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 - Built using the [LÖVE Framework](https://love2d.org/)
 - Easter Egg mini-game by: [SLAYKIN6_TTV](https://github.com/justaporter)
 - Adorable Animal Sprites by: [Elthen](https://elthen.itch.io/), [Pixelcave](https://pixelcave.itch.io/), and [Duckhive](https://itch.io/profile/duckhive)
+- Sandclock Sprite by: [NYKNCK](https://itch.io/profile/nyknck)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!
