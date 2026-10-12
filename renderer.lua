@@ -4148,7 +4148,7 @@ local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_a
     if spr_data and spr_data.image then
         love.graphics.push("all")
         local now = love.timer.getTime()
-        local f_idx = (math.floor(now * spr_data.fps) % spr_data.count) + 1
+        local f_idx = is_selected and ((math.floor(now * spr_data.fps) % spr_data.count) + 1) or 1
         local quad = spr_data.quads[f_idx]
 
         local icon_s = (32 * scale) / 28
@@ -8611,9 +8611,14 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         love.graphics.scale(card_scale, card_scale)
         love.graphics.translate(-(cx_pos + card_w_arc / 2), -(cy + card_h_arc / 2))
 
+        -- Text
+        local text_x = cx_pos + math.floor(52 * scale)
+        local text_w = card_w_arc - math.floor(62 * scale)
+        local name_y = cy + math.floor(14 * scale)
+
         -- Icon
         local icon_cx = cx_pos + math.floor(28 * scale)
-        local icon_cy = cy + card_h_arc / 2
+        local icon_cy = name_y + math.floor(font_score:getHeight() / 2) + math.floor(8 * scale)
         if mode.icon == "sandclock" or mode.icon == "stopwatch" then
             drawSandclock(icon_cx, icon_cy, scale, select_factor, mode.accentR, mode.accentG, mode.accentB)
         elseif mode.icon == "huge" then
@@ -8625,11 +8630,6 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         elseif mode.icon == "goose" then
             drawGooseCardIcon(icon_cx, icon_cy, scale, select_factor, mode.accentR, mode.accentG, mode.accentB)
         end
-
-        -- Text
-        local text_x = cx_pos + math.floor(52 * scale)
-        local text_w = card_w_arc - math.floor(62 * scale)
-        local name_y = cy + math.floor(10 * scale)
 
         love.graphics.setFont(font_score)
         local name_r = 0.40
