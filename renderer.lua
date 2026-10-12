@@ -64,6 +64,8 @@ local pet_dog_breed_frames = {}
 local pet_goose_sprites = {}
 local sandclock_frames = {}
 local skull_frames = {}
+local classic_board_img = nil
+local classic_board_quads = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3554,6 +3556,24 @@ function renderer.init()
         if ok_sk and sk_img then
             sk_img:setFilter("nearest", "nearest")
             table.insert(skull_frames, sk_img)
+        end
+    end
+
+    classic_board_quads = {}
+    local ok_cb, cb_img = pcall(love.graphics.newImage, "assets/icon/classic_board_sheet.png")
+    if ok_cb and cb_img then
+        cb_img:setFilter("nearest", "nearest")
+        classic_board_img = cb_img
+        local iw, ih = cb_img:getDimensions()
+        local cell_w = 137
+        local cell_h = 137
+        local pad = 2
+        for i = 0, 173 do
+            local col = i % 14
+            local row = math.floor(i / 14)
+            local qx = col * cell_w + pad
+            local qy = row * cell_h + pad
+            table.insert(classic_board_quads, love.graphics.newQuad(qx, qy, 133, 133, iw, ih))
         end
     end
 
@@ -7693,8 +7713,32 @@ end
 local function drawClassicIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local r = 14 * scale
     local t = love.timer.getTime()
+
+    if classic_board_img and #classic_board_quads > 0 then
+        love.graphics.push("all")
+        local f_idx = is_selected and ((math.floor(t / 0.100) % #classic_board_quads) + 1) or 2
+        local quad = classic_board_quads[f_idx]
+
+        local icon_s = (42 * scale) / 133
+        local ox = 66.5
+        local oy = 66.5
+
+        -- Shadow
+        love.graphics.setColor(0, 0, 0, 0.22)
+        local shadow_w = 18 * scale
+        local shadow_h = 4 * scale
+        love.graphics.ellipse("fill", cx, cy + 21 * scale, shadow_w, shadow_h)
+
+        local alpha = 0.70 + 0.30 * select_factor
+        love.graphics.setColor(1, 1, 1, alpha)
+        love.graphics.draw(classic_board_img, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
+
+        love.graphics.pop()
+        return
+    end
+
+    local r = 14 * scale
 
     love.graphics.push("all")
 
