@@ -61,6 +61,7 @@ local pet_cat_sleep_frames = {}
 local pet_cat_stretch_frames = {}
 
 local pet_dog_breed_frames = {}
+local pet_goose_sprites = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3509,6 +3510,33 @@ function renderer.init()
         pet_dog_breed_frames[id] = frames
     end
 
+    -- Load Goose pet sprites
+    pet_goose_sprites = {}
+    local goose_sheets = {
+        idle = { file = "assets/pet/goose/Idle.png", frames = 2, fps = 3 },
+        walk = { file = "assets/pet/goose/Walk.png", frames = 4, fps = 8 },
+        run  = { file = "assets/pet/goose/Run.png",  frames = 4, fps = 12 },
+        flap = { file = "assets/pet/goose/Flap.png", frames = 4, fps = 10 },
+    }
+    for state_name, info in pairs(goose_sheets) do
+        local ok, img = pcall(love.graphics.newImage, info.file)
+        if ok then
+            img:setFilter("nearest", "nearest")
+            local quads = {}
+            local fw = 64
+            local fh = 64
+            for i = 0, info.frames - 1 do
+                table.insert(quads, love.graphics.newQuad(i * fw, 0, fw, fh, img:getDimensions()))
+            end
+            pet_goose_sprites[state_name] = {
+                image = img,
+                quads = quads,
+                fps = info.fps,
+                count = info.frames,
+            }
+        end
+    end
+
     -- Load store item icons & achievement icons
     item_icons = {}
     achievement_icons = {}
@@ -3955,7 +3983,88 @@ function renderer.drawBoard(game)
     end
 end
 
-local function drawGooseTile(cx, cy, size, scale, shouldWaddle)
+local function drawGooseTile(cx, cy, size, scale, shouldWaddle, tile, slideProgress, popProgress)
+    local state = "idle"
+    local facing = 1
+    local now = love.timer.getTime()
+
+    if tile and tile.goose_facing then
+        facing = tile.goose_facing
+    end
+
+    local is_flapping = tile and tile.flap_end_time and (now < tile.flap_end_time)
+    local is_moving_anim = tile and tile.move_anim_end_time and (now < tile.move_anim_end_time)
+
+    if tile and tile.previousPosition and slideProgress and slideProgress < 1 then
+        local dx = tile.x - tile.previousPosition.x
+        local dy = tile.y - tile.previousPosition.y
+        local dist = math.abs(dx) + math.abs(dy)
+
+        if dx < 0 then
+            facing = -1
+            tile.goose_facing = -1
+        elseif dx > 0 then
+            facing = 1
+            tile.goose_facing = 1
+        end
+
+        if not tile.move_anim_end_time or now >= tile.move_anim_end_time then
+            tile.move_anim_end_time = now + 0.38
+            if dist > 1 then
+                tile.active_move_anim = "flap"
+                tile.flap_end_time = now + 0.55
+            else
+                tile.active_move_anim = tile.move_anim or "walk"
+            end
+        end
+
+        state = tile.active_move_anim or "walk"
+    elseif tile and tile.isNew and popProgress and popProgress < 1 then
+        if not is_flapping then
+            tile.flap_end_time = now + 0.55
+            is_flapping = true
+        end
+        state = "flap"
+    elseif is_flapping then
+        state = "flap"
+    elseif is_moving_anim and tile.active_move_anim then
+        state = tile.active_move_anim
+    else
+        state = "idle"
+        tile.active_move_anim = nil
+        if tile then
+            tile.next_flap_time = tile.next_flap_time or (now + 5.0 + ((tile.x * 3 + tile.y * 7) % 4))
+            if now >= tile.next_flap_time then
+                tile.flap_end_time = now + 0.60
+                tile.next_flap_time = now + 8.0 + love.math.random() * 4.0
+                state = "flap"
+            end
+        end
+    end
+
+    local spr_data = pet_goose_sprites and pet_goose_sprites[state]
+    if spr_data and spr_data.image then
+        local now = love.timer.getTime()
+        local f_idx = (math.floor(now * spr_data.fps) % spr_data.count) + 1
+        local quad = spr_data.quads[f_idx]
+
+        local spr_s = (size * 0.68) / 28
+        local ox = (state == "run" and 37 or 34)
+        local oy = (state == "run" and 22 or 18)
+
+        -- Shadow
+        love.graphics.setColor(0, 0, 0, 0.22)
+        local shadow_w = (state == "flap" and 9 or (state == "run" and 15 or 12)) * spr_s
+        local shadow_h = (state == "flap" and 2.5 or 3.5) * spr_s
+        local shadow_y = cy + (state == "run" and 10 or 13.5) * spr_s
+        love.graphics.ellipse("fill", cx, shadow_y, shadow_w, shadow_h)
+
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(spr_data.image, quad, cx, cy, 0, spr_s * facing, spr_s, ox, oy)
+        return
+    end
+
+    -- Fallback vector drawing
     local time = love.timer.getTime()
     local waddleAngle = 0
     local waddleY = 0
@@ -3964,7 +4073,6 @@ local function drawGooseTile(cx, cy, size, scale, shouldWaddle)
         waddleY = math.abs(math.cos(time * 12)) * 2 * scale
     end
 
-    -- Body offset for waddling
     local bx = cx
     local by = cy + waddleY
 
@@ -3983,22 +4091,22 @@ local function drawGooseTile(cx, cy, size, scale, shouldWaddle)
     love.graphics.line(8 * scale, 15 * scale, 6 * scale + r_foot_osc, 28 * scale)
     love.graphics.line(6 * scale + r_foot_osc, 28 * scale, 1 * scale + r_foot_osc, 28 * scale)
 
-    -- Body (white)
+    -- Body
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.ellipse("fill", -5 * scale, 5 * scale, 22 * scale, 15 * scale)
 
-    -- Neck (white)
+    -- Neck
     love.graphics.setLineWidth(math.max(1, 10 * scale))
     love.graphics.line(8 * scale, 5 * scale, 14 * scale, -12 * scale)
 
-    -- Head (white)
+    -- Head
     love.graphics.ellipse("fill", 15 * scale, -15 * scale, 10 * scale, 10 * scale)
 
-    -- Wing (light gray/off-white)
+    -- Wing
     love.graphics.setColor(0.9, 0.9, 0.9, 1)
     love.graphics.ellipse("fill", -8 * scale, 5 * scale, 12 * scale, 8 * scale)
 
-    -- Beak (orange triangle)
+    -- Beak
     love.graphics.setColor(0.95, 0.5, 0.1, 1)
     love.graphics.polygon("fill",
         23 * scale, -18 * scale,
@@ -4006,7 +4114,7 @@ local function drawGooseTile(cx, cy, size, scale, shouldWaddle)
         33 * scale, -15 * scale
     )
 
-    -- Eye (black dot)
+    -- Eye
     love.graphics.setColor(0.1, 0.1, 0.1, 1)
     love.graphics.circle("fill", 17 * scale, -17 * scale, 1.8 * scale)
 
@@ -4024,6 +4132,31 @@ local game_start_transition = {
 local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
+
+    local state = is_selected and "walk" or "idle"
+    local spr_data = pet_goose_sprites and pet_goose_sprites[state]
+    if spr_data and spr_data.image then
+        love.graphics.push("all")
+        local now = love.timer.getTime()
+        local f_idx = (math.floor(now * spr_data.fps) % spr_data.count) + 1
+        local quad = spr_data.quads[f_idx]
+
+        local icon_s = (32 * scale) / 28
+        local ox = 34
+        local oy = 18
+
+        -- Shadow
+        love.graphics.setColor(0, 0, 0, 0.22)
+        local shadow_w = 11 * icon_s
+        local shadow_h = 2.8 * icon_s
+        love.graphics.ellipse("fill", cx, cy + 13 * icon_s, shadow_w, shadow_h)
+
+        local alpha = 0.75 + 0.25 * select_factor
+        love.graphics.setColor(1, 1, 1, alpha)
+        love.graphics.draw(spr_data.image, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
+        love.graphics.pop()
+        return
+    end
 
     love.graphics.push("all")
 
@@ -4219,7 +4352,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
     if tile.value == "goose" then
         love.graphics.setColor(0.15, 0.55, 0.75, 1)
         roundedRect("fill", sx, sy, scaledW, scaledH, cr)
-        drawGooseTile(cx, cy, cs, scale, true)
+        drawGooseTile(cx, cy, cs, scale, true, tile, slideProgress, popProgress)
         if needs_tile_transform then love.graphics.pop() end
         return
     end
@@ -9803,7 +9936,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen and Pixelcave\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap

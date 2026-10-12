@@ -202,7 +202,7 @@ function love.load(args)
                 max_powerups = _G.cheat_max_powerups,
                 start_1024_classic = _G.cheat_start_1024_classic,
                 start_1024_plus = _G.cheat_start_1024_plus,
-                debug_layout = _G.cheat_debug_layout,
+                debug_layout = "None",
             })
         end
     end
@@ -429,7 +429,7 @@ function love.load(args)
     _G.cheat_max_powerups = cheat_opts.max_powerups or false
     _G.cheat_start_1024_classic = cheat_opts.start_1024_classic or false
     _G.cheat_start_1024_plus = cheat_opts.start_1024_plus or false
-    _G.cheat_debug_layout = cheat_opts.debug_layout or "None"
+    _G.cheat_debug_layout = "None"
     if _G.cheat_unlock_all_themes and _G.rebuildUnlockedThemes then
         _G.rebuildUnlockedThemes()
     end
