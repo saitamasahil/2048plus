@@ -92,7 +92,8 @@ To build the packages yourself, make sure you are in a Linux or macOS environmen
 - Easter Egg mini-game by: [SLAYKIN6_TTV](https://github.com/justaporter)
 - Adorable Animal Sprites by: [Elthen](https://elthen.itch.io/), [Pixelcave](https://pixelcave.itch.io/), and [Duckhive](https://itch.io/profile/duckhive)
 - Clock Sprite by: [AlltheturtlesGames](https://itch.io/profile/alltheturtlesgames)
-- Skull Sprites by: [NYKNCK](https://itch.io/profile/nyknck)
+- Arcade Cabinet Sprite by: [bullabit](https://bullabit.itch.io/)
+- Skull Sprite by: [NYKNCK](https://itch.io/profile/nyknck)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!

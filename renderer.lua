@@ -66,6 +66,9 @@ local clock_frames = {}
 local skull_frames = {}
 local classic_board_img = nil
 local classic_board_quads = {}
+local arcade_cabinet_off_img = nil
+local arcade_cabinet_on_img = nil
+local arcade_cabinet_on_quads = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3574,6 +3577,25 @@ function renderer.init()
             local qx = col * cell_w + pad
             local qy = row * cell_h + pad
             table.insert(classic_board_quads, love.graphics.newQuad(qx, qy, 133, 133, iw, ih))
+        end
+    end
+
+    arcade_cabinet_off_img = nil
+    arcade_cabinet_on_img = nil
+    arcade_cabinet_on_quads = {}
+    local ok_cab_off, cab_off = pcall(love.graphics.newImage, "assets/icon/arcade/cabinet01_sprite.png")
+    if ok_cab_off and cab_off then
+        cab_off:setFilter("nearest", "nearest")
+        arcade_cabinet_off_img = cab_off
+    end
+
+    local ok_cab_on, cab_on = pcall(love.graphics.newImage, "assets/icon/arcade/cabinet01-on.png")
+    if ok_cab_on and cab_on then
+        cab_on:setFilter("nearest", "nearest")
+        arcade_cabinet_on_img = cab_on
+        local fw, fh = 50, 65
+        for i = 0, 7 do
+            table.insert(arcade_cabinet_on_quads, love.graphics.newQuad(i * fw, 0, fw, fh, cab_on:getDimensions()))
         end
     end
 
@@ -8005,6 +8027,34 @@ local function drawArcadeIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     local is_selected = select_factor > 0.4
     local t = love.timer.getTime()
 
+    if arcade_cabinet_off_img and arcade_cabinet_on_img and #arcade_cabinet_on_quads > 0 then
+        love.graphics.push("all")
+
+        local icon_s = (50 * scale) / 65
+        local ox = 25
+        local oy = 32.5
+
+        -- Shadow
+        love.graphics.setColor(0, 0, 0, 0.22)
+        local shadow_w = 13 * scale
+        local shadow_h = 3.5 * scale
+        love.graphics.ellipse("fill", cx, cy + 24 * scale, shadow_w, shadow_h)
+
+        local alpha = 0.70 + 0.30 * select_factor
+        love.graphics.setColor(1, 1, 1, alpha)
+
+        if is_selected then
+            local f_idx = (math.floor(t / 0.12) % #arcade_cabinet_on_quads) + 1
+            local quad = arcade_cabinet_on_quads[f_idx]
+            love.graphics.draw(arcade_cabinet_on_img, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
+        else
+            love.graphics.draw(arcade_cabinet_off_img, cx, cy, 0, icon_s, icon_s, ox, oy)
+        end
+
+        love.graphics.pop()
+        return
+    end
+
     love.graphics.push("all")
 
     local br_r = 0.40 + (r_acc - 0.40) * select_factor
@@ -10058,7 +10108,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nSkull Sprites by NYKNCK\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap
