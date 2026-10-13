@@ -77,6 +77,7 @@ local bomb_char_explode_img = nil
 local bomb_char_explode_quads = {}
 local campfire_img = nil
 local campfire_quads = {}
+local card_anim_timers = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3579,7 +3580,7 @@ function renderer.init()
         local cell_w = 137
         local cell_h = 137
         local pad = 2
-        for i = 0, 173 do
+        for i = 1, 173 do
             local col = i % 14
             local row = math.floor(i / 14)
             local qx = col * cell_w + pad
@@ -4250,9 +4251,9 @@ local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_a
 
     local state = is_selected and "walk" or "idle"
     local spr_data = pet_goose_sprites and pet_goose_sprites[state]
+    local now = card_anim_timers["goose"] or 0
     if spr_data and spr_data.image then
         love.graphics.push("all")
-        local now = love.timer.getTime()
         local f_idx = is_selected and ((math.floor(now * (spr_data.fps * 0.65)) % spr_data.count) + 1) or 1
         local quad = spr_data.quads[f_idx]
 
@@ -4288,13 +4289,12 @@ local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_a
 
     local float_y = 0
     if is_selected then
-        float_y = math.sin(love.timer.getTime() * 2.5) * 2 * scale * select_factor
+        float_y = math.sin(now * 2.5) * 2 * scale * select_factor
     end
     cy = cy + float_y
 
-    local time = love.timer.getTime()
-    local waddleAngle = is_selected and (math.sin(time * 6) * 0.10 * select_factor) or 0
-    local waddleY = is_selected and (math.abs(math.cos(time * 6)) * 1.2 * scale * select_factor) or 0
+    local waddleAngle = is_selected and (math.sin(now * 6) * 0.10 * select_factor) or 0
+    local waddleY = is_selected and (math.abs(math.cos(now * 6)) * 1.2 * scale * select_factor) or 0
 
     love.graphics.translate(cx, cy + waddleY)
     love.graphics.rotate(waddleAngle)
@@ -6146,6 +6146,30 @@ function renderer.updateTransition(dt)
         end
     end
 
+    -- Update card animation timers only for selected card
+    local is_play_sel = (_G.appState == "PLAY_SELECT")
+    local is_arcade_sel = (_G.appState == "ARCADE_MENU")
+    local p0_sel = is_play_sel and (_G.play_select_selection or 1) or 0
+    local p1_sel = is_arcade_sel and (_G.arcade_selection or 1) or 0
+
+    local p0_modes = { "classic", "plus", "arcade" }
+    for i, m in ipairs(p0_modes) do
+        if p0_sel == i then
+            card_anim_timers[m] = (card_anim_timers[m] or 0) + dt
+        else
+            card_anim_timers[m] = 0
+        end
+    end
+
+    local p1_modes = { "clock", "huge", "skull", "goose" }
+    for i, m in ipairs(p1_modes) do
+        if p1_sel == i then
+            card_anim_timers[m] = (card_anim_timers[m] or 0) + dt
+        else
+            card_anim_timers[m] = 0
+        end
+    end
+
     -- Text size flash timer
     if text_size_flash_timer > 0 then
         text_size_flash_timer = math.max(0, text_size_flash_timer - dt)
@@ -7633,7 +7657,7 @@ local function drawStopwatch(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
     local r = 13.5 * scale
-    local t = love.timer.getTime()
+    local t = card_anim_timers["clock"] or card_anim_timers["stopwatch"] or 0
 
     love.graphics.push("all")
 
@@ -7757,7 +7781,7 @@ local function drawClockIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
 
     if clock_frames and #clock_frames > 0 then
         love.graphics.push("all")
-        local now = love.timer.getTime()
+        local now = card_anim_timers["clock"] or 0
         local f_idx = is_selected and ((math.floor(now * 2.5) % #clock_frames) + 1) or 1
         local img = clock_frames[f_idx]
 
@@ -7788,11 +7812,11 @@ end
 local function drawClassicIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local t = love.timer.getTime()
+    local t = card_anim_timers["classic"] or 0
 
     if classic_board_img and #classic_board_quads > 0 then
         love.graphics.push("all")
-        local f_idx = is_selected and ((math.floor(t / 0.140) % #classic_board_quads) + 1) or 2
+        local f_idx = is_selected and ((math.floor(t / 0.140) % #classic_board_quads) + 1) or 1
         local quad = classic_board_quads[f_idx]
 
         local icon_s = (42 * scale) / 133
@@ -7901,7 +7925,7 @@ end
 local function drawPlusIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local t = love.timer.getTime()
+    local t = card_anim_timers["plus"] or 0
 
     if bomb_char_walk_img and #bomb_char_walk_quads > 0 and bomb_char_idle_img and bomb_char_idle_quad then
         love.graphics.push("all")
@@ -8171,7 +8195,7 @@ end
 local function drawArcadeIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local t = love.timer.getTime()
+    local t = card_anim_timers["arcade"] or 0
 
     if arcade_cabinet_off_img and arcade_cabinet_on_img and #arcade_cabinet_on_quads > 0 then
         love.graphics.push("all")
@@ -8281,7 +8305,7 @@ end
 local function drawHugeGrid(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local t = love.timer.getTime()
+    local t = card_anim_timers["huge"] or 0
 
     if campfire_img and #campfire_quads > 0 then
         love.graphics.push("all")
@@ -8389,7 +8413,7 @@ end
 local function drawSkull(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local t = love.timer.getTime()
+    local t = card_anim_timers["skull"] or 0
 
     if skull_frames and #skull_frames > 0 then
         love.graphics.push("all")
