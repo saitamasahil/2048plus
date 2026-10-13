@@ -7739,7 +7739,7 @@ local function drawClassicIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc
 
     if classic_board_img and #classic_board_quads > 0 then
         love.graphics.push("all")
-        local f_idx = is_selected and ((math.floor(t / 0.100) % #classic_board_quads) + 1) or 2
+        local f_idx = is_selected and ((math.floor(t / 0.140) % #classic_board_quads) + 1) or 2
         local quad = classic_board_quads[f_idx]
 
         local icon_s = (42 * scale) / 133
@@ -8044,7 +8044,7 @@ local function drawArcadeIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
         love.graphics.setColor(1, 1, 1, alpha)
 
         if is_selected then
-            local f_idx = (math.floor(t / 0.12) % #arcade_cabinet_on_quads) + 1
+            local f_idx = (math.floor(t / 0.165) % #arcade_cabinet_on_quads) + 1
             local quad = arcade_cabinet_on_quads[f_idx]
             love.graphics.draw(arcade_cabinet_on_img, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
         else
