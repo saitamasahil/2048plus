@@ -1625,7 +1625,7 @@ function renderer.getModeDisplayName(mode)
     elseif mode == "timeattack" then
         return "Time Attack"
     elseif mode == "huge" then
-        return "Huge Mode (5x5)"
+        return "Huge Mode"
     elseif mode == "nomercy" then
         return "No Mercy Mode"
     elseif mode == "goose" then
@@ -8569,14 +8569,14 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         },
         {
             name      = "Plus Mode",
-            desc      = "Adds powerups: Undo, Shuffle, and Block Cleanup.",
+            desc      = "Adds powerups: Undo, Swap, and Bomb.",
             icon      = "plus",
             bestScore = save.loadHighScore("plus"),
             accentR = 0.95, accentG = 0.60, accentB = 0.10,
         },
         {
             name      = "Arcade Mode",
-            desc      = "Time Attack, 5x5, Goose, and No Mercy.",
+            desc      = "Time Attack, Huge, Goose, and No Mercy.",
             icon      = "arcade",
             bestScore = 0,
             accentR = 0.90, accentG = 0.15, accentB = 0.55,
@@ -8809,7 +8809,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
             accentR = 0.95, accentG = 0.80, accentB = 0.10,
         },
         {
-            name        = "Huge Mode (5x5)",
+            name        = "Huge Mode",
             desc        = "Relaxed play. Standard achievements disabled.",
             icon        = "huge",
             bestScore   = save.loadHighScore("huge"),
