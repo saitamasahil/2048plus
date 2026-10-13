@@ -39,6 +39,7 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 - Clock Sprite by: [AlltheturtlesGames](https://itch.io/profile/alltheturtlesgames)
 - Arcade Cabinet Sprite by: [bullabit](https://bullabit.itch.io/)
 - Skull Sprite by: [NYKNCK](https://itch.io/profile/nyknck)
+- Bomb Sprite by: [CazBee](https://itch.io/profile/caz-bee)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!

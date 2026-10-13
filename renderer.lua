@@ -69,6 +69,12 @@ local classic_board_quads = {}
 local arcade_cabinet_off_img = nil
 local arcade_cabinet_on_img = nil
 local arcade_cabinet_on_quads = {}
+local bomb_char_idle_img = nil
+local bomb_char_idle_quad = nil
+local bomb_char_walk_img = nil
+local bomb_char_walk_quads = {}
+local bomb_char_explode_img = nil
+local bomb_char_explode_quads = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3596,6 +3602,39 @@ function renderer.init()
         local fw, fh = 50, 65
         for i = 0, 7 do
             table.insert(arcade_cabinet_on_quads, love.graphics.newQuad(i * fw, 0, fw, fh, cab_on:getDimensions()))
+        end
+    end
+
+    bomb_char_idle_img = nil
+    bomb_char_idle_quad = nil
+    bomb_char_walk_img = nil
+    bomb_char_walk_quads = {}
+    local ok_b_idle, b_idle = pcall(love.graphics.newImage, "assets/icon/bomb/bomb_character_o_idle.png")
+    if ok_b_idle and b_idle then
+        b_idle:setFilter("nearest", "nearest")
+        bomb_char_idle_img = b_idle
+        bomb_char_idle_quad = love.graphics.newQuad(0, 0, 64, 64, b_idle:getDimensions())
+    end
+
+    local ok_b_walk, b_walk = pcall(love.graphics.newImage, "assets/icon/bomb/bomb_character_o_walk.png")
+    if ok_b_walk and b_walk then
+        b_walk:setFilter("nearest", "nearest")
+        bomb_char_walk_img = b_walk
+        local fw, fh = 64, 64
+        for i = 0, 5 do
+            table.insert(bomb_char_walk_quads, love.graphics.newQuad(i * fw, 0, fw, fh, b_walk:getDimensions()))
+        end
+    end
+
+    bomb_char_explode_img = nil
+    bomb_char_explode_quads = {}
+    local ok_b_exp, b_exp = pcall(love.graphics.newImage, "assets/icon/bomb/bomb_character_o_explode.png")
+    if ok_b_exp and b_exp then
+        b_exp:setFilter("nearest", "nearest")
+        bomb_char_explode_img = b_exp
+        local fw, fh = 64, 64
+        for i = 0, 3 do
+            table.insert(bomb_char_explode_quads, love.graphics.newQuad(i * fw, 0, fw, fh, b_exp:getDimensions()))
         end
     end
 
@@ -7705,7 +7744,7 @@ local function drawClockIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     if clock_frames and #clock_frames > 0 then
         love.graphics.push("all")
         local now = love.timer.getTime()
-        local f_idx = is_selected and ((math.floor(now * 4) % #clock_frames) + 1) or 1
+        local f_idx = is_selected and ((math.floor(now * 2.5) % #clock_frames) + 1) or 1
         local img = clock_frames[f_idx]
 
         if img then
@@ -7848,8 +7887,101 @@ end
 local function drawPlusIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local r = 14 * scale
     local t = love.timer.getTime()
+
+    if bomb_char_walk_img and #bomb_char_walk_quads > 0 and bomb_char_idle_img and bomb_char_idle_quad then
+        love.graphics.push("all")
+        local icon_s = (42 * scale) / 32
+        local ox = 33
+        local oy = 36.5
+
+        local alpha = 0.70 + 0.30 * select_factor
+
+        if not is_selected then
+            -- Shadow
+            love.graphics.setColor(0, 0, 0, 0.22)
+            local shadow_w = 11 * scale
+            local shadow_h = 2.8 * scale
+            love.graphics.ellipse("fill", cx, cy + 18 * scale, shadow_w, shadow_h)
+
+            love.graphics.setColor(1, 1, 1, alpha)
+            love.graphics.draw(bomb_char_idle_img, bomb_char_idle_quad, cx, cy, 0, icon_s, icon_s, ox, oy)
+        else
+            local cycle = t % 2.6
+            local shake_x = 0
+            local draw_img = bomb_char_walk_img
+            local draw_quad = bomb_char_walk_quads[1]
+            local cur_scale = icon_s
+            local shadow_alpha = 0.22
+
+            local blast_phase = false
+            local smoke_phase = false
+            local smoke_progress = 0
+
+            if cycle < 1.40 then
+                -- Walk
+                local f_idx = (math.floor(cycle / 0.12) % #bomb_char_walk_quads) + 1
+                draw_img = bomb_char_walk_img
+                draw_quad = bomb_char_walk_quads[f_idx]
+            elseif cycle < 1.70 then
+                -- Squash anticipation
+                draw_img = bomb_char_explode_img
+                draw_quad = bomb_char_explode_quads and bomb_char_explode_quads[1]
+                shake_x = math.sin((cycle - 1.40) * 50) * 1.5 * scale
+            elseif cycle < 1.95 then
+                -- Blast
+                draw_img = bomb_char_explode_img
+                draw_quad = bomb_char_explode_quads and bomb_char_explode_quads[2]
+                shadow_alpha = 0.10
+                blast_phase = true
+            elseif cycle < 2.25 then
+                -- Smoke
+                draw_img = bomb_char_explode_img
+                draw_quad = bomb_char_explode_quads and bomb_char_explode_quads[3]
+                shadow_alpha = 0.05
+                smoke_phase = true
+                smoke_progress = (cycle - 1.95) / 0.30
+            elseif cycle < 2.40 then
+                -- Cleared gap
+                draw_img = nil
+                shadow_alpha = 0
+            else
+                -- Respawn pop
+                local p = (cycle - 2.40) / 0.20
+                cur_scale = icon_s * (0.5 + 0.5 * math.sin(p * math.pi * 0.5))
+                draw_img = bomb_char_idle_img
+                draw_quad = bomb_char_idle_quad
+                shadow_alpha = 0.22 * p
+            end
+
+            if shadow_alpha > 0 then
+                love.graphics.setColor(0, 0, 0, shadow_alpha)
+                local shadow_w = 11 * scale
+                local shadow_h = 2.8 * scale
+                love.graphics.ellipse("fill", cx, cy + 18 * scale, shadow_w, shadow_h)
+            end
+
+            if blast_phase then
+                love.graphics.setColor(1.0, 0.58, 0.12, 0.85 * alpha)
+                love.graphics.circle("fill", cx, cy, 14 * scale)
+                love.graphics.setColor(1.0, 0.95, 0.35, 0.95 * alpha)
+                love.graphics.circle("fill", cx, cy, 8 * scale)
+            elseif smoke_phase then
+                love.graphics.setColor(0.65, 0.65, 0.70, (1 - smoke_progress) * 0.35 * alpha)
+                love.graphics.circle("fill", cx, cy, (10 + 5 * smoke_progress) * scale)
+            end
+
+            if draw_img and draw_quad then
+                love.graphics.setColor(1, 1, 1, alpha)
+                love.graphics.draw(draw_img, draw_quad, cx + shake_x, cy, 0, cur_scale, cur_scale, ox, oy)
+            end
+        end
+
+        love.graphics.pop()
+        return
+    end
+
+    local r = 14 * scale
 
     love.graphics.push("all")
 
@@ -10108,7 +10240,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nBomb Sprite by CazBee\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap
