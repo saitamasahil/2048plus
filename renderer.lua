@@ -62,7 +62,7 @@ local pet_cat_stretch_frames = {}
 
 local pet_dog_breed_frames = {}
 local pet_goose_sprites = {}
-local sandclock_frames = {}
+local clock_frames = {}
 local skull_frames = {}
 local classic_board_img = nil
 local classic_board_quads = {}
@@ -3541,12 +3541,12 @@ function renderer.init()
         end
     end
 
-    sandclock_frames = {}
-    for i = 1, 5 do
-        local ok_sc, sc_img = pcall(love.graphics.newImage, "assets/icon/sandclock/" .. i .. ".png")
-        if ok_sc and sc_img then
-            sc_img:setFilter("nearest", "nearest")
-            table.insert(sandclock_frames, sc_img)
+    clock_frames = {}
+    for i = 0, 3 do
+        local ok_c, c_img = pcall(love.graphics.newImage, "assets/icon/clock/clock" .. i .. ".png")
+        if ok_c and c_img then
+            c_img:setFilter("nearest", "nearest")
+            table.insert(clock_frames, c_img)
         end
     end
 
@@ -7676,26 +7676,26 @@ local function drawStopwatch(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     love.graphics.pop()
 end
 
-local function drawSandclock(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
+local function drawClockIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
 
-    if sandclock_frames and #sandclock_frames > 0 then
+    if clock_frames and #clock_frames > 0 then
         love.graphics.push("all")
         local now = love.timer.getTime()
-        local f_idx = is_selected and ((math.floor(now * 7) % #sandclock_frames) + 1) or 1
-        local img = sandclock_frames[f_idx]
+        local f_idx = is_selected and ((math.floor(now * 4) % #clock_frames) + 1) or 1
+        local img = clock_frames[f_idx]
 
         if img then
-            local icon_s = (34 * scale) / 58
-            local ox = 31
-            local oy = 32
+            local icon_s = (36 * scale) / 48
+            local ox = 24
+            local oy = 24
 
             -- Shadow
             love.graphics.setColor(0, 0, 0, 0.22)
             local shadow_w = 11 * scale
-            local shadow_h = 2.6 * scale
-            love.graphics.ellipse("fill", cx, cy + 17 * scale, shadow_w, shadow_h)
+            local shadow_h = 2.8 * scale
+            love.graphics.ellipse("fill", cx, cy + 15 * scale, shadow_w, shadow_h)
 
             local alpha = 0.70 + 0.30 * select_factor
             love.graphics.setColor(1, 1, 1, alpha)
@@ -8554,7 +8554,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         {
             name        = "Time Attack",
             desc        = "Race the clock! Merge tiles for extra time.",
-            icon        = "sandclock",
+            icon        = "clock",
             bestScore   = save.loadHighScore("timeattack"),
             available   = true,
             accentR = 0.95, accentG = 0.80, accentB = 0.10,
@@ -8698,8 +8698,8 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         -- Icon
         local icon_cx = cx_pos + math.floor(28 * scale)
         local icon_cy = name_y + math.floor(font_score:getHeight() / 2) + math.floor(8 * scale)
-        if mode.icon == "sandclock" or mode.icon == "stopwatch" then
-            drawSandclock(icon_cx, icon_cy, scale, select_factor, mode.accentR, mode.accentG, mode.accentB)
+        if mode.icon == "clock" or mode.icon == "stopwatch" then
+            drawClockIcon(icon_cx, icon_cy, scale, select_factor, mode.accentR, mode.accentG, mode.accentB)
         elseif mode.icon == "huge" then
             drawHugeGrid(icon_cx, icon_cy, scale, select_factor, mode.accentR, mode.accentG, mode.accentB)
         elseif mode.icon == "skull" then
@@ -10058,7 +10058,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nSandclock & Skull Sprites by NYKNCK\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nSkull Sprites by NYKNCK\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap
