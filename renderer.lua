@@ -75,6 +75,8 @@ local bomb_char_walk_img = nil
 local bomb_char_walk_quads = {}
 local bomb_char_explode_img = nil
 local bomb_char_explode_quads = {}
+local campfire_img = nil
+local campfire_quads = {}
 
 local badge_canvas = nil
 local badge_quad = nil
@@ -3638,6 +3640,18 @@ function renderer.init()
         end
     end
 
+    campfire_img = nil
+    campfire_quads = {}
+    local ok_camp, c_img = pcall(love.graphics.newImage, "assets/icon/campfire/campfire.png")
+    if ok_camp and c_img then
+        c_img:setFilter("nearest", "nearest")
+        campfire_img = c_img
+        local fw, fh = 64, 64
+        for i = 0, 23 do
+            table.insert(campfire_quads, love.graphics.newQuad(i * fw, 0, fw, fh, c_img:getDimensions()))
+        end
+    end
+
     -- Load store item icons & achievement icons
     item_icons = {}
     achievement_icons = {}
@@ -4239,7 +4253,7 @@ local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_a
     if spr_data and spr_data.image then
         love.graphics.push("all")
         local now = love.timer.getTime()
-        local f_idx = is_selected and ((math.floor(now * spr_data.fps) % spr_data.count) + 1) or 1
+        local f_idx = is_selected and ((math.floor(now * (spr_data.fps * 0.65)) % spr_data.count) + 1) or 1
         local quad = spr_data.quads[f_idx]
 
         local icon_s = (32 * scale) / 28
@@ -4274,13 +4288,13 @@ local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_a
 
     local float_y = 0
     if is_selected then
-        float_y = math.sin(love.timer.getTime() * 4) * 2 * scale * select_factor
+        float_y = math.sin(love.timer.getTime() * 2.5) * 2 * scale * select_factor
     end
     cy = cy + float_y
 
     local time = love.timer.getTime()
-    local waddleAngle = is_selected and (math.sin(time * 10) * 0.10 * select_factor) or 0
-    local waddleY = is_selected and (math.abs(math.cos(time * 10)) * 1.2 * scale * select_factor) or 0
+    local waddleAngle = is_selected and (math.sin(time * 6) * 0.10 * select_factor) or 0
+    local waddleY = is_selected and (math.abs(math.cos(time * 6)) * 1.2 * scale * select_factor) or 0
 
     love.graphics.translate(cx, cy + waddleY)
     love.graphics.rotate(waddleAngle)
@@ -7907,7 +7921,7 @@ local function drawPlusIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
             love.graphics.setColor(1, 1, 1, alpha)
             love.graphics.draw(bomb_char_idle_img, bomb_char_idle_quad, cx, cy, 0, icon_s, icon_s, ox, oy)
         else
-            local cycle = t % 2.6
+            local cycle = t % 3.45
             local shake_x = 0
             local draw_img = bomb_char_walk_img
             local draw_quad = bomb_char_walk_quads[1]
@@ -7918,36 +7932,36 @@ local function drawPlusIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
             local smoke_phase = false
             local smoke_progress = 0
 
-            if cycle < 1.40 then
+            if cycle < 1.80 then
                 -- Walk
-                local f_idx = (math.floor(cycle / 0.12) % #bomb_char_walk_quads) + 1
+                local f_idx = (math.floor(cycle / 0.16) % #bomb_char_walk_quads) + 1
                 draw_img = bomb_char_walk_img
                 draw_quad = bomb_char_walk_quads[f_idx]
-            elseif cycle < 1.70 then
+            elseif cycle < 2.20 then
                 -- Squash anticipation
                 draw_img = bomb_char_explode_img
                 draw_quad = bomb_char_explode_quads and bomb_char_explode_quads[1]
-                shake_x = math.sin((cycle - 1.40) * 50) * 1.5 * scale
-            elseif cycle < 1.95 then
+                shake_x = math.sin((cycle - 1.80) * 40) * 1.5 * scale
+            elseif cycle < 2.55 then
                 -- Blast
                 draw_img = bomb_char_explode_img
                 draw_quad = bomb_char_explode_quads and bomb_char_explode_quads[2]
                 shadow_alpha = 0.10
                 blast_phase = true
-            elseif cycle < 2.25 then
+            elseif cycle < 2.95 then
                 -- Smoke
                 draw_img = bomb_char_explode_img
                 draw_quad = bomb_char_explode_quads and bomb_char_explode_quads[3]
                 shadow_alpha = 0.05
                 smoke_phase = true
-                smoke_progress = (cycle - 1.95) / 0.30
-            elseif cycle < 2.40 then
+                smoke_progress = (cycle - 2.55) / 0.40
+            elseif cycle < 3.15 then
                 -- Cleared gap
                 draw_img = nil
                 shadow_alpha = 0
             else
                 -- Respawn pop
-                local p = (cycle - 2.40) / 0.20
+                local p = (cycle - 3.15) / 0.30
                 cur_scale = icon_s * (0.5 + 0.5 * math.sin(p * math.pi * 0.5))
                 draw_img = bomb_char_idle_img
                 draw_quad = bomb_char_idle_quad
@@ -8267,8 +8281,45 @@ end
 local function drawHugeGrid(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     select_factor = select_factor or 0.0
     local is_selected = select_factor > 0.4
-    local r = 14 * scale
     local t = love.timer.getTime()
+
+    if campfire_img and #campfire_quads > 0 then
+        love.graphics.push("all")
+        local icon_s = (36 * scale) / 48
+        local ox = 32.5
+        local oy = 32
+
+        -- Ground shadow
+        love.graphics.setColor(0, 0, 0, 0.22)
+        local shadow_w = 9.5 * scale
+        local shadow_h = 2.4 * scale
+        love.graphics.ellipse("fill", cx, cy + 13 * scale, shadow_w, shadow_h)
+
+        if is_selected then
+            -- Ambient warm glow
+            local pulse = 0.85 + 0.15 * math.sin(t * 8)
+            love.graphics.setColor(1.0, 0.50, 0.10, 0.18 * select_factor * pulse)
+            love.graphics.circle("fill", cx, cy + 4 * scale, 13 * scale)
+            love.graphics.setColor(1.0, 0.80, 0.20, 0.12 * select_factor * pulse)
+            love.graphics.circle("fill", cx, cy + 5 * scale, 7 * scale)
+
+            -- Animate flames
+            local f_idx = (math.floor(t / 0.11) % #campfire_quads) + 1
+            local quad = campfire_quads[f_idx]
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(campfire_img, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
+        else
+            -- Calm low flame pose
+            local alpha = 0.70 + 0.30 * select_factor
+            love.graphics.setColor(1, 1, 1, alpha)
+            love.graphics.draw(campfire_img, campfire_quads[1], cx, cy, 0, icon_s, icon_s, ox, oy)
+        end
+
+        love.graphics.pop()
+        return
+    end
+
+    local r = 14 * scale
 
     love.graphics.push("all")
 
@@ -8342,7 +8393,7 @@ local function drawSkull(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
 
     if skull_frames and #skull_frames > 0 then
         love.graphics.push("all")
-        local f_idx = is_selected and ((math.floor(t * 5) % #skull_frames) + 1) or 1
+        local f_idx = is_selected and ((math.floor(t * 3.2) % #skull_frames) + 1) or 1
         local img = skull_frames[f_idx]
 
         if img then
@@ -8743,7 +8794,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         },
         {
             name        = "Huge Mode (5x5)",
-            desc        = "Spacious 5x5 board. Own achievements only.",
+            desc        = "Relaxed play. Standard achievements disabled.",
             icon        = "huge",
             bestScore   = save.loadHighScore("huge"),
             available   = true,
@@ -10240,7 +10291,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nBomb Sprite by CazBee\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nBomb Sprite by CazBee\nCampfire Sprite by SMStudios\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap

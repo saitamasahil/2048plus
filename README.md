@@ -95,6 +95,7 @@ To build the packages yourself, make sure you are in a Linux or macOS environmen
 - Arcade Cabinet Sprite by: [bullabit](https://bullabit.itch.io/)
 - Skull Sprite by: [NYKNCK](https://itch.io/profile/nyknck)
 - Bomb Sprite by: [CazBee](https://itch.io/profile/caz-bee)
+- Campfire Sprite by: [SMStudios](https://itch.io/profile/simon-develop)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!
