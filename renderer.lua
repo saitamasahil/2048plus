@@ -7782,7 +7782,7 @@ local function drawClockIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
     if clock_frames and #clock_frames > 0 then
         love.graphics.push("all")
         local now = card_anim_timers["clock"] or 0
-        local f_idx = is_selected and ((math.floor(now * 2.5) % #clock_frames) + 1) or 1
+        local f_idx = is_selected and ((math.floor(now * 1.2) % #clock_frames) + 1) or 1
         local img = clock_frames[f_idx]
 
         if img then
@@ -8320,15 +8320,7 @@ local function drawHugeGrid(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
         love.graphics.ellipse("fill", cx, cy + 13 * scale, shadow_w, shadow_h)
 
         if is_selected then
-            -- Ambient warm glow
-            local pulse = 0.85 + 0.15 * math.sin(t * 8)
-            love.graphics.setColor(1.0, 0.50, 0.10, 0.18 * select_factor * pulse)
-            love.graphics.circle("fill", cx, cy + 4 * scale, 13 * scale)
-            love.graphics.setColor(1.0, 0.80, 0.20, 0.12 * select_factor * pulse)
-            love.graphics.circle("fill", cx, cy + 5 * scale, 7 * scale)
-
-            -- Animate flames
-            local f_idx = (math.floor(t / 0.11) % #campfire_quads) + 1
+            local f_idx = (math.floor(t / 0.18) % #campfire_quads) + 1
             local quad = campfire_quads[f_idx]
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.draw(campfire_img, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
