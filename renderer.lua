@@ -3554,7 +3554,7 @@ function renderer.init()
 
     clock_frames = {}
     for i = 0, 3 do
-        local ok_c, c_img = pcall(love.graphics.newImage, "assets/icon/clock/clock" .. i .. ".png")
+        local ok_c, c_img = pcall(love.graphics.newImage, "assets/ui/clock/clock" .. i .. ".png")
         if ok_c and c_img then
             c_img:setFilter("nearest", "nearest")
             table.insert(clock_frames, c_img)
@@ -3563,7 +3563,7 @@ function renderer.init()
 
     skull_frames = {}
     for i = 1, 2 do
-        local ok_sk, sk_img = pcall(love.graphics.newImage, "assets/icon/skull/" .. i .. ".png")
+        local ok_sk, sk_img = pcall(love.graphics.newImage, "assets/ui/skull/" .. i .. ".png")
         if ok_sk and sk_img then
             sk_img:setFilter("nearest", "nearest")
             table.insert(skull_frames, sk_img)
@@ -3571,7 +3571,7 @@ function renderer.init()
     end
 
     classic_board_quads = {}
-    local ok_cb, cb_img = pcall(love.graphics.newImage, "assets/icon/classic_board_sheet.png")
+    local ok_cb, cb_img = pcall(love.graphics.newImage, "assets/ui/board/classic_board_sheet.png")
     if ok_cb and cb_img then
         cb_img:setFilter("nearest", "nearest")
         classic_board_img = cb_img
@@ -3591,13 +3591,13 @@ function renderer.init()
     arcade_cabinet_off_img = nil
     arcade_cabinet_on_img = nil
     arcade_cabinet_on_quads = {}
-    local ok_cab_off, cab_off = pcall(love.graphics.newImage, "assets/icon/arcade/cabinet01_sprite.png")
+    local ok_cab_off, cab_off = pcall(love.graphics.newImage, "assets/ui/arcade/cabinet01_sprite.png")
     if ok_cab_off and cab_off then
         cab_off:setFilter("nearest", "nearest")
         arcade_cabinet_off_img = cab_off
     end
 
-    local ok_cab_on, cab_on = pcall(love.graphics.newImage, "assets/icon/arcade/cabinet01-on.png")
+    local ok_cab_on, cab_on = pcall(love.graphics.newImage, "assets/ui/arcade/cabinet01-on.png")
     if ok_cab_on and cab_on then
         cab_on:setFilter("nearest", "nearest")
         arcade_cabinet_on_img = cab_on
@@ -3611,14 +3611,14 @@ function renderer.init()
     bomb_char_idle_quad = nil
     bomb_char_walk_img = nil
     bomb_char_walk_quads = {}
-    local ok_b_idle, b_idle = pcall(love.graphics.newImage, "assets/icon/bomb/bomb_character_o_idle.png")
+    local ok_b_idle, b_idle = pcall(love.graphics.newImage, "assets/ui/bomb/bomb_character_o_idle.png")
     if ok_b_idle and b_idle then
         b_idle:setFilter("nearest", "nearest")
         bomb_char_idle_img = b_idle
         bomb_char_idle_quad = love.graphics.newQuad(0, 0, 64, 64, b_idle:getDimensions())
     end
 
-    local ok_b_walk, b_walk = pcall(love.graphics.newImage, "assets/icon/bomb/bomb_character_o_walk.png")
+    local ok_b_walk, b_walk = pcall(love.graphics.newImage, "assets/ui/bomb/bomb_character_o_walk.png")
     if ok_b_walk and b_walk then
         b_walk:setFilter("nearest", "nearest")
         bomb_char_walk_img = b_walk
@@ -3630,7 +3630,7 @@ function renderer.init()
 
     bomb_char_explode_img = nil
     bomb_char_explode_quads = {}
-    local ok_b_exp, b_exp = pcall(love.graphics.newImage, "assets/icon/bomb/bomb_character_o_explode.png")
+    local ok_b_exp, b_exp = pcall(love.graphics.newImage, "assets/ui/bomb/bomb_character_o_explode.png")
     if ok_b_exp and b_exp then
         b_exp:setFilter("nearest", "nearest")
         bomb_char_explode_img = b_exp
@@ -3642,7 +3642,7 @@ function renderer.init()
 
     campfire_img = nil
     campfire_quads = {}
-    local ok_camp, c_img = pcall(love.graphics.newImage, "assets/icon/campfire/campfire.png")
+    local ok_camp, c_img = pcall(love.graphics.newImage, "assets/ui/campfire/campfire.png")
     if ok_camp and c_img then
         c_img:setFilter("nearest", "nearest")
         campfire_img = c_img
