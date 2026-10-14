@@ -1616,7 +1616,7 @@ function love.update(dt)
                         game:startSwapTargeting()
                     end)
                 end
-            elseif event == input.events.R1 or event == input.events.X then
+            elseif event == input.events.R1 then
                 if game.mode == "plus" and game.powerups.bomb <= 0 then
                     renderer.showToast("No Bomb Powerup!")
                 else
