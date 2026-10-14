@@ -41,8 +41,9 @@ build_muos() {
     rm -rf "$WORKDIR" "$OUTPUT"
     mkdir -p "$WORKDIR/$APP_NAME/.game"
 
-    # Copy launcher script
+    # Copy launcher script and language file
     cp "$PROJECT_ROOT/mux_launch.sh" "$WORKDIR/$APP_NAME/"
+    [ -f "$PROJECT_ROOT/mux_lang.ini" ] && cp "$PROJECT_ROOT/mux_lang.ini" "$WORKDIR/$APP_NAME/"
 
     # Copy all Lua source files
     cp "$PROJECT_ROOT/"*.lua "$WORKDIR/$APP_NAME/.game/"
@@ -98,6 +99,7 @@ build_portmaster() {
       --exclude="banner.png" \
       --exclude="licenses" \
       --exclude="portmaster" \
+      --exclude="mux_*" \
       "$PROJECT_ROOT/" "$TMP_STAGE/gamedata/" > /dev/null
 
     tar -czf "$TMP_STAGE/gamedata.tar.gz" -C "$TMP_STAGE" gamedata
