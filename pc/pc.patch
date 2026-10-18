@@ -452,57 +452,6 @@
          right_x = right_x - key_w
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2
-@@ -12406,10 +12453,21 @@
-         end
- 
-         -- Close button
--        local btn_w = math.floor(136 * scale)
-         local btn_h = math.floor(32 * scale)
--        local btn_x = mx + math.floor((mw - btn_w) / 2)
-         local btn_y = my + mh - btn_h - math.floor(12 * scale)
-+        local k_sz = math.floor(24 * scale)
-+        local ky = btn_y + math.floor((btn_h - k_sz) / 2)
-+        local pill_center_y = btn_y + math.floor(btn_h / 2)
-+
-+        local btn_label = "Close"
-+        love.graphics.setFont(font_help_label)
-+        local btn_label_w = font_help_label:getWidth(btn_label)
-+        local gap = math.floor(8 * scale)
-+        local key_prompt = renderer.getButtonPrompt("B")
-+        local key_w = math.max(k_sz, font_help_key:getWidth(key_prompt) + math.floor(12 * scale))
-+        local total_content_w = key_w + gap + btn_label_w
-+        local btn_w = math.max(math.floor(136 * scale), total_content_w + math.floor(28 * scale))
-+        local btn_x = mx + math.floor((mw - btn_w) / 2)
- 
-         if is_light_theme then
-             love.graphics.setColor(1.0, 1.0, 1.0, 0.70 * card_alpha)
-@@ -12425,24 +12483,14 @@
-             roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
-         end
- 
--        local k_sz = math.floor(24 * scale)
--        local ky = btn_y + math.floor((btn_h - k_sz) / 2)
--        local pill_center_y = btn_y + math.floor(btn_h / 2)
--
--        local btn_label = "Close"
--        love.graphics.setFont(font_help_label)
--        local btn_label_w = font_help_label:getWidth(btn_label)
--        local gap = math.floor(8 * scale)
--        local total_content_w = k_sz + gap + btn_label_w
-         local start_btn_x = btn_x + math.floor((btn_w - total_content_w) / 2)
--
--        drawKeyBadge("B", start_btn_x, ky, k_sz, k_sz, card_alpha)
-+        drawKeyBadge("B", start_btn_x, ky, key_w, k_sz, card_alpha)
- 
-         local label_fh = font_help_label:getHeight()
-         local label_y = pill_center_y - math.floor(label_fh / 2) - math.max(1, math.floor(1 * scale))
-         love.graphics.setFont(font_help_label)
-         love.graphics.setColor(text_title)
--        love.graphics.print(btn_label, start_btn_x + k_sz + gap, label_y)
-+        love.graphics.print(btn_label, start_btn_x + key_w + gap, label_y)
- 
-         love.graphics.pop()
-     end
 --- a/sound.lua
 +++ b/sound.lua
 @@ -419,7 +419,9 @@
