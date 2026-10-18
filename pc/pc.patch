@@ -1,0 +1,443 @@
+--- a/conf.lua
++++ b/conf.lua
+@@ -1,4 +1,5 @@
+ function love.conf(t)
++    t.identity = "2048plus"
+     t.version = "11.5"
+     t.console = false
+ 
+@@ -7,7 +8,9 @@
+     t.window.width = 640
+     t.window.height = 480
+     t.window.borderless = false
+-    t.window.resizable = false
++    t.window.resizable = true
++    t.window.fullscreen = true
++    t.window.fullscreentype = "desktop"
+     t.window.vsync = 1
+     t.window.display = 1
+     t.window.highdpi = true
+@@ -16,7 +19,7 @@
+ 
+     t.modules.thread = false
+     t.modules.audio = true
+-    t.modules.mouse = false
++    t.modules.mouse = true
+     t.modules.physics = false
+     t.modules.sound = true
+     t.modules.touch = true
+--- a/globals.lua
++++ b/globals.lua
+@@ -55,6 +55,8 @@
+ _G.time_attack_time = 60
+ _G.vibration = true
+ _G.merge_fx = "default"
++_G.controls_help = "auto"
++_G.input_mode = "keyboard"
+ 
+ -- Achievements and Unlockables
+ _G.achievements = {
+--- a/save.lua
++++ b/save.lua
+@@ -661,4 +661,28 @@
+     return s ~= 1 and s ~= 2
+ end
+ 
++local CONTROLS_HELP_FILE = "controls_help.dat"
++
++function save.saveControlsHelp(mode)
++    local path = getFilePath(CONTROLS_HELP_FILE)
++    local file = io.open(path, "w")
++    if file then
++        file:write(mode)
++        file:close()
++    end
++end
++
++function save.loadControlsHelp()
++    local path = getFilePath(CONTROLS_HELP_FILE)
++    local file = io.open(path, "r")
++    if file then
++        local content = file:read("*all")
++        file:close()
++        if content and content ~= "" then
++            return content
++        end
++    end
++    return "auto"
++end
++
+ return save
+--- a/input.lua
++++ b/input.lua
+@@ -117,6 +117,16 @@
+ end
+ 
+ function love.keypressed(key)
++    if key == "f11" then
++        if love.window then
++            love.window.setFullscreen(not love.window.getFullscreen())
++        end
++    end
++
++    if _G.controls_help == "auto" then
++        _G.input_mode = "keyboard"
++    end
++
+     local triggered = false
+     for event_name, k in pairs(input.events) do
+         if key == k then
+@@ -214,6 +224,10 @@
+ end
+ 
+ function love.gamepadpressed(js, button)
++    if _G.controls_help == "auto" then
++        _G.input_mode = "gamepad"
++    end
++
+     local event = input.joystick_mapping[button]
+     if event then
+         input.state[event] = true
+--- a/main.lua
++++ b/main.lua
+@@ -59,7 +59,7 @@
+ 
+ local function captureOldScreen()
+     local w, h = love.graphics.getDimensions()
+-    if not old_screen_canvas then
++    if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
+         old_screen_canvas = love.graphics.newCanvas(w, h)
+     end
+     love.graphics.setCanvas({old_screen_canvas, stencil = true})
+@@ -83,6 +83,9 @@
+ end
+ 
+ function love.load(args)
++    if love.mouse then
++        love.mouse.setVisible(false)
++    end
+     love.math.setRandomSeed(os.time())
+ 
+     -- Handle resolution arguments (same pattern as Scrappy)
+@@ -107,12 +110,12 @@
+ 
+     update_ui_scale()
+ 
+-    -- Initialize save system (high scores stored in static/ dir)
++    -- Initialize save system (standard OS save folder on PC, /tmp on Web)
+     if love.system.getOS() == "Web" then
+         save.init("/tmp")
+     else
+-        _G.WORK_DIR = love.filesystem.getWorkingDirectory() or "."
+-        save.init(_G.WORK_DIR .. "/static")
++        local save_dir = love.filesystem.getSaveDirectory()
++        save.init(save_dir)
+     end
+ 
+     sound.init()
+@@ -440,6 +443,7 @@
+     _G.time_attack_time = save.loadTimeAttackTime() or 60
+     _G.vibration = save.loadVibration()
+     _G.crt_filter = save.loadCrtFilter()
++    _G.controls_help = save.loadControlsHelp() or "auto"
+     _G.merge_fx = "default"
+     _G.board_skin = save.loadBoardSkin() or "default"
+ 
+@@ -1436,7 +1440,7 @@
+                         sound.playMenuBack()
+                         if _G.screen_transitions then
+                             local w, h = love.graphics.getDimensions()
+-                            if not old_screen_canvas then
++                            if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
+                                 old_screen_canvas = love.graphics.newCanvas(w, h)
+                             end
+                             love.graphics.setCanvas({old_screen_canvas, stencil = true})
+@@ -1460,7 +1464,7 @@
+                         sound.playMenuSelect()
+                         if _G.screen_transitions then
+                             local w, h = love.graphics.getDimensions()
+-                            if not old_screen_canvas then
++                            if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
+                                 old_screen_canvas = love.graphics.newCanvas(w, h)
+                             end
+                             love.graphics.setCanvas({old_screen_canvas, stencil = true})
+@@ -1524,7 +1528,16 @@
+                         _G.crt_filter = not _G.crt_filter
+                         save.saveCrtFilter(_G.crt_filter)
+                         sound.playMenuSelect()
+-
++                    elseif sel:match("^Control Hints") then
++                        sound.playMenuSelect()
++                        if _G.controls_help == "auto" then
++                            _G.controls_help = "gamepad"
++                        elseif _G.controls_help == "gamepad" then
++                            _G.controls_help = "keyboard"
++                        else
++                            _G.controls_help = "auto"
++                        end
++                        save.saveControlsHelp(_G.controls_help)
+                     elseif sel == "Back" then
+                         sound.playMenuBack()
+                         queueTransitionAction(event, 0.08, function()
+@@ -1537,7 +1550,7 @@
+                 if _G.settings_page == "audio" then
+                     if _G.screen_transitions then
+                         local w, h = love.graphics.getDimensions()
+-                        if not old_screen_canvas then
++                        if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
+                             old_screen_canvas = love.graphics.newCanvas(w, h)
+                         end
+                         love.graphics.setCanvas({old_screen_canvas, stencil = true})
+@@ -2096,3 +2109,8 @@
+     end
+     os.exit()
+ end
++
++function love.resize(w, h)
++    _G.update_ui_scale()
++    renderer.init()
++end
+--- a/renderer.lua
++++ b/renderer.lua
+@@ -152,7 +152,7 @@
+ 
+ function renderer.captureOldTutorialSlide(page)
+     local w, h = love.graphics.getDimensions()
+-    if not tutorial_old_canvas then
++    if not tutorial_old_canvas or tutorial_old_canvas:getWidth() ~= w or tutorial_old_canvas:getHeight() ~= h then
+         tutorial_old_canvas = love.graphics.newCanvas(w, h)
+     end
+     love.graphics.setCanvas({tutorial_old_canvas, stencil = true})
+@@ -163,7 +163,7 @@
+ 
+ function renderer.captureOldAchievementsSlide(tab)
+     local w, h = love.graphics.getDimensions()
+-    if not achievements_old_canvas then
++    if not achievements_old_canvas or achievements_old_canvas:getWidth() ~= w or achievements_old_canvas:getHeight() ~= h then
+         achievements_old_canvas = love.graphics.newCanvas(w, h)
+     end
+     love.graphics.setCanvas({achievements_old_canvas, stencil = true})
+@@ -5123,6 +5123,14 @@
+ -- ============================================================================
+ -- Get proper text for button prompts based on OS
+ -- ============================================================================
++function renderer.isKeyboardMode()
++    local mode = _G.controls_help or "auto"
++    if mode == "auto" then
++        return (_G.input_mode or "keyboard") == "keyboard"
++    end
++    return mode == "keyboard"
++end
++
+ function renderer.getButtonPrompt(key)
+     if love.system.getOS() == "Web" then
+         local web_mapping = {
+@@ -5137,6 +5145,20 @@
+             DPAD = "Arrows"
+         }
+         return web_mapping[key] or key
++    elseif renderer.isKeyboardMode() then
++        local keyboard_mapping = {
++            A = "Enter",
++            B = "Backsp",
++            X = "X",
++            Y = "Y",
++            L1 = "Q",
++            R1 = "E",
++            START = "Space",
++            SELECT = "R-Shift",
++            DPAD = "Arrows",
++            ["L/R"] = "Q/E"
++        }
++        return keyboard_mapping[key] or key
+     end
+     return key
+ end
+@@ -5152,6 +5174,16 @@
+         text = text:gsub("Press Y", "Press C")
+         text = text:gsub("%[Y%]", "[C]")
+         text = text:gsub("B button", "Esc key")
++    elseif renderer.isKeyboardMode() then
++        text = text:gsub("Press B", "Press Backspace")
++        text = text:gsub("%[B%]", "[Backspace]")
++        text = text:gsub("Press L1", "Press Q")
++        text = text:gsub("%[L1%]", "[Q]")
++        text = text:gsub("Press R1", "Press E")
++        text = text:gsub("%[R1%]", "[E]")
++        text = text:gsub("Press Y", "Press Y")
++        text = text:gsub("%[Y%]", "[Y]")
++        text = text:gsub("B button", "Backspace key")
+     end
+     return text
+ end
+@@ -5978,7 +6010,7 @@
+         return
+     end
+     local w, h = love.graphics.getDimensions()
+-    if not transition_canvas then
++    if not transition_canvas or transition_canvas:getWidth() ~= w or transition_canvas:getHeight() ~= h then
+         transition_canvas = love.graphics.newCanvas(w, h)
+     end
+     love.graphics.setCanvas({transition_canvas, stencil = true})
+@@ -6958,7 +6990,7 @@
+ 
+         -- Capture the new page to tutorial_new_canvas ONCE at the start of transition
+         if not _G.tutorial_slide_ready then
+-            if not tutorial_new_canvas then
++            if not tutorial_new_canvas or tutorial_new_canvas:getWidth() ~= w or tutorial_new_canvas:getHeight() ~= h then
+                 tutorial_new_canvas = love.graphics.newCanvas(w, h)
+             end
+             love.graphics.setCanvas({tutorial_new_canvas, stencil = true})
+@@ -7108,7 +7140,8 @@
+ 
+             -- Badge
+             right_x = right_x - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x = right_x - key_w
+             drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -7178,6 +7211,8 @@
+     local undo_lbl = "Undo Limit (Classic/Huge): " .. undo_val
+     local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
+     local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
++    local help_mode = _G.controls_help or "auto"
++    local help_lbl = "Control Hints: " .. (help_mode == "auto" and "Auto" or (help_mode == "gamepad" and "Gamepad" or "Keyboard"))
+ 
+     return {
+         "Audio & Haptics",
+@@ -7187,6 +7222,7 @@
+         undo_lbl,
+         ta_lbl,
+         crt_lbl,
++        help_lbl,
+         "Back"
+     }
+ end
+@@ -7207,7 +7243,7 @@
+     local badge_y = h - badge_h - math.floor(7 * scale)
+ 
+     -- Settings header style
+-    local header_h = math.floor((_G.text_size == "large" and 70 or 85) * scale)
++    local header_h = math.floor((_G.text_size == "large" and 60 or 65) * scale)
+     local total_h = header_h + math.floor(12 * scale) + menu_h
+     local available_h = badge_y - math.floor(10 * scale)
+     local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
+@@ -7244,6 +7280,7 @@
+             "Undo Limit (Classic/Huge): Unlimited",
+             "Time Attack Max Limit: 90s",
+             "CRT Shader: Off",
++            "Control Hints: Keyboard",
+             "Back"
+         }
+     end
+@@ -7316,7 +7353,8 @@
+ 
+             -- Badge
+             right_x = right_x - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x = right_x - key_w
+             drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -7517,7 +7555,8 @@
+ 
+             -- Badge
+             right_x = right_x - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x = right_x - key_w
+             drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -8771,7 +8810,8 @@
+             love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
+             love.graphics.print(action.label, right_x0, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
+             right_x0 = right_x0 - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x0 = right_x0 - key_w
+             drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
+             right_x0 = right_x0 - item_gap
+@@ -9053,7 +9093,8 @@
+             love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
+             love.graphics.print(action.label, right_x1, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
+             right_x1 = right_x1 - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x1 = right_x1 - key_w
+             drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
+             right_x1 = right_x1 - item_gap
+@@ -9196,7 +9237,8 @@
+ 
+             -- Badge
+             right_x = right_x - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x = right_x - key_w
+             drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -9373,7 +9415,8 @@
+ 
+         -- Badge
+         right_x = right_x - label_gap
+-        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++        local translated_key = renderer.getButtonPrompt(action.key)
++        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+         right_x = right_x - key_w
+         drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -9671,7 +9714,7 @@
+ 
+         -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
+         if not _G.achievements_slide_ready then
+-            if not achievements_new_canvas then
++            if not achievements_new_canvas or achievements_new_canvas:getWidth() ~= w or achievements_new_canvas:getHeight() ~= h then
+                 achievements_new_canvas = love.graphics.newCanvas(w, h)
+             end
+             love.graphics.setCanvas({achievements_new_canvas, stencil = true})
+@@ -10188,7 +10231,8 @@
+ 
+             -- Badge
+             right_x = right_x - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x = right_x - key_w
+             drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -10420,7 +10464,8 @@
+ 
+             -- Badge
+             right_x = right_x - label_gap
+-            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++            local translated_key = renderer.getButtonPrompt(action.key)
++            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+             right_x = right_x - key_w
+             drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
+ 
+@@ -11304,7 +11349,8 @@
+         love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+ 
+         right_x = right_x - label_gap
+-        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++        local translated_key = renderer.getButtonPrompt(action.key)
++        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+         right_x = right_x - key_w
+         drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+ 
+@@ -12075,7 +12121,8 @@
+         love.graphics.setColor(ui_text)
+         love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+         right_x = right_x - label_gap
+-        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
++        local translated_key = renderer.getButtonPrompt(action.key)
++        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+         right_x = right_x - key_w
+         if action.key == "Y" then
+             renderer.theme_button_x = right_x + key_w / 2

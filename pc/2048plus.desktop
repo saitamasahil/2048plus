@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=2048 Plus
+Comment=A feature-packed implementation of the classic 2048 puzzle game
+Exec=love %f
+Icon=love
+Type=Application
+Categories=Game;LogicGame;
+Terminal=false
