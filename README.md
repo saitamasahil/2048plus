@@ -41,12 +41,12 @@ This project is inspired by and references the popular open-source [2048 Android
 4. PortMaster will automatically detect the `.zip` file and complete the installation.
 
 ### Linux
-Download the `2048_Plus-x86_64.AppImage`, make it executable (`chmod +x 2048_Plus-x86_64.AppImage`), and run it.
+Download `2048_Plus-x86_64.AppImage` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](https://github.com/saitamasahil/2048plus#building-from-source) instructions. Make it executable (`chmod +x 2048_Plus-x86_64.AppImage`), and run it.
 
 Saves are stored in: `~/.local/share/love/2048plus/`
 
 ### Windows
-Download and extract `2048_Plus-win64.zip`, then run `2048 Plus.exe`.
+Download and extract `2048_Plus-win64.zip` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](https://github.com/saitamasahil/2048plus#building-from-source) instructions, then run `2048 Plus.exe`.
 
 Saves are stored in: `%APPDATA%\LOVE\2048plus\`
 
