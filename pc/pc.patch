@@ -39,7 +39,18 @@
  _G.achievements = {
 --- a/save.lua
 +++ b/save.lua
-@@ -661,4 +661,28 @@
+@@ -27,6 +27,10 @@
+     end
+ end
+ 
++function save.getDir()
++    return SAVE_DIR
++end
++
+ function save.getPath(mode)
+     local file
+     if mode == "plus" then
+@@ -661,4 +665,28 @@
      return s ~= 1 and s ~= 2
  end
  
@@ -441,3 +452,152 @@
          right_x = right_x - key_w
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2
+@@ -12406,10 +12453,21 @@
+         end
+ 
+         -- Close button
+-        local btn_w = math.floor(136 * scale)
+         local btn_h = math.floor(32 * scale)
+-        local btn_x = mx + math.floor((mw - btn_w) / 2)
+         local btn_y = my + mh - btn_h - math.floor(12 * scale)
++        local k_sz = math.floor(24 * scale)
++        local ky = btn_y + math.floor((btn_h - k_sz) / 2)
++        local pill_center_y = btn_y + math.floor(btn_h / 2)
++
++        local btn_label = "Close"
++        love.graphics.setFont(font_help_label)
++        local btn_label_w = font_help_label:getWidth(btn_label)
++        local gap = math.floor(8 * scale)
++        local key_prompt = renderer.getButtonPrompt("B")
++        local key_w = math.max(k_sz, font_help_key:getWidth(key_prompt) + math.floor(12 * scale))
++        local total_content_w = key_w + gap + btn_label_w
++        local btn_w = math.max(math.floor(136 * scale), total_content_w + math.floor(28 * scale))
++        local btn_x = mx + math.floor((mw - btn_w) / 2)
+ 
+         if is_light_theme then
+             love.graphics.setColor(1.0, 1.0, 1.0, 0.70 * card_alpha)
+@@ -12425,24 +12483,14 @@
+             roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
+         end
+ 
+-        local k_sz = math.floor(24 * scale)
+-        local ky = btn_y + math.floor((btn_h - k_sz) / 2)
+-        local pill_center_y = btn_y + math.floor(btn_h / 2)
+-
+-        local btn_label = "Close"
+-        love.graphics.setFont(font_help_label)
+-        local btn_label_w = font_help_label:getWidth(btn_label)
+-        local gap = math.floor(8 * scale)
+-        local total_content_w = k_sz + gap + btn_label_w
+         local start_btn_x = btn_x + math.floor((btn_w - total_content_w) / 2)
+-
+-        drawKeyBadge("B", start_btn_x, ky, k_sz, k_sz, card_alpha)
++        drawKeyBadge("B", start_btn_x, ky, key_w, k_sz, card_alpha)
+ 
+         local label_fh = font_help_label:getHeight()
+         local label_y = pill_center_y - math.floor(label_fh / 2) - math.max(1, math.floor(1 * scale))
+         love.graphics.setFont(font_help_label)
+         love.graphics.setColor(text_title)
+-        love.graphics.print(btn_label, start_btn_x + k_sz + gap, label_y)
++        love.graphics.print(btn_label, start_btn_x + key_w + gap, label_y)
+ 
+         love.graphics.pop()
+     end
+--- a/sound.lua
++++ b/sound.lua
+@@ -419,7 +419,9 @@
+     last_qr_check = now
+ 
+     local work_dir = _G.WORK_DIR or "."
++    local save_dir = (save and save.getDir and save.getDir() ~= "") and save.getDir() or (love.filesystem and love.filesystem.getSaveDirectory and love.filesystem.getSaveDirectory()) or (work_dir .. "/static")
+     local candidates = {
++        save_dir .. "/web_qr.png",
+         work_dir .. "/static/web_qr.png",
+         work_dir .. "/gamedata/static/web_qr.png",
+         "static/web_qr.png",
+@@ -554,11 +556,16 @@
+     port = port or 8048
+     last_server_start_time = love and love.timer and love.timer.getTime and love.timer.getTime() or os.clock()
+     local work_dir = _G.WORK_DIR or "."
++    local save_dir = (save and save.getDir and save.getDir() ~= "") and save.getDir() or (love.filesystem and love.filesystem.getSaveDirectory and love.filesystem.getSaveDirectory()) or (work_dir .. "/static")
++    if os and os.execute then
++        os.execute(string.format('mkdir -p "%s/scripts" "%s/assets/music" "%s/assets/font" "%s/assets/logo" 2>/dev/null', save_dir, save_dir, save_dir, save_dir))
++    end
+ 
+     local function resolve_path(rel)
+         local candidates = {
+             work_dir .. "/" .. rel,
+             work_dir .. "/gamedata/" .. rel,
++            save_dir .. "/" .. rel,
+             "gamedata/" .. rel,
+             rel
+         }
+@@ -566,29 +573,62 @@
+             local f = io.open(p, "r")
+             if f then f:close(); return p end
+         end
++
++        -- If not on disk, extract from love.filesystem (fused AppImage / .love)
++        if love.filesystem and love.filesystem.getInfo and love.filesystem.getInfo(rel) then
++            local data = love.filesystem.read(rel)
++            if data then
++                local dest = save_dir .. "/" .. rel
++                local dest_dir = dest:match("^(.*)/[^/]+$")
++                if dest_dir and os and os.execute then
++                    os.execute(string.format('mkdir -p "%s" 2>/dev/null', dest_dir))
++                end
++                local out = io.open(dest, "wb")
++                if out then
++                    out:write(data)
++                    out:close()
++                    return dest
++                end
++            end
++        end
++
+         return work_dir .. "/" .. rel
+     end
+ 
+     local script_path = resolve_path("scripts/jukebox_server.py")
+-    local music_dir = resolve_path("assets/music")
++    resolve_path("scripts/qrcodegen.py")
+     local font_path = resolve_path("assets/font/ClearSans-Bold.ttf")
++    resolve_path("assets/logo/logo_2048.png")
+ 
+-    local static_dir = work_dir .. "/static"
+-    local st_check = io.open(static_dir .. "/theme.dat", "r") or io.open(static_dir .. "/theme_state.json", "r")
+-    if not st_check then
++    local static_dir = save_dir
++    local st_check = io.open(work_dir .. "/static/theme.dat", "r") or io.open(work_dir .. "/static/theme_state.json", "r")
++    if st_check then
++        st_check:close()
++        static_dir = work_dir .. "/static"
++    else
+         local g_static = work_dir .. "/gamedata/static"
+         local gst_check = io.open(g_static .. "/theme.dat", "r") or io.open(g_static .. "/theme_state.json", "r")
+         if gst_check then
+             gst_check:close()
+             static_dir = g_static
+         end
+-    else
+-        st_check:close()
+     end
+ 
+     local qr_path = static_dir .. "/web_qr.png"
+     local url_path = qr_path .. ".url"
+     local theme_path = static_dir .. "/theme_state.json"
++    local music_dir = static_dir .. "/assets/music"
++    local m_check = io.open(music_dir, "r")
++    if m_check then
++        m_check:close()
++    else
++        local base_m = resolve_path("assets/music")
++        local bm_check = io.open(base_m, "r")
++        if bm_check then
++            bm_check:close()
++            music_dir = base_m
++        end
++    end
+ 
+     local ok_wifi, ip = sound.has_wifi(true)
+     if not ok_wifi then
