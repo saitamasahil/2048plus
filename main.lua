@@ -1003,24 +1003,24 @@ function love.update(dt)
                 if event == input.events.BACK then
                     if not (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
                         sound.playMenuSelect()
-                        transition_delay_key = "B"
-                        transition_delay_timer = 0.08
-                        if _G.screen_transitions and renderer.closeJukeboxModal then
-                            renderer.closeJukeboxModal(function()
+                        queueTransitionAction("B", 0.08, function()
+                            if _G.screen_transitions and renderer.closeJukeboxModal then
+                                renderer.closeJukeboxModal(function()
+                                    _G.jukebox_web_modal = false
+                                    if sound.stopWebServer then
+                                        sound.stopWebServer()
+                                    end
+                                end)
+                            else
                                 _G.jukebox_web_modal = false
+                                if renderer.resetJukeboxModalAnim then
+                                    renderer.resetJukeboxModalAnim()
+                                end
                                 if sound.stopWebServer then
                                     sound.stopWebServer()
                                 end
-                            end)
-                        else
-                            _G.jukebox_web_modal = false
-                            if renderer.resetJukeboxModalAnim then
-                                renderer.resetJukeboxModalAnim()
                             end
-                            if sound.stopWebServer then
-                                sound.stopWebServer()
-                            end
-                        end
+                        end)
                     end
                 elseif event == input.events.CONFIRM or event == "return" or event == "a" or event == "space" then
                     if not (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
@@ -1084,16 +1084,17 @@ function love.update(dt)
             elseif event == input.events.X or event == input.events.SELECT then
                 if not _G.jukebox_web_modal and not (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing()) then
                     sound.playMenuSelect()
-                    transition_delay_key = (event == input.events.SELECT) and "SELECT" or "X"
-                    transition_delay_timer = 0.08
-                    if renderer.openJukeboxModal then
-                        renderer.openJukeboxModal()
-                    else
-                        _G.jukebox_web_modal = true
-                    end
-                    if sound.startWebServer then
-                        sound.startWebServer(8048)
-                    end
+                    local key = (event == input.events.SELECT) and "SELECT" or "X"
+                    queueTransitionAction(key, 0.08, function()
+                        if renderer.openJukeboxModal then
+                            renderer.openJukeboxModal()
+                        else
+                            _G.jukebox_web_modal = true
+                        end
+                        if sound.startWebServer then
+                            sound.startWebServer(8048)
+                        end
+                    end)
                 end
             elseif event == input.events.R1 then
                 sound.playMenuSelect()

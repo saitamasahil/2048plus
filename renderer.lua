@@ -5161,6 +5161,7 @@ end
 -- ============================================================================
 local function drawKeyBadge(text, x, y, w, h, alpha_override)
     local scale = _G.scale
+    local badge_a = alpha_override or 1.0
     local visual_offset_y = -math.max(1, math.floor(1.5 * scale))
     local original_text = text
     text = renderer.getButtonPrompt(text)
@@ -5215,6 +5216,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 end
             end
         end
+    end
+
+    if jukebox_modal_state == "opening" and original_text == "B" then
+        is_pressed = false
     end
 
     -- Apply tactile button depression shifts
@@ -5296,7 +5301,6 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
         if text == "A" or text == "B" or text == "X" or text == "Y" then
             local cx, cy = x + w/2, y + h/2
             local r = h * 0.45
-            local badge_a = alpha_override or 1.0
 
             if _G.theme == "matrix" then
                 -- Black background circle
@@ -5340,22 +5344,22 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
             return
         end
 
-        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" or original_text == "START" or original_text == "SELECT" or original_text == "DOWN" or (love.system.getOS() == "Web" and string.len(text) > 1) then
+        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" or original_text == "START" or original_text == "SELECT" or original_text == "DOWN" or string.len(text) > 1 then
             local cr = math.floor(h * 0.4)
 
             if _G.theme == "matrix" then
                 -- Black background capsule
-                love.graphics.setColor(0, 0, 0, 1)
+                love.graphics.setColor(0, 0, 0, badge_a)
                 roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
                 -- Green outline capsule
-                love.graphics.setColor(help_key_color)
+                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
                 love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
                 roundedRect("line", x, y + press_shift_y, w, h, cr)
 
                 -- Text
                 love.graphics.setFont(font_help_key)
-                love.graphics.setColor(help_key_text)
+                love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
                 local tw = font_help_key:getWidth(text)
                 local th = font_help_key:getHeight()
                 love.graphics.print(text, x + (w - tw) / 2, y + (h - th) / 2 + letter_offset_y + press_shift_y)
@@ -5363,22 +5367,22 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
             end
 
             -- Shadow (shrinks when depressed)
-            love.graphics.setColor(0, 0, 0, 0.2)
+            love.graphics.setColor(0, 0, 0, 0.2 * badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             roundedRect("fill", x, y + sh, w, h, cr)
 
             -- Body (shifted by press_shift_y)
-            love.graphics.setColor(help_key_color)
+            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
             roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
             -- Border
-            love.graphics.setColor(1, 1, 1, 0.15)
+            love.graphics.setColor(1, 1, 1, 0.15 * badge_a)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
             roundedRect("line", x, y + press_shift_y, w, h, cr)
 
             -- Text
             love.graphics.setFont(font_help_key)
-            love.graphics.setColor(help_key_text)
+            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
             local tw = font_help_key:getWidth(text)
             local th = font_help_key:getHeight()
             love.graphics.print(text, x + (w - tw) / 2, y + (h - th) / 2 + letter_offset_y + press_shift_y)
@@ -5388,22 +5392,22 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
         local cr = math.floor(h * 0.3)
 
         -- Badge shadow (smooth depth effect, shrinks when depressed)
-        love.graphics.setColor(0, 0, 0, 0.2)
+        love.graphics.setColor(0, 0, 0, 0.2 * badge_a)
         local sh_off = math.max(1, math.floor(2 * scale)) * shadow_shrink
         roundedRect("fill", x, y + sh_off, w, h, cr)
 
         -- Badge background (shifted by press_shift_y)
-        love.graphics.setColor(help_key_color)
+        love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
         roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
         -- Subtle border for a clean, premium feel
-        love.graphics.setColor(1, 1, 1, 0.15)
+        love.graphics.setColor(1, 1, 1, 0.15 * badge_a)
         love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
         roundedRect("line", x, y + press_shift_y, w, h, cr)
 
         -- Badge text
         love.graphics.setFont(font_help_key)
-        love.graphics.setColor(help_key_text)
+        love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
         local tw = font_help_key:getWidth(text)
         local th = font_help_key:getHeight()
 
@@ -12406,10 +12410,21 @@ function renderer.drawJukebox(selection, skip_transition)
         end
 
         -- Close button
-        local btn_w = math.floor(136 * scale)
         local btn_h = math.floor(32 * scale)
-        local btn_x = mx + math.floor((mw - btn_w) / 2)
         local btn_y = my + mh - btn_h - math.floor(12 * scale)
+        local k_sz = math.floor(24 * scale)
+        local ky = btn_y + math.floor((btn_h - k_sz) / 2)
+        local pill_center_y = btn_y + math.floor(btn_h / 2)
+
+        local btn_label = "Close"
+        love.graphics.setFont(font_help_label)
+        local btn_label_w = font_help_label:getWidth(btn_label)
+        local gap = math.floor(8 * scale)
+        local key_prompt = renderer.getButtonPrompt("B")
+        local key_w = math.max(k_sz, font_help_key:getWidth(key_prompt) + math.floor(12 * scale))
+        local total_content_w = key_w + gap + btn_label_w
+        local btn_w = math.max(math.floor(136 * scale), total_content_w + math.floor(28 * scale))
+        local btn_x = mx + math.floor((mw - btn_w) / 2)
 
         if is_light_theme then
             love.graphics.setColor(1.0, 1.0, 1.0, 0.70 * card_alpha)
@@ -12425,24 +12440,14 @@ function renderer.drawJukebox(selection, skip_transition)
             roundedRect("line", btn_x, btn_y, btn_w, btn_h, math.floor(btn_h / 2))
         end
 
-        local k_sz = math.floor(24 * scale)
-        local ky = btn_y + math.floor((btn_h - k_sz) / 2)
-        local pill_center_y = btn_y + math.floor(btn_h / 2)
-
-        local btn_label = "Close"
-        love.graphics.setFont(font_help_label)
-        local btn_label_w = font_help_label:getWidth(btn_label)
-        local gap = math.floor(8 * scale)
-        local total_content_w = k_sz + gap + btn_label_w
         local start_btn_x = btn_x + math.floor((btn_w - total_content_w) / 2)
-
-        drawKeyBadge("B", start_btn_x, ky, k_sz, k_sz, card_alpha)
+        drawKeyBadge("B", start_btn_x, ky, key_w, k_sz, card_alpha)
 
         local label_fh = font_help_label:getHeight()
         local label_y = pill_center_y - math.floor(label_fh / 2) - math.max(1, math.floor(1 * scale))
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(text_title)
-        love.graphics.print(btn_label, start_btn_x + k_sz + gap, label_y)
+        love.graphics.print(btn_label, start_btn_x + key_w + gap, label_y)
 
         love.graphics.pop()
     end
