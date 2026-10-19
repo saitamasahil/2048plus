@@ -7551,7 +7551,8 @@ function renderer.drawMainMenu(selection, skip_transition)
     -- Draw Store Icon / Coins
     love.graphics.setFont(font_help_label)
     
-    local r1_text = "R1 "
+    local r1_btn = renderer.getButtonPrompt and renderer.getButtonPrompt("R1") or "R1"
+    local r1_text = r1_btn .. " "
     local r1_w = font_help_label:getWidth(r1_text)
     local r1_h = font_help_label:getHeight()
     local icon_size = math.floor(20 * scale)
@@ -7591,9 +7592,10 @@ function renderer.drawMainMenu(selection, skip_transition)
             cursor = cursor + icon_size + math.floor(4 * scale)
         end
 
+        local l1_btn = renderer.getButtonPrompt and renderer.getButtonPrompt("L1") or "L1"
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.8)
-        love.graphics.print("L1", cursor, l1_y + (icon_size - l1_h) / 2)
+        love.graphics.print(l1_btn, cursor, l1_y + (icon_size - l1_h) / 2)
     end
 
     local coins = _G.stats and _G.stats.coins or 0
