@@ -62,10 +62,10 @@ Saves are stored in: `%APPDATA%\LOVE\2048plus\`
 | **Activate Swap Powerup** | `L1` | `Q` |
 | **Activate Bomb Powerup** | `R1` | `E` |
 | **Seek Music** | D-Pad Left / Right | Arrow Left / Right |
-| **Show Coin Balance** | `Select` | `Tab` |
+| **Show Coin Balance** | `Select` | `Tab/Shift` |
 | **Pause Menu / Resume** | `Start` | `Space` |
 | **Toggle Fullscreen** | — | `F11` |
-| **Force Quit App** | `Menu + Start` | `Escape` |
+| **Force Quit App** | `Menu + Start` | `Alt + F4` |
 
 *Note: Your progress is automatically saved after every move. You can safely close the game and pick up exactly where you left off.*
 

@@ -256,7 +256,7 @@
 +            L1 = "Q",
 +            R1 = "E",
 +            START = "Space",
-+            SELECT = "R-Shift",
++            SELECT = "Tab",
 +            DPAD = "Arrows",
 +            ["L/R"] = "Q/E"
 +        }
