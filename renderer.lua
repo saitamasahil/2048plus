@@ -3580,7 +3580,7 @@ function renderer.init()
         local cell_w = 137
         local cell_h = 137
         local pad = 2
-        for i = 1, 173 do
+        for i = 0, 173 do
             local col = i % 14
             local row = math.floor(i / 14)
             local qx = col * cell_w + pad
@@ -7820,7 +7820,7 @@ local function drawClassicIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_acc
 
     if classic_board_img and #classic_board_quads > 0 then
         love.graphics.push("all")
-        local f_idx = is_selected and ((math.floor(t / 0.140) % #classic_board_quads) + 1) or 1
+        local f_idx = is_selected and ((math.floor(t / 0.075) % #classic_board_quads) + 1) or 1
         local quad = classic_board_quads[f_idx]
 
         local icon_s = (42 * scale) / 133
