@@ -122,7 +122,7 @@ If Wine or Pillow is not installed, the Windows package will build with the defa
 - Arcade Cabinet Sprite by: [bullabit](https://bullabit.itch.io/)
 - Skull Sprite by: [NYKNCK](https://itch.io/profile/nyknck)
 - Bomb Sprite by: [CazBee](https://itch.io/profile/caz-bee)
-- Campfire Sprite by: [SMStudios](https://itch.io/profile/simon-develop)
+- Campfire Sprite by: [Devs In Exile Studio](https://devs-in-exile.itch.io/)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!

@@ -3647,8 +3647,8 @@ function renderer.init()
     if ok_camp and c_img then
         c_img:setFilter("nearest", "nearest")
         campfire_img = c_img
-        local fw, fh = 64, 64
-        for i = 0, 23 do
+        local fw, fh = 32, 32
+        for i = 0, 7 do
             table.insert(campfire_quads, love.graphics.newQuad(i * fw, 0, fw, fh, c_img:getDimensions()))
         end
     end
@@ -8315,23 +8315,22 @@ local function drawHugeGrid(cx, cy, scale, select_factor, r_acc, g_acc, b_acc)
 
     if campfire_img and #campfire_quads > 0 then
         love.graphics.push("all")
-        local icon_s = (36 * scale) / 48
-        local ox = 32.5
-        local oy = 32
+        local icon_s = (34 * scale) / 32
+        local ox = 16
+        local oy = 18
 
         -- Ground shadow
         love.graphics.setColor(0, 0, 0, 0.22)
-        local shadow_w = 9.5 * scale
+        local shadow_w = 9.0 * scale
         local shadow_h = 2.4 * scale
         love.graphics.ellipse("fill", cx, cy + 13 * scale, shadow_w, shadow_h)
 
         if is_selected then
-            local f_idx = (math.floor(t / 0.18) % #campfire_quads) + 1
+            local f_idx = (math.floor(t / 0.12) % #campfire_quads) + 1
             local quad = campfire_quads[f_idx]
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.draw(campfire_img, quad, cx, cy, 0, icon_s, icon_s, ox, oy)
         else
-            -- Calm low flame pose
             local alpha = 0.70 + 0.30 * select_factor
             love.graphics.setColor(1, 1, 1, alpha)
             love.graphics.draw(campfire_img, campfire_quads[1], cx, cy, 0, icon_s, icon_s, ox, oy)
@@ -10313,7 +10312,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #lines3 * font_help_label:getHeight() + section_gap
 
     -- Section 3b: Sprite credits
-    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nBomb Sprite by CazBee\nCampfire Sprite by SMStudios\nAnimated Button Prompts by greenpixels_"
+    local s_sprites = "Adorable Animal Sprites by Elthen, Pixelcave, and Duckhive\nClock Sprite by AlltheturtlesGames\nArcade Cabinet Sprite by bullabit\nSkull Sprite by NYKNCK\nBomb Sprite by CazBee\nCampfire Sprite by Devs In Exile Studio\nAnimated Button Prompts by greenpixels_"
     love.graphics.printf(s_sprites, 0, cur_y, w, "center")
     local _, lines_sprites = font_help_label:getWrap(s_sprites, w)
     cur_y = cur_y + #lines_sprites * font_help_label:getHeight() + section_gap
