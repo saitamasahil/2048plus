@@ -141,6 +141,7 @@ The build script automatically creates a local debug keystore and signs the APK 
 - Bomb Sprite by: [CazBee](https://itch.io/profile/caz-bee)
 - Campfire Sprite by: [Devs In Exile Studio](https://devs-in-exile.itch.io/)
 - Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
+- Android Virtual Controller Buttons & D-Pad Sprites by: [Mr. Breakfast](https://itch.io/profile/mrbreakfastsdelight)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!
 - Background Music tracks provided via [Chosic](https://www.chosic.com/) by authors: AudioCoffee, Ghostrifter Official, Purrple Cat, Roa, Sakura Girl, and Tokyo Music Walker.
