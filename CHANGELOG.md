@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.0.2]
+### Added
+- Native PC Version: Added standalone release builds for Linux and Windows
+
+### Changed
+- Replaced Huge Mode icon with animated campfire sprite by Devs In Exile Studio
+- Improved animation speed of Classic Mode preview sprite
+
 ## [7.0.1]
 ### Added
 - Added smooth board cascade animation when starting or continuing a game
