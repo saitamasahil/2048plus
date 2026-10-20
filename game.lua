@@ -1266,7 +1266,7 @@ function Game:update(dt)
                 self.timesUp = true  -- flag for renderer to show "Time's Up!"
                 local sound = require("sound")
                 sound.playGameOver()
-                self:saveGameState()  -- saves high score only (saveGameState returns early for timeattack)
+                self:saveGameState()  -- saves high score only, saveGameState returns early for timeattack
                 save.saveHighScore(self.highScore, self.mode)
             end
         end
