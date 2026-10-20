@@ -89,17 +89,17 @@ local selection_quad = nil
 -- Win animation state
 local win_timer = 0
 
--- Endless Mode header animation state (0 = normal header, 1 = endless header)
+-- Endless Mode header animation state: 0 normal header, 1 endless header
 local endless_anim_progress = 0
 
--- Text size flash animation state (triggered when text size is toggled)
+-- Text size flash animation state on toggle
 local text_size_flash_timer = 0
 local TEXT_SIZE_FLASH_DURATION = 0.4
 
 -- Arcade Menu animation state
-local arcade_panel_y_offset = 9999  -- starts fully hidden (off screen below)
+local arcade_panel_y_offset = 9999  -- starts fully hidden off screen below
 local arcade_panel_target = 9999    -- target offset
-local arcade_menu_bg_alpha = 0      -- dim overlay alpha (0..0.75)
+local arcade_menu_bg_alpha = 0      -- dim overlay alpha
 local panel_page_target = 0         -- 0 for Play Selection, 1 for Arcade modes
 local panel_page_current = 0
 
@@ -229,7 +229,7 @@ function renderer.showToast(msg, custom_duration, is_achievement)
     local ach_id = type(is_achievement) == "string" and is_achievement or nil
 
     if not is_achievement then
-        -- For non-achievement toasts (like store bulk purchases), update active message & clear pending purchase queue
+        -- Update active message and clear pending purchase queue for store toasts
         if toast_timer > 0 and not toast_ach_id then
             toast_message = msg
             toast_timer = duration
@@ -289,7 +289,7 @@ function renderer.getContrastTextColor(bg_col, desired_text_col, dark_fallback)
     end
 end
 
--- Color palette (from Android cell_rectangle_*.xml and colors.xml)
+-- Color palette from Android XML assets
 -- ============================================================================
 local function hex(h)
     h = h:gsub("#", "")
@@ -421,7 +421,7 @@ local themes = {
     },
     retro = {
         tile_colors = {
-            [0]    = {hex("#306230")},   -- empty cell (mid-dark green so tiles pop)
+            [0]    = {hex("#306230")},   -- empty cell mid-dark green
             [2]    = {hex("#9bbc0f")},
             [4]    = {hex("#8fb00f")},
             [8]    = {hex("#83a40f")},
@@ -509,7 +509,7 @@ local themes = {
         help_key_color   = {hex("#ec4899")},
         help_key_text    = {hex("#0d0e15")},
     },
-    -- Simple themes (color-only, no custom tiles — use default light tile colors)
+    -- Simple themes with default light tile colors
     ocean = {
         tile_colors = {
             [0]    = {hex("#b8d4e3")},
@@ -916,14 +916,14 @@ local themes = {
             [2048] = {hex("#5d4037")},
         },
         super_tile_color = {hex("#5d4037")},
-        dark_text        = {hex("#1b3a1f")},   -- deep forest green (was muddy brown)
+        dark_text        = {hex("#1b3a1f")},   -- deep forest green
         light_text       = {hex("#f9fbe7")},   -- pale lime white
-        ui_text          = {hex("#2e7d32")},   -- rich green (was too muted)
+        ui_text          = {hex("#2e7d32")},   -- rich green
         bg_color         = {hex("#efebe9")},
         board_color      = {hex("#bcaaa4")},
         score_bg_color   = {hex("#bcaaa4")},
         score_label      = {hex("#4e342e")},   -- warm brown label
-        score_value      = {hex("#1b5e20")},   -- deep green value (was too dark and flat)
+        score_value      = {hex("#1b5e20")},   -- deep green value
         overlay_win      = {hex("#558b2f")},
         overlay_lose     = {hex("#bcaaa4")},
         help_bg_color    = {hex("#bcaaa4")},
@@ -1030,7 +1030,7 @@ local themes = {
         -- Wetland Pond: soft swamp green and pond blue accents.
         tile_colors = {
             [0]    = {hex("#e2ece9")},   -- light green-gray water
-            [2]    = {hex("#ffffff")},   -- clean white (goose color)
+            [2]    = {hex("#ffffff")},   -- clean white goose color
             [4]    = {hex("#f7f0e1")},   -- eggshell white
             [8]    = {hex("#fbdca4")},   -- orange beak yellow
             [16]   = {hex("#f9c264")},   -- dark orange
@@ -1579,7 +1579,7 @@ local font_help_label
 local font_path = "assets/font/ClearSans-Bold.ttf"
 local font_cache = {}
 
--- Current active colors (will be populated by applyTheme)
+-- Current active colors populated by applyTheme
 local tile_colors, super_tile_color, dark_text, light_text, ui_text
 local bg_color, board_color, score_bg_color, score_label, score_value
 local overlay_win, overlay_lose, help_bg_color, help_key_color, help_key_text
@@ -1683,7 +1683,7 @@ function renderer.clearHeaderLogoMorph()
 end
 
 function renderer.triggerCoinFooterToast()
-    -- Only trigger if not already showing (prevents re-animation on repeated SELECT presses)
+    -- Only trigger if not already showing
     if coin_toast_timer and coin_toast_timer > 0.2 then return end
     local total = (_G.stats and _G.stats.coins) or 0
     coin_toast_text = "Coins: " .. tostring(total)
@@ -1741,7 +1741,7 @@ function renderer.applyTheme(show_morph)
     end
 end
 
--- Initialize theme immediately (skip morph on startup)
+-- Initialize theme immediately skipping morph
 renderer.applyTheme(true)
 local matrix_cols = nil
 local matrix_last_t = nil
@@ -1859,7 +1859,7 @@ function renderer.drawDynamicBackground(themeName)
             {0.85, 0.20, 0.75}, -- magenta
         }
 
-        -- Layer 1: Wide layered curtain bands (tall vertical rectangles swept by sine waves)
+        -- Layer 1: Wide layered curtain bands
         -- Each curtain spans nearly full screen height, anchored at top, waving at bottom
         local seg_count = 60
         for band = 1, 5 do
@@ -1902,7 +1902,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 3: Drifting shimmer stars (small bright points)
+        -- Layer 3: Drifting shimmer stars
         for i = 1, 35 do
             local golden = 0.6180339887
             local sx = ((i * golden) % 1.0) * w
@@ -1919,7 +1919,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Swirling dust clouds (large, slow, layered)
+        -- Layer 1: Swirling dust clouds
         local clouds = {
             {0.35, 0.25, 0.50, 0.12, 0.55, 280, 0.07},  -- deep purple
             {0.65, 0.55, 0.08, 0.15, 0.50, 300, 0.06},  -- deep blue
@@ -1937,7 +1937,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", cx, cy, cloud[6] * scale)
         end
 
-        -- Layer 2: Dense star field (50 stars with varied twinkle speeds)
+        -- Layer 2: Dense star field
         -- Restrict stars to the area above the help footer to keep the bottom clean and readable
         local star_pad = math.max(8 * scale, 8)
         local max_star_y = h - math.floor(75 * scale)
@@ -1965,7 +1965,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 3: Shooting stars (2 at different phases)
+        -- Layer 3: Shooting stars
         for s = 1, 2 do
             local cycle = 6.0 + s * 2.0
             local phase = (t + s * 3.7) % cycle
@@ -2024,7 +2024,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", px, py, 60 * scale)
         end
 
-        -- Layer 2: Rising ember particles (40 particles)
+        -- Layer 2: Rising ember particles
         for i = 1, 40 do
             -- Distribute start positions evenly across width
             local start_x = w * ((i * 0.618 + 0.1) % 1.0)
@@ -2039,7 +2039,7 @@ function renderer.drawDynamicBackground(themeName)
             -- X position: sways side to side
             local x = start_x + math.sin(t * sway_speed + i * 2.3) * sway_amount * scale
 
-            -- Life fraction (0 at bottom, 1 at top)
+            -- Life fraction: 0 at bottom, 1 at top
             local life = 1.0 - (y / h)
             life = math.max(0, math.min(1, life))
 
@@ -2065,7 +2065,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 3: Heat distortion waves (horizontal shimmer lines)
+        -- Layer 3: Heat distortion waves
         love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
         for i = 1, 6 do
             local wave_y = h * (0.4 + i * 0.08) + math.sin(t * 0.4 + i) * 20 * scale
@@ -2087,7 +2087,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Ambient morning mist & sun glare on the pond (soft drifting glowing orbs)
+        -- Layer 1: Ambient morning mist and sun glare on pond
         local cx, cy = w / 2, h / 2
         for i = 1, 3 do
             local mist_x = cx + math.sin(t * 0.2 + i) * 150 * scale
@@ -2097,7 +2097,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", mist_x, mist_y, (180 + i * 40) * scale)
         end
 
-        -- Layer 2: Distant water shimmer (horizontal streaks on the upper pond surface)
+        -- Layer 2: Distant water shimmer
         local shimmer_rng = love.math.newRandomGenerator(88)
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
         for i = 1, 15 do
@@ -2114,7 +2114,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 3: Elegant water surface (perspective elliptical ripples on the upper half)
+        -- Layer 3: Water surface ripples
         love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
         local ripple_rng = love.math.newRandomGenerator(123)
         for i = 1, 12 do
@@ -2137,7 +2137,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 4: Clean, smooth overlapping waves at the bottom (solid filled pastel colors)
+        -- Layer 4: Overlapping waves at bottom
         -- Added a subtle gradient effect by layering colors
         local wave_layers = {
             {y = 0.55, h = 12, c = {0.55, 0.78, 0.88, 0.35}},
@@ -2272,7 +2272,7 @@ function renderer.drawDynamicBackground(themeName)
         local rng = love.math.newRandomGenerator(time_step * 17 + 31)
         local rng_slow = love.math.newRandomGenerator(math.floor(t * 4) * 53 + 19)
 
-        -- Layer 1: Occasional scanline tears (sparse, not constant)
+        -- Layer 1: Occasional scanline tears
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
         local num_tears = rng:random(1, 4)
         for i = 1, num_tears do
@@ -2286,7 +2286,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.rectangle("fill", shift, ty, w + math.abs(shift), tear_h)
         end
 
-        -- Layer 2: Subtle RGB channel-split bars (happens slowly)
+        -- Layer 2: RGB channel-split bars
         local num_splits = rng_slow:random(1, 2)
         for i = 1, num_splits do
             local sy = rng_slow:random(0, h - 30)
@@ -2298,7 +2298,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.rectangle("fill", -drift, sy, w, sh)
         end
 
-        -- Layer 3: Rare VHS block (only occasionally)
+        -- Layer 3: Rare VHS block
         if rng:random() > 0.85 then
             local bx = rng:random(0, w)
             local by = rng:random(0, h)
@@ -2335,7 +2335,7 @@ function renderer.drawDynamicBackground(themeName)
         local sun_x = w / 2
         local sun_r = 72 * scale
 
-        -- Layer 1: Gradient sky (deep purple top → hot pink horizon)
+        -- Layer 1: Gradient sky
         local sky_bands = 28
         for i = 0, sky_bands do
             local frac = i / sky_bands
@@ -2366,7 +2366,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.setColor(1.0, 0.30, 0.70, 0.04 * (1.0 - f))
             love.graphics.circle("fill", sun_x, horizon_y, r)
         end
-        -- Main sun body gradient (hot pink top → orange bottom)
+        -- Main sun body gradient
         local sun_segs = 20
         for s = 0, sun_segs do
             local f = s / sun_segs
@@ -2378,13 +2378,13 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.setColor(r_c, g_c, b_c, 0.22)
             love.graphics.rectangle("fill", sun_x - sun_r, horizon_y - sun_r + f * sun_r * 2, sun_r * 2, seg_h + 1)
         end
-        -- Clip sun to circle using stencil-style overdraw with bg (bg_color mask)
-        -- We draw horizontal stripe cuts across the lower half (vaporwave signature)
+        -- Clip sun to circle using mask
+        -- Horizontal stripe cuts across lower half
         local num_cuts = 8
         for i = 1, num_cuts do
             local cut_frac = i / (num_cuts + 1)
             local cut_y = horizon_y + cut_frac * sun_r - sun_r * 0.05
-            -- Cuts get thicker toward horizon (perspective)
+            -- Cuts get thicker toward horizon for perspective
             local cut_h = (1.0 + cut_frac * cut_frac * 5.0) * scale
             love.graphics.setColor(bg_color[1], bg_color[2], bg_color[3], 1.0)
             love.graphics.rectangle("fill", sun_x - sun_r - 2 * scale, cut_y, sun_r * 2 + 4 * scale, cut_h)
@@ -2392,14 +2392,14 @@ function renderer.drawDynamicBackground(themeName)
 
         -- Layer 4: 3D perspective grid on ground
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
-        -- Vertical vanishing lines (fan out from sun center)
+        -- Vertical vanishing lines fan out from sun center
         for i = -12, 12 do
             local spread = i * 42 * scale
             local alpha = 0.16 - math.abs(i) * 0.008
             love.graphics.setColor(0.95, 0.15, 0.70, math.max(0.03, alpha))
             love.graphics.line(sun_x, horizon_y, sun_x + spread * 2.2, h)
         end
-        -- Scrolling horizontal ground lines (exponential spacing = perspective)
+        -- Scrolling horizontal ground lines with perspective spacing
         local scroll = (t * 28 * scale)
         for i = 1, 12 do
             local spacing = math.pow(1.32, i) * 5 * scale
@@ -2453,7 +2453,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", rx, ry, 1.2 * scale)
         end
 
-        -- Layer 2: Perspective neon grid (cyan horizontal, pink vertical)
+        -- Layer 2: Perspective neon grid
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
         local grid = 55 * scale
         for x = 0, w, grid do
@@ -2468,7 +2468,7 @@ function renderer.drawDynamicBackground(themeName)
         end
 
 
-        -- Layer 4: Scrolling scanlines (fast, thin, TV interference effect)
+        -- Layer 4: Scrolling scanlines
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
         local scan_count = 20
         for i = 1, scan_count do
@@ -2528,7 +2528,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Ambient Forest Canopy Light (Wide spread)
+        -- Layer 1: Forest canopy light
         local pulse1 = 0.5 + 0.5 * math.sin(t * 0.25)
         local pulse2 = 0.5 + 0.5 * math.sin(t * 0.35 + 2.0)
         
@@ -2570,7 +2570,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 4: Elegant Falling Leaves (Minimalist Elongated Ellipses)
+        -- Layer 4: Falling leaves
         for i = 1, 24 do
             local start_x = ((i * 0.6180339887) % 1.0) * w
             local speed_y = 12 + (i % 5) * 5
@@ -2613,7 +2613,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Deep magma glow pools at the bottom (wide underground heat)
+        -- Layer 1: Magma glow pools at bottom
         local pools = {
             {0.18, 1.10, 240, 0.0},  -- left pool
             {0.50, 1.08, 300, 0.0},  -- center pool
@@ -2676,7 +2676,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 3: Dense rising ember particles (50 embers, varied speed/color/size)
+        -- Layer 3: Rising ember particles
         for i = 1, 50 do
             local golden = 0.6180339887
             local start_x = w * ((i * golden) % 1.0)
@@ -2692,7 +2692,7 @@ function renderer.drawDynamicBackground(themeName)
             local life = math.max(0, math.min(1, 1.0 - (y / h)))
             local size_base = (1.0 + (i % 4) * 0.7) * scale
 
-            -- Color: white-hot near bottom (fresh), dims and reddens as rises
+            -- Color dims and reddens as ember rises
             local heat = 1.0 - life * 0.8
             local r_e = 1.0
             local g_e = math.max(0, heat * 0.7 - life * 0.3)
@@ -2707,7 +2707,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", x, y, size_base)
         end
 
-        -- Layer 4: Heat shimmer waves (horizontal distortion bands rising from bottom)
+        -- Layer 4: Heat shimmer waves
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
         for wave = 1, 5 do
             local wave_y = h * (0.65 + wave * 0.06) + math.sin(t * 0.8 + wave) * 6 * scale
@@ -2731,7 +2731,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Deep crimson moonlight bloom (large glow from top-right like a blood moon)
+        -- Layer 1: Blood moon crimson bloom
         local moon_x = w * 0.82 + math.sin(t * 0.05) * 12 * scale
         local moon_y = h * 0.12 + math.cos(t * 0.04) * 8 * scale
         for r = 5, 1, -1 do
@@ -2759,7 +2759,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", mx, my, m[4] * 1000 * scale)
         end
 
-        -- Layer 3: Castlevania bat swarms (enhanced alpha + purple tint)
+        -- Layer 3: Bat swarms
 
         local cycle1 = 13.0
         local prog1 = (t % cycle1) / cycle1
@@ -2831,7 +2831,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Floating pixel stars (8-bit style)
+        -- Floating pixel stars
         for i = 1, 10 do
             local sx = ((i * 137.5) % 1.0) * w
             local sy = ((i * 47.3 + t * 12) % h)
@@ -2892,7 +2892,7 @@ function renderer.drawDynamicBackground(themeName)
             local px2 = base_x2 + math.cos(t * speed + p * 1.1 + math.pi) * orbit_r  -- anti-phase
             local py2 = base_y2 + math.sin(t * speed + p * 1.1 + math.pi) * orbit_r
 
-            -- Entanglement thread (flickers between visible/invisible)
+            -- Entanglement thread flickers
             local thread_alpha = (math.sin(t * (1.5 + p * 0.2) + p * 0.7) * 0.5 + 0.5) * 0.08
             love.graphics.setLineWidth(math.max(1, math.floor(scale)))
             -- Color shifts between cyan and violet per pair
@@ -2937,7 +2937,7 @@ function renderer.drawDynamicBackground(themeName)
             end
         end
 
-        -- Layer 3: Superposition ghost particles (same particle at multiple positions)
+        -- Layer 3: Superposition ghost particles
         for g = 1, 8 do
             local gx_base = ((g * golden * 1.9) % 1.0) * w
             local gy_base = ((g * golden * 2.7) % 1.0) * h
@@ -2961,7 +2961,7 @@ function renderer.drawDynamicBackground(themeName)
         local cx = w / 2
         local cy = h / 2
 
-        -- Layer 1: Central vortex core glow (pulsing energy source)
+        -- Layer 1: Central vortex core glow
         local core_pulse = 0.5 + 0.5 * math.sin(t * 2.5)
         for ring = 1, 6 do
             local rr = ring * 8 * scale * (1.0 + core_pulse * 0.3)
@@ -2972,7 +2972,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", cx, cy, rr)
         end
 
-        -- Layer 2: Warp star streaks (80 stars, multi-colored, accelerating)
+        -- Layer 2: Warp star streaks
         local star_colors = {
             {1.0, 1.0, 1.0},   -- white
             {0.5, 0.8, 1.0},   -- ice blue
@@ -2988,7 +2988,7 @@ function renderer.drawDynamicBackground(themeName)
             local t_offset = (t * (0.9 + (i % 7) * 0.08) + i * 0.31) % cycle
             local progress = t_offset / cycle
 
-            -- Stars accelerate as they go outward (ease-in)
+            -- Stars accelerate outward
             local eased = progress * progress * progress
             local distance = eased * (w * 0.72)
 
@@ -3021,7 +3021,7 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Warm golden ambient glow pulses (bottom corners, like torchlight)
+        -- Layer 1: Ambient golden glow pulses
         local torch_positions = {{0.0, 1.0}, {1.0, 1.0}, {0.5, 1.05}}
         for ti, tp in ipairs(torch_positions) do
             local tx = w * tp[1]
@@ -3033,7 +3033,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.circle("fill", tx, ty, 120 * scale)
         end
 
-        -- Layer 2: Rising gold coin flakes (spinning squares, shimmer on contact with light)
+        -- Layer 2: Rising gold coin flakes
         for i = 1, 36 do
             local golden_r = 0.6180339887
             local gx_base = ((i * golden_r) % 1.0) * w
@@ -3046,7 +3046,7 @@ function renderer.drawDynamicBackground(themeName)
             local life = math.max(0, 1.0 - gy / h)
             local size = (2.5 + (i % 4) * 1.2) * scale
 
-            -- Sparkle pulse per coin (each on its own frequency)
+            -- Sparkle pulse per coin
             local sparkle = math.sin(t * (3.5 + (i % 5) * 0.6) + i * 2.1) * 0.5 + 0.5
             local alpha = sparkle * life * 0.42
 
@@ -3072,7 +3072,7 @@ function renderer.drawDynamicBackground(themeName)
             love.graphics.pop()
         end
 
-        -- Layer 3: Gold lens flares (star-shaped cross glints at fixed positions)
+        -- Layer 3: Gold lens flares
         local flare_spots = {{0.15, 0.22}, {0.72, 0.18}, {0.88, 0.60}, {0.35, 0.75}, {0.58, 0.35}}
         for fi, fs in ipairs(flare_spots) do
             local fx = w * fs[1]
@@ -3085,7 +3085,7 @@ function renderer.drawDynamicBackground(themeName)
             -- Cross spokes
             love.graphics.line(fx - flare_r, fy, fx + flare_r, fy)
             love.graphics.line(fx, fy - flare_r, fx, fy + flare_r)
-            -- Diagonal spokes (shorter)
+            -- Diagonal spokes
             local d = flare_r * 0.6
             love.graphics.setColor(1.0, 0.85, 0.20, flare_alpha * 0.5)
             love.graphics.line(fx - d, fy - d, fx + d, fy + d)
@@ -3115,11 +3115,11 @@ function renderer.drawDynamicBackground(themeName)
         }
 
         local num_rays = #ray_colors
-        -- Origin point: top-left corner area (like prism emitting light)
+        -- Origin point: top-left corner area
         local origin_x = w * (-0.05)
         local origin_y = h * (-0.05)
 
-        -- Fan spread: rays go from ~30° to ~80° (mostly rightward-downward)
+        -- Fan spread: rays go rightward and downward
         local angle_start = math.pi * 0.08   -- ~14 degrees
         local angle_end   = math.pi * 0.48   -- ~86 degrees
 
@@ -3142,7 +3142,7 @@ function renderer.drawDynamicBackground(themeName)
             local dx = math.cos(angle)
             local dy = math.sin(angle)
 
-            -- Width of beam grows along its length (perspective)
+            -- Beam width grows along its length for perspective
             local seg_count = 18
             for s = 1, seg_count do
                 local seg_frac = s / seg_count
@@ -3279,7 +3279,7 @@ function renderer.getThemeHighlightColors()
     return t.super_tile_color or {hex("#edc22e")}, t.board_color or {hex("#bbada0")}
 end
 
--- Fonts (moved to top of file)
+-- Fonts
 
 -- ============================================================================
 -- Layout
@@ -3417,7 +3417,7 @@ function renderer.init()
     if ok_tr_pause then track_pause_icon = tps_img end
 
 
-    -- Preload pet animations (all 1 to N frames for different states)
+    -- Preload pet animations for each state
     pet_cat_idle_down_frames = {}
     pet_cat_idle_left_frames = {}
     pet_cat_idle_right_frames = {}
@@ -3799,7 +3799,7 @@ local function getTileTextColor(value)
 end
 
 -- ============================================================================
--- Draw the board background (grid of empty cells)
+-- Draw board background empty cells
 -- ============================================================================
 function renderer.drawBoard(game)
     local bx, by = layout.board_x, layout.board_y
@@ -4329,7 +4329,7 @@ local function drawGooseCardIcon(cx, cy, scale, select_factor, r_acc, g_acc, b_a
     love.graphics.setColor(color_r, color_g, color_b, alpha * 0.8)
     love.graphics.ellipse("line", -3.6 * scale, 1.8 * scale, 5.4 * scale, 3.6 * scale)
 
-    -- Eye (small filled dot)
+    -- Eye dot
     love.graphics.setColor(0.1, 0.1, 0.15, alpha)
     love.graphics.circle("fill", 7.5 * scale, -9.3 * scale, 0.8 * scale)
 
@@ -4433,7 +4433,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
         local b_age = now - (tile.booster_spawn_t or now)
         b_alpha = math.max(0.0, math.min(1.0, (5.0 - b_age) / 1.2))
 
-        -- 1. Soft outer glow bloom (3 expanding layers)
+        -- 1. Soft outer glow bloom
         for layer = 3, 1, -1 do
             local breath = 0.7 + 0.3 * math.sin(now * 4.0 + layer * 0.8)
             local expand = (layer * 4.0 * scale) * breath
@@ -4442,7 +4442,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
             roundedRect("fill", sx - expand, sy - expand, scaledW + expand * 2, scaledH + expand * 2, cr + expand * 0.4)
         end
 
-        -- 2. Slow rotating light cone rays (6 wide, soft)
+        -- 2. Rotating light cone rays
         local ray_count = 6
         local ray_rot = now * 0.8
         local ray_len = scaledW * 0.85
@@ -4486,7 +4486,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
         love.graphics.setLineWidth(math.max(1, math.floor(2.0 * scale)))
         roundedRect("line", sx, sy, scaledW, scaledH, cr)
 
-        -- Corner sparkle dots (4 corners)
+        -- Corner sparkle dots
         local dot_sz = math.floor(2.5 * scale)
         local dot_pulse = 0.5 + 0.5 * math.sin(now * 6.0)
         love.graphics.setColor(1, 1, 1, 0.7 * b_alpha * dot_pulse)
@@ -4535,7 +4535,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
 end
 
 -- ============================================================================
--- Draw all tiles (layered: normal → merged → new)
+-- Draw all tiles
 -- ============================================================================
 function renderer.drawTiles(game)
     local t = game.animationTimer
@@ -4634,7 +4634,7 @@ function renderer.drawTiles(game)
             love.graphics.setColor(0, 0, 0, alpha * 0.75)
             love.graphics.printf(n.text, cx - 100 * _G.scale, float_y + 1, 200 * _G.scale, "center")
 
-            -- Text fill (bold emerald green / neon green)
+            -- Text fill
             if _G.theme == "matrix" then
                 love.graphics.setColor(0, 1, 0, alpha)
             else
@@ -4829,7 +4829,7 @@ function renderer.drawScores(game)
     local best_x = bx + bs - box_w
     local score_x = best_x - box_w - box_gap
 
-    -- Center vertically in the header area (above the board)
+    -- Center vertically above board
     local box_y = math.floor((layout.board_y - box_h) / 2)
 
     -- Dynamic vertical centering of text inside score boxes
@@ -4858,7 +4858,7 @@ function renderer.drawScores(game)
 
 
     if game.mode == "timeattack" and game.timeLeft ~= nil then
-        -- TIMER box (replaces BEST in Time Attack)
+        -- Timer box replaces best score in Time Attack
         local t = math.max(0, game.timeLeft)
         local mins = math.floor(t / 60)
         local secs = math.floor(t % 60)
@@ -4876,7 +4876,7 @@ function renderer.drawScores(game)
             end
         end
 
-        -- Box background (subtly different tint when urgent or flashing)
+        -- Box background tint when urgent or flashing
         if game.timerFlashTimer and game.timerFlashTimer > 0 then
             local f = game.timerFlashTimer / 0.3
             local r_col = score_bg_color[1] * (1 - f) + 0.0 * f
@@ -4959,7 +4959,7 @@ function renderer.drawScores(game)
 end
 
 -- ============================================================================
--- Draw header ("2048" title)
+-- Draw header title
 -- ============================================================================
 function renderer.drawHeader(game)
     local bx = layout.board_x
@@ -5047,11 +5047,11 @@ function renderer.drawHeader(game)
         end
     end
 
-    -- Normal gameplay position (without Endless Mode subtitle)
+    -- Normal gameplay position without subtitle
     local normal_title_y = math.floor((layout.board_y - title_h) / 2)
     local normal_y_2048 = normal_title_y
 
-    -- Endless Mode final position (shifted up to make room for Endless Mode subtitle)
+    -- Endless Mode position shifted up for subtitle
     local eh = font_header_plus:getHeight()
     local total_h = title_h + eh - math.floor(2 * scale)
     local endless_title_y = math.floor((layout.board_y - total_h) / 2)
@@ -5081,7 +5081,7 @@ function renderer.drawHeader(game)
     love.graphics.setColor(ui_text)
     love.graphics.print("2048", bx, y_2048)
 
-    -- Draw "PLUS" (or morph theme name)
+    -- Draw Plus or morph theme name
     drawSubTitle(bx + tw, y_plus)
 
     -- Draw "Endless Mode" subtitle with fade & subtle slide animation
@@ -5157,7 +5157,7 @@ function renderer.formatText(text)
 end
 
 -- ============================================================================
--- Draw a key badge (rounded rectangle with text inside)
+-- Draw key badge rounded rectangle with text
 -- ============================================================================
 local function drawKeyBadge(text, x, y, w, h, alpha_override)
     local scale = _G.scale
@@ -5236,12 +5236,12 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
             local cr = math.floor(aw * 0.25)
 
             if _G.theme == "matrix" then
-                -- Black background cross (shifted by press_shift_y)
+                -- Black background cross shifted by press_shift_y
                 love.graphics.setColor(0, 0, 0, 1)
                 love.graphics.rectangle("fill", x, y + (h - aw) / 2 + press_shift_y, w, aw)
                 love.graphics.rectangle("fill", x + (w - aw) / 2, y + press_shift_y, aw, h)
 
-                -- Green outline cross (shifted by press_shift_y)
+                -- Green outline cross shifted by press_shift_y
                 love.graphics.setColor(help_key_color)
                 love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
                 love.graphics.rectangle("line", x, y + (h - aw) / 2 + press_shift_y, w, aw)
@@ -5250,7 +5250,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 -- Center core circle outline
                 love.graphics.circle("line", x + w/2, y + h/2 + press_shift_y, aw * 0.7)
 
-                -- Draw four small direction dots inside in help_key_text (press-feedback highlights)
+                -- Draw four small direction dots inside in help_key_text
                 love.graphics.setColor(help_key_text)
                 local dot_r = math.max(1.2 * scale, 1)
                 local offset = w * 0.35
@@ -5267,13 +5267,13 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 return
             end
 
-            -- D-Pad shadow (shrinks when depressed)
+            -- D-Pad shadow shrinks when pressed
             love.graphics.setColor(0, 0, 0, 0.2)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             love.graphics.rectangle("fill", x, y + (h - aw) / 2 + sh, w, aw, cr)
             love.graphics.rectangle("fill", x + (w - aw) / 2, y + sh, aw, h, cr)
 
-            -- D-Pad body (shifted by press_shift_y)
+            -- D-Pad body shifted by press_shift_y
             love.graphics.setColor(help_key_color)
             love.graphics.rectangle("fill", x, y + (h - aw) / 2 + press_shift_y, w, aw, cr)
             love.graphics.rectangle("fill", x + (w - aw) / 2, y + press_shift_y, aw, h, cr)
@@ -5281,7 +5281,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
             -- Center core circle to blend the intersection
             love.graphics.circle("fill", x + w/2, y + h/2 + press_shift_y, aw * 0.7)
 
-            -- Draw four small direction dots inside in help_key_text (press-feedback highlights)
+            -- Draw four small direction dots inside in help_key_text
             love.graphics.setColor(help_key_text)
             local dot_r = math.max(1.2 * scale, 1)
             local offset = w * 0.35
@@ -5321,12 +5321,12 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 return
             end
 
-            -- Button shadow (shrinks when depressed)
+            -- Button shadow shrinks when pressed
             love.graphics.setColor(0, 0, 0, 0.25 * badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             love.graphics.circle("fill", cx, cy + sh, r)
 
-            -- Button body (shifted by press_shift_y)
+            -- Button body shifted by press_shift_y
             love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
             love.graphics.circle("fill", cx, cy + press_shift_y, r)
 
@@ -5366,12 +5366,12 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 return
             end
 
-            -- Shadow (shrinks when depressed)
+            -- Shadow shrinks when pressed
             love.graphics.setColor(0, 0, 0, 0.2 * badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             roundedRect("fill", x, y + sh, w, h, cr)
 
-            -- Body (shifted by press_shift_y)
+            -- Body shifted by press_shift_y
             love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
             roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
@@ -5391,12 +5391,12 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
 
         local cr = math.floor(h * 0.3)
 
-        -- Badge shadow (smooth depth effect, shrinks when depressed)
+        -- Badge shadow shrinks when pressed
         love.graphics.setColor(0, 0, 0, 0.2 * badge_a)
         local sh_off = math.max(1, math.floor(2 * scale)) * shadow_shrink
         roundedRect("fill", x, y + sh_off, w, h, cr)
 
-        -- Badge background (shifted by press_shift_y)
+        -- Badge background shifted by press_shift_y
         love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
         roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
@@ -5494,7 +5494,7 @@ function renderer.drawHelp(game)
     local label_gap = math.floor(4 * scale)
 
     if game.state ~= Game.STATE_LOST and game.state ~= Game.STATE_WON then
-        -- --- D-PAD section (left side) ---
+        -- --- D-PAD section left side ---
         local dpad_x = bar_x + math.floor(10 * scale)
         local dpad_size = math.floor(24 * scale)
 
@@ -5508,7 +5508,7 @@ function renderer.drawHelp(game)
         love.graphics.print("Move", dpad_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
     end
 
-    -- Action buttons (right side) ---
+    -- Action buttons right side ---
     local right_x = bar_x + bar_w - math.floor(10 * scale)
 
     -- Determine cross-fade alphas for BGM info, Coin info, and normal help prompts
@@ -5825,7 +5825,7 @@ function renderer.drawOverlay(game)
             local sound = require("sound")
             local track = sound.getCurrentTrack()
 
-            -- Active Perks & Boosters List (icons only)
+            -- Active Perks and Boosters List
             local active_perks = {}
             if game.coin_rush_active and item_icons and item_icons["coin_rush"] then
                 table.insert(active_perks, item_icons["coin_rush"])
@@ -5969,7 +5969,10 @@ local function drawStencilCircle()
     if transition_direction < 0 then
         p = 1 - p
     end
-    local w, h = love.graphics.getDimensions()
+    local w, h = 640, 480
+    if not _G.android_console then
+        w, h = love.graphics.getDimensions()
+    end
     local dx = math.max(transition_center_x, w - transition_center_x)
     local dy = math.max(transition_center_y, h - transition_center_y)
     local max_radius = math.sqrt(dx*dx + dy*dy) + 20
@@ -5981,28 +5984,55 @@ function renderer.startThemeTransition(drawTarget, direction)
     if not _G.screen_transitions then
         return
     end
-    local w, h = love.graphics.getDimensions()
-    if not transition_canvas then
+    local w, h = 640, 480
+    if not _G.android_console then
+        w, h = love.graphics.getDimensions()
+    end
+    if not transition_canvas or transition_canvas:getWidth() ~= w or transition_canvas:getHeight() ~= h then
         transition_canvas = love.graphics.newCanvas(w, h)
     end
     love.graphics.setCanvas({transition_canvas, stencil = true})
     love.graphics.clear()
-    if type(drawTarget) == "function" then
-        drawTarget()
+
+    if _G.android_console then
+        local real_getDims = love.graphics.getDimensions
+        local real_getW = love.graphics.getWidth
+        local real_getH = love.graphics.getHeight
+        love.graphics.getDimensions = function() return 640, 480 end
+        love.graphics.getWidth = function() return 640 end
+        love.graphics.getHeight = function() return 480 end
+        local prev_scale = _G.scale
+        _G.scale = 1.0
+
+        if type(drawTarget) == "function" then
+            drawTarget()
+        else
+            renderer.draw(drawTarget, true)
+        end
+
+        _G.scale = prev_scale
+        love.graphics.getDimensions = real_getDims
+        love.graphics.getWidth = real_getW
+        love.graphics.getHeight = real_getH
     else
-        renderer.draw(drawTarget, true)
+        if type(drawTarget) == "function" then
+            drawTarget()
+        else
+            renderer.draw(drawTarget, true)
+        end
     end
     love.graphics.setCanvas()
 
     transition_timer = transition_duration
     local dir = direction or 1
     transition_direction = dir
+    local scale_factor = _G.android_console and 1.0 or (_G.scale or 1.0)
     if dir < 0 then
-        transition_center_x = renderer.theme_prev_button_x or (w - math.floor(180 * _G.scale))
-        transition_center_y = renderer.theme_prev_button_y or (h - math.floor(30 * _G.scale))
+        transition_center_x = renderer.theme_prev_button_x or (w - math.floor(180 * scale_factor))
+        transition_center_y = renderer.theme_prev_button_y or (h - math.floor(30 * scale_factor))
     else
-        transition_center_x = renderer.theme_button_x or (w - math.floor(90 * _G.scale))
-        transition_center_y = renderer.theme_button_y or (h - math.floor(30 * _G.scale))
+        transition_center_x = renderer.theme_button_x or (w - math.floor(90 * scale_factor))
+        transition_center_y = renderer.theme_button_y or (h - math.floor(30 * scale_factor))
     end
 end
 
@@ -6109,7 +6139,7 @@ function renderer.updateTransition(dt)
             arcade_panel_y_offset = arcade_panel_target
         end
     end
-    -- Bg alpha: fully visible (0.75) when panel is near open (offset ~0), fades as panel closes
+    -- Bg alpha fades as panel closes
     local h = love.graphics.getHeight()
     local raw_t = 1 - math.min(1, arcade_panel_y_offset / math.max(1, h * 0.7))
     arcade_menu_bg_alpha = raw_t * 0.75
@@ -6519,7 +6549,7 @@ end
 -- ============================================================================
 
 -- Draw a mini 4x4 board at a given position with static tile data
--- tiles is a flat table: tiles[col][row] = value (or nil/0 for empty)
+-- tiles table: tiles col row = value or nil for empty
 local mini_fonts_cache = {}
 
 local function drawMiniBoard(bx, by, board_size, tiles, highlight, alpha_mod)
@@ -8894,10 +8924,10 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
         roundedRect("fill", hl_x, hl_y, card_w_arc, card_h_arc, card_cr)
 
         -- Bilinear color interpolation for Page 1 active border
-        local c11 = {r = 0.95, g = 0.80, b = 0.10} -- Time Attack (1,1)
-        local c21 = {r = 0.58, g = 0.25, b = 0.95} -- Huge Mode (2,1)
-        local c12 = {r = 0.85, g = 0.10, b = 0.10} -- No Mercy Mode (1,2)
-        local c22 = {r = 0.15, g = 0.55, b = 0.75} -- Goose Mode (2,2)
+        local c11 = {r = 0.95, g = 0.80, b = 0.10} -- Time Attack 1,1
+        local c21 = {r = 0.58, g = 0.25, b = 0.95} -- Huge Mode 2,1
+        local c12 = {r = 0.85, g = 0.10, b = 0.10} -- No Mercy Mode 1,2
+        local c22 = {r = 0.15, g = 0.55, b = 0.75} -- Goose Mode 2,2
 
         local tx = math.max(0, math.min(1, col_val - 1))
         local ty = math.max(0, math.min(1, row_val - 1))
@@ -9687,7 +9717,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         end
 
         if dir == 1 then
-            -- Forward transition (Tab 1 -> Tab 2): New page slides in on top from right (w -> 0)
+            -- Forward transition: new page slides in from right
             -- Parallax shift for old page
             local old_x = math.floor(-0.3 * w * p)
             local new_x = math.floor(w * (1 - p))
@@ -9719,7 +9749,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
                 love.graphics.setBlendMode("alpha", "alphamultiply")
             end
         else
-            -- Backward transition (Tab 2 -> Tab 1): Old page slides out on top to the right (0 -> w)
+            -- Backward transition: old page slides out to right
             -- Parallax shift for new page
             local new_x = math.floor(-0.3 * w * (1 - p))
             local old_x = math.floor(w * p)
@@ -11425,7 +11455,7 @@ function renderer.drawJukebox(selection, skip_transition)
     end
     local viz_level = _G.jukebox_viz_level or 0
 
-    -- Track-change animation (0.55s transition)
+    -- Track-change animation transition
     local change_age = t - (_G.jukebox_card_change_time or 0)
     local anim_dur   = 0.55
     local progress   = math.min(1.0, math.max(0.0, change_age / anim_dur))
@@ -11443,7 +11473,7 @@ function renderer.drawJukebox(selection, skip_transition)
     local pbar_h    = math.floor(4 * scale)
     local max_bar_h = math.floor(26 * scale)
     local bar_gap   = math.floor(12 * scale)   -- gap between artist and EQ top
-    local pb_gap    = math.floor(12 * scale)   -- gap between EQ bottom and pbar (perfectly symmetric)
+    local pb_gap    = math.floor(12 * scale)   -- gap between EQ bottom and pbar
     local tm_gap    = math.floor(3 * scale)    -- gap between pbar and time
 
     local y_title  = pad_v
@@ -11821,7 +11851,7 @@ function renderer.drawJukebox(selection, skip_transition)
                 eqs.slide_t       = this_playing and 1 or 0
                 eqs.pause_badge_t = this_paused and 1 or 0
             else
-                local spd = 4.5  -- slide speed (1 = full range per second × spd)
+                local spd = 4.5  -- slide speed
                 if this_playing then
                     eqs.slide_t = math.min(1, eqs.slide_t + dt * spd)
                 else
@@ -12004,7 +12034,7 @@ function renderer.drawJukebox(selection, skip_transition)
             end
             love.graphics.print(display_label, text_x, text_y)
 
-            -- Custom track badge (positioned directly along with song name, vertically centered in row)
+            -- Custom track badge positioned along with song name
             if track.is_custom then
                 local label_w = font_help_label:getWidth(display_label)
                 local custom_x = text_x + label_w + math.floor(8 * scale)

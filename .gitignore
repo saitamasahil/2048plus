@@ -1,3 +1,9 @@
 build/
 static/
 *.love
+*.apk
+*.idsig
+*.keystore
+*.jks
+android/release.keystore
+android/debug.keystore

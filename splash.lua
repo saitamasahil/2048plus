@@ -75,7 +75,10 @@ local cascade_tile_colors = {
 -- Initialization
 -- ============================================================================
 function splash.load()
-    local w, h = love.graphics.getDimensions()
+    local w, h = 640, 480
+    if not _G.android_console then
+        w, h = love.graphics.getDimensions()
+    end
 
     local renderer = require("renderer")
     local tile_colors_t, super_color = renderer.getThemeTileColors()
@@ -143,7 +146,7 @@ function splash.load()
                 size = cell_size,
                 color = cascade_tile_colors[color_idx],
                 delay = delay,
-                scale = 0,           -- current scale (animated)
+                scale = 0,           -- current animated scale
                 target_scale = 1,
                 rotation = 0,
                 corner_r = math.floor(cell_size * 0.08),
@@ -221,8 +224,11 @@ end
 function splash.draw()
     if splash.finished then return end
 
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
+    local w, h = 640, 480
+    if not _G.android_console then
+        w, h = love.graphics.getDimensions()
+    end
+    local scale = _G.android_console and 1.0 or _G.scale
 
     love.graphics.push()
     love.graphics.translate(anim.shake_x, anim.shake_y)

@@ -7,7 +7,7 @@ local joystick
 
 -- Hold-to-repeat configuration
 local repeat_delay = 0.3    -- initial delay before auto-repeat
-local repeat_rate  = 0.15   -- time between repeats while holding (slower than Scrappy — game moves are heavier)
+local repeat_rate  = 0.15   -- repeat interval while holding
 local holding = {
     dir = nil,
     start_time = 0,
@@ -28,10 +28,10 @@ input.events = {
     RIGHT  = "right",
     UP     = "up",
     DOWN   = "down",
-    CONFIRM = "return",               -- A button (Enter key)
+    CONFIRM = "return",               -- A button Enter key
     BACK   = "backspace",             -- B button
     SELECT = use_fallback and "tab" or "rshift",    -- Select button
-    START  = use_fallback and "p" or "space",  -- Start button (P key or Space)
+    START  = use_fallback and "p" or "space",  -- Start button P or Space
     MENU   = "escape",                -- Physical Menu/Function button
     X      = is_web and "space" or "x", -- X button
     Y      = is_web and "c" or "y",     -- Y button
@@ -75,6 +75,8 @@ local function emit(event, bypass)
         table.insert(event_queue, event)
     end
 end
+
+input.emit = emit
 
 function input.load()
     local joysticks = love.joystick.getJoysticks()
@@ -253,6 +255,10 @@ local touch_start_y = 0
 local touch_start_time = 0
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
+    if _G.android_console then
+        _G.android_console.touchpressed(id, x, y, dx, dy, pressure)
+        return
+    end
     -- Only track the first finger to avoid multi-touch confusion
     if not active_touch_id then
         active_touch_id = id
@@ -263,6 +269,10 @@ function love.touchpressed(id, x, y, dx, dy, pressure)
 end
 
 function love.touchreleased(id, x, y, dx, dy, pressure)
+    if _G.android_console then
+        _G.android_console.touchreleased(id, x, y, dx, dy, pressure)
+        return
+    end
     if active_touch_id ~= id then return end
     active_touch_id = nil
 
@@ -328,6 +338,13 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
                 emit(input.events.CONFIRM, false)
             end
         end
+    end
+end
+
+function love.touchmoved(id, x, y, dx, dy, pressure)
+    if _G.android_console then
+        _G.android_console.touchmoved(id, x, y, dx, dy, pressure)
+        return
     end
 end
 

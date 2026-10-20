@@ -1,0 +1,74 @@
+--- a/conf.lua	2026-10-20 22:22:29.931185916 +0530
++++ b/conf.lua	2026-10-20 22:22:29.932984482 +0530
+@@ -5,10 +5,12 @@
+ 
+     t.window.title = "2048 Plus"
+     t.window.icon = nil
+-    t.window.width = 640
+-    t.window.height = 480
++    t.window.width = 0
++    t.window.height = 0
++    t.window.fullscreen = true
+     t.window.borderless = false
+-    t.window.resizable = false
++    t.window.resizable = true
++    t.window.orientation = "portrait"
+     t.window.vsync = 1
+     t.window.display = 1
+     t.window.highdpi = true
+@@ -17,7 +19,7 @@
+ 
+     t.modules.thread = false
+     t.modules.audio = true
+-    t.modules.mouse = false
++    t.modules.mouse = true
+     t.modules.physics = false
+     t.modules.sound = true
+     t.modules.touch = true
+--- a/main.lua	2026-10-20 22:22:29.934348592 +0530
++++ b/main.lua	2026-10-20 22:22:29.935672651 +0530
+@@ -102,6 +102,12 @@
+ end
+ 
+ function love.load(args)
++    local ok_and, ac = pcall(require, "android.android_console")
++    if not ok_and then ok_and, ac = pcall(require, "android_console") end
++    if ok_and and ac then
++        _G.android_console = ac
++        ac.init(input)
++    end
+     love.math.setRandomSeed(os.time())
+ 
+     -- Handle resolution arguments (same pattern as Scrappy)
+@@ -2080,6 +2086,9 @@
+ end
+ 
+ function love.mousereleased(x, y, button, istouch, presses)
++    if _G.android_console and not istouch and button == 1 then
++        _G.android_console.mousereleased(x, y, button)
++    end
+     if button == 1 then
+         if _G.appState == "STORE" and _G.store_sort_btn_bounds then
+             local b = _G.store_sort_btn_bounds
+@@ -2130,3 +2139,21 @@
+         end
+     end
+ end
++
++function love.mousepressed(x, y, button, istouch, presses)
++    if _G.android_console and not istouch and button == 1 then
++        _G.android_console.mousepressed(x, y, button)
++    end
++end
++
++function love.mousemoved(x, y, dx, dy, istouch)
++    if _G.android_console and not istouch then
++        _G.android_console.mousemoved(x, y, dx, dy)
++    end
++end
++
++function love.resize(w, h)
++    if _G.android_console then
++        _G.android_console.updateLayout()
++    end
++end

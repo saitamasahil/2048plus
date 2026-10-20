@@ -14,7 +14,7 @@ set -e
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
-CACHE_DIR="$BUILD_DIR/.cache"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/2048plus_build"
 PM_SOURCE_DIR="$PROJECT_ROOT/portmaster"
 PC_SOURCE_DIR="$PROJECT_ROOT/pc"
 
@@ -29,11 +29,12 @@ if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
 fi
 
 TAG="v${MAJOR}.${MINOR}.${PATCH}"
-mkdir -p "$BUILD_DIR" "$CACHE_DIR"
+mkdir -p "$BUILD_DIR"
 
 # Helper function to download files to cache
 download_cached() {
     local url="$1"
+    mkdir -p "$CACHE_DIR"
     local output="$CACHE_DIR/$2"
     if [ ! -f "$output" ]; then
         echo "Downloading $2..."
@@ -297,6 +298,64 @@ build_windows() {
 }
 
 # ------------------------------------------------------------------------------
+# Function: Build Android APK
+# ------------------------------------------------------------------------------
+build_android() {
+    echo ""
+    echo "Building Android APK..."
+
+    TMP_STAGE="/tmp/android_stage_$$"
+    TMP_LOVE="/tmp/2048plus_android_$$.love"
+    rm -rf "$TMP_STAGE" "$TMP_LOVE"
+    mkdir -p "$TMP_STAGE"
+
+    # Stage runtime assets and scripts from project root
+    rsync -av \
+      --exclude=".git*" \
+      --exclude="*.sh" \
+      --exclude="*.md" \
+      --exclude="build*" \
+      --exclude="bin" \
+      --exclude="portmaster" \
+      --exclude="pc" \
+      --exclude="android" \
+      --exclude="mux_*" \
+      --exclude="static" \
+      "$PROJECT_ROOT/" "$TMP_STAGE/" > /dev/null || [ $? -eq 24 ]
+
+    # Copy android console module and assets into staged build
+    cp "$PROJECT_ROOT/android/android_console.lua" "$TMP_STAGE/"
+    mkdir -p "$TMP_STAGE/android"
+    cp -r "$PROJECT_ROOT/android/assets" "$TMP_STAGE/android/"
+
+    # Apply Android patch cleanly to staged copy
+    if [ -f "$PROJECT_ROOT/android/android.patch" ]; then
+        echo "Applying Android patch to staged build..."
+        (cd "$TMP_STAGE" && patch -p1 < "$PROJECT_ROOT/android/android.patch" > /dev/null)
+    fi
+
+    (
+        [ -f "$PROJECT_ROOT/LICENSE" ] && cp "$PROJECT_ROOT/LICENSE" "$TMP_STAGE/"
+        cd "$TMP_STAGE"
+        zip -9 -q -r "$TMP_LOVE" .
+    )
+    rm -rf "$TMP_STAGE"
+
+    # Build standalone signed APK with official icon
+    if [ -f "$PROJECT_ROOT/android/build_apk.py" ]; then
+        if command -v apktool &> /dev/null; then
+            LOVE_PATH="$TMP_LOVE" python3 "$PROJECT_ROOT/android/build_apk.py"
+        else
+            echo "Error: apktool not found. Install apktool to build the Android APK."
+            rm -f "$TMP_LOVE"
+            exit 1
+        fi
+    fi
+
+    rm -f "$TMP_LOVE" "$BUILD_DIR/2048plus_android.love" "$BUILD_DIR/2048plus.apk.idsig"
+}
+
+# ------------------------------------------------------------------------------
 # Interactive Menu / Argument Parsing
 # ------------------------------------------------------------------------------
 echo "2048 Plus $TAG"
@@ -309,9 +368,10 @@ if [ -z "$TARGET" ]; then
     echo "  2) PortMaster Package"
     echo "  3) Linux AppImage"
     echo "  4) Windows Package"
-    echo "  5) All"
+    echo "  5) Android APK"
+    echo "  6) All"
     echo ""
-    read -r -p "Enter choice [1/2/3/4/5] (Press Enter for All): " CHOICE
+    read -r -p "Enter choice [1/2/3/4/5/6] (Press Enter for All): " CHOICE
     case "$CHOICE" in
         1|muos|MUOS)
             TARGET="muos"
@@ -325,7 +385,10 @@ if [ -z "$TARGET" ]; then
         4|windows|win|win64|Windows|WINDOWS)
             TARGET="windows"
             ;;
-        5|all|ALL|both|BOTH|"")
+        5|android|Android|ANDROID)
+            TARGET="android"
+            ;;
+        6|all|ALL|both|BOTH|"")
             TARGET="all"
             ;;
         *)
@@ -350,15 +413,19 @@ case "$TARGET" in
         build_windows
         rm -f "$BUILD_DIR/2048plus.love"
         ;;
-    5|all|ALL|both|BOTH)
+    5|android|Android|ANDROID)
+        build_android
+        ;;
+    6|all|ALL|both|BOTH)
         build_muos
         build_portmaster
         build_linux
         build_windows
+        build_android
         rm -f "$BUILD_DIR/2048plus.love"
         ;;
     *)
-        echo "Unknown target '$TARGET'. Valid options: muos, portmaster, linux, windows, all"
+        echo "Unknown target '$TARGET'. Valid options: muos, portmaster, linux, windows, android, all"
         exit 1
         ;;
 esac

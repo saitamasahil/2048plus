@@ -1,5 +1,4 @@
--- 2048 Plus — Main entry point
--- A feature-packed implementation of the classic 2048 game
+-- Main entry point
 
 require("globals")
 
@@ -26,9 +25,9 @@ local konami_sequence = { "up", "up", "down", "down", "left", "right", "left", "
 local last_app_state = nil
 local screen_transition_timer = 0
 local screen_transition_duration = 0.20
-local screen_canvas = nil       -- canvas of the NEW (incoming) screen
-local old_screen_canvas = nil   -- canvas of the OLD (outgoing) screen
-local transition_direction = 1  -- +1 = forward (new slides in from right), -1 = backward (from left)
+local screen_canvas = nil       -- canvas of new incoming screen
+local old_screen_canvas = nil   -- canvas of old outgoing screen
+local transition_direction = 1  -- forward 1, backward -1
 local konami_progress = 1
 
 local transition_delay_timer = 0
@@ -54,17 +53,36 @@ local STATE_DEPTH = {
     DINO          = 2,
 }
 
--- Forward declaration (defined later in the file, after love.update's helper logic)
+-- Forward declaration for drawCurrentScreen
 local drawCurrentScreen
 
 local function captureOldScreen()
-    local w, h = love.graphics.getDimensions()
-    if not old_screen_canvas then
+    local w, h = 640, 480
+    if not _G.android_console then
+        w, h = love.graphics.getDimensions()
+    end
+    if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
         old_screen_canvas = love.graphics.newCanvas(w, h)
     end
     love.graphics.setCanvas({old_screen_canvas, stencil = true})
     love.graphics.clear()
-    drawCurrentScreen()
+    if _G.android_console then
+        local real_getDims = love.graphics.getDimensions
+        local real_getW = love.graphics.getWidth
+        local real_getH = love.graphics.getHeight
+        love.graphics.getDimensions = function() return 640, 480 end
+        love.graphics.getWidth = function() return 640 end
+        love.graphics.getHeight = function() return 480 end
+        local prev_scale = _G.scale
+        _G.scale = 1.0
+        drawCurrentScreen()
+        _G.scale = prev_scale
+        love.graphics.getDimensions = real_getDims
+        love.graphics.getWidth = real_getW
+        love.graphics.getHeight = real_getH
+    else
+        drawCurrentScreen()
+    end
     love.graphics.setCanvas()
 end
 
@@ -85,7 +103,7 @@ end
 function love.load(args)
     love.math.setRandomSeed(os.time())
 
-    -- Handle resolution arguments (same pattern as Scrappy)
+    -- Parse resolution arguments
     if args and #args > 0 then
         local w, h = 640, 480
         if #args >= 2 then
@@ -107,9 +125,14 @@ function love.load(args)
 
     update_ui_scale()
 
-    -- Initialize save system (high scores stored in static/ dir)
+    -- Initialize save directory
     if love.system.getOS() == "Web" then
         save.init("/tmp")
+    elseif love.system.getOS() == "Android" or _G.android_console then
+        love.filesystem.setIdentity("2048plus")
+        local save_dir = love.filesystem.getSaveDirectory()
+        love.filesystem.createDirectory("")
+        save.init(save_dir)
     else
         _G.WORK_DIR = love.filesystem.getWorkingDirectory() or "."
         save.init(_G.WORK_DIR .. "/static")
@@ -503,15 +526,18 @@ function love.load(args)
         end
     end
 
-    -- Crucially apply the loaded theme to the renderer NOW
+    -- Apply active theme to renderer
     renderer.applyTheme()
 
     -- Initialize input
     input.load()
 
-    -- Initialize renderer (compute layout, load fonts)
+    -- Initialize renderer layout and fonts
     renderer.init()
-    local w, h = love.graphics.getDimensions()
+    local w, h = 640, 480
+    if not _G.android_console then
+        w, h = love.graphics.getDimensions()
+    end
     screen_canvas = love.graphics.newCanvas(w, h)
 
     -- Initialize dino game
@@ -527,11 +553,11 @@ function love.update(dt)
     -- Cap dt to prevent animation glitches on frame drops
     dt = math.min(dt, 0.05)
 
-    -- Trigger screen transitions on appState change (smooth slide animation)
+    -- Screen slide transitions
     if _G.appState ~= last_app_state then
         if splash.finished and last_app_state ~= nil then
-            -- ARCADE_MENU & PLAY_SELECT have their own panel slide animation; skip global slide for them
-            -- Exception: PLAY_SELECT → GAME uses the normal circle-wipe so the game doesn't flash
+            -- Skip global slide for menus with custom panel transitions
+            -- Circle wipe transition into game
             local going_to_game_from_play = (last_app_state == "PLAY_SELECT" or last_app_state == "ARCADE_MENU") and _G.appState == "GAME"
             local skip_slide = not going_to_game_from_play and
                 (_G.appState == "ARCADE_MENU" or last_app_state == "ARCADE_MENU" or _G.appState == "PLAY_SELECT" or last_app_state == "PLAY_SELECT")
@@ -558,8 +584,8 @@ function love.update(dt)
         screen_transition_timer = math.max(0, screen_transition_timer - dt)
     end
 
-    -- Check for global exit combo (MENU + START)
-    -- Only trigger if MENU and BACK are distinct keys (avoids false quit when pressing Back on PC)
+    -- Global exit combo: MENU + START
+    -- Require distinct MENU and BACK keys to avoid accidental exit
     if input.events.MENU ~= input.events.BACK then
         if input.state[input.events.MENU] and input.state[input.events.START] then
             love.event.quit()
@@ -1436,14 +1462,7 @@ function love.update(dt)
                     elseif sel == "Back" then
                         sound.playMenuBack()
                         if _G.screen_transitions then
-                            local w, h = love.graphics.getDimensions()
-                            if not old_screen_canvas then
-                                old_screen_canvas = love.graphics.newCanvas(w, h)
-                            end
-                            love.graphics.setCanvas({old_screen_canvas, stencil = true})
-                            love.graphics.clear()
-                            drawCurrentScreen()
-                            love.graphics.setCanvas()
+                            captureOldScreen()
                             _G.screen_canvas_ready = false
                         end
                         queueTransitionAction(event, 0.08, function()
@@ -1460,14 +1479,7 @@ function love.update(dt)
                     if sel == "Audio & Haptics" then
                         sound.playMenuSelect()
                         if _G.screen_transitions then
-                            local w, h = love.graphics.getDimensions()
-                            if not old_screen_canvas then
-                                old_screen_canvas = love.graphics.newCanvas(w, h)
-                            end
-                            love.graphics.setCanvas({old_screen_canvas, stencil = true})
-                            love.graphics.clear()
-                            drawCurrentScreen()
-                            love.graphics.setCanvas()
+                            captureOldScreen()
                             _G.screen_canvas_ready = false
                         end
                         queueTransitionAction(event, 0.08, function()
@@ -1537,14 +1549,7 @@ function love.update(dt)
                 sound.playMenuBack()
                 if _G.settings_page == "audio" then
                     if _G.screen_transitions then
-                        local w, h = love.graphics.getDimensions()
-                        if not old_screen_canvas then
-                            old_screen_canvas = love.graphics.newCanvas(w, h)
-                        end
-                        love.graphics.setCanvas({old_screen_canvas, stencil = true})
-                        love.graphics.clear()
-                        drawCurrentScreen()
-                        love.graphics.setCanvas()
+                        captureOldScreen()
                         _G.screen_canvas_ready = false
                     end
                     queueTransitionAction(event, 0.08, function()
@@ -1909,7 +1914,117 @@ local crt_shader_code = [[
 local crt_shader = nil
 local crt_main_canvas = nil
 
+local function draw_internal()
+    if not splash.finished then
+        splash.draw()
+        return
+    end
+
+    local sc_w, sc_h = 640, 480
+    if not _G.android_console then
+        sc_w, sc_h = love.graphics.getDimensions()
+    end
+    local w, h = sc_w, sc_h
+
+    if screen_transition_timer > 0 then
+        -- Ease-out transition curve
+        local t_progress = 1 - (screen_transition_timer / screen_transition_duration)
+        local p = 1 - math.pow(1 - t_progress, 3)
+
+        if not screen_canvas or screen_canvas:getWidth() ~= sc_w or screen_canvas:getHeight() ~= sc_h then
+            screen_canvas = love.graphics.newCanvas(sc_w, sc_h)
+        end
+
+        -- Only render the new screen to the canvas ONCE at the start of the transition
+        if not _G.screen_canvas_ready then
+            love.graphics.setCanvas({screen_canvas, stencil = true})
+            love.graphics.clear()
+            drawCurrentScreen()
+            love.graphics.setCanvas()
+            _G.screen_canvas_ready = true
+        end
+
+        -- Draw background fill to avoid any gaps
+        love.graphics.clear(0.05, 0.05, 0.08, 1.0)
+
+        local dir = transition_direction or 1
+        local shadow_w = math.floor(20 * (_G.scale or 1))
+
+        if dir == 1 then
+            -- Forward screen slide
+            -- Parallax shift for old screen
+            local old_x = math.floor(-0.3 * w * p)
+            local new_x = math.floor(w * (1 - p))
+
+            -- Draw old screen
+            if old_screen_canvas then
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.setBlendMode("replace", "premultiplied")
+                love.graphics.draw(old_screen_canvas, old_x, 0)
+                love.graphics.setBlendMode("alpha", "alphamultiply")
+
+                -- Dim old screen overlay
+                love.graphics.setColor(0, 0, 0, 0.5 * p)
+                love.graphics.rectangle("fill", old_x, 0, w, h)
+            end
+
+            -- 2. Draw shadow to the left of the new screen
+            for i = 0, shadow_w - 1 do
+                local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
+                love.graphics.setColor(0, 0, 0, alpha)
+                love.graphics.rectangle("fill", new_x - shadow_w + i, 0, 1, h)
+            end
+
+            -- Draw new screen
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("replace", "premultiplied")
+            love.graphics.draw(screen_canvas, new_x, 0)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
+        else
+            -- Backward screen slide
+            -- Parallax shift for new screen
+            local new_x = math.floor(-0.3 * w * (1 - p))
+            local old_x = math.floor(w * p)
+
+            -- Draw new screen
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("replace", "premultiplied")
+            love.graphics.draw(screen_canvas, new_x, 0)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
+
+            -- Dim overlay
+            love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
+            love.graphics.rectangle("fill", new_x, 0, w, h)
+
+            if old_screen_canvas then
+                -- Draw edge shadow
+                for i = 0, shadow_w - 1 do
+                    local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
+                    love.graphics.setColor(0, 0, 0, alpha)
+                    love.graphics.rectangle("fill", old_x - shadow_w + i, 0, 1, h)
+                end
+
+                -- Draw old screen
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.setBlendMode("replace", "premultiplied")
+                love.graphics.draw(old_screen_canvas, old_x, 0)
+                love.graphics.setBlendMode("alpha", "alphamultiply")
+            end
+        end
+
+        love.graphics.setColor(1, 1, 1, 1)
+    else
+        _G.screen_canvas_ready = false
+        drawCurrentScreen()
+    end
+end
+
 function love.draw()
+    if _G.android_console then
+        _G.android_console.draw(draw_internal)
+        return
+    end
+
     local w, h = love.graphics.getDimensions()
     local old_setCanvas = love.graphics.setCanvas
 
@@ -1942,105 +2057,6 @@ function love.draw()
         end
         love.graphics.setCanvas(crt_main_canvas)
         love.graphics.clear()
-    end
-
-    local function draw_internal()
-        if not splash.finished then
-            splash.draw()
-            return
-        end
-
-        if screen_transition_timer > 0 then
-            -- Ease-out transition curve
-            local t_progress = 1 - (screen_transition_timer / screen_transition_duration)
-            local p = 1 - math.pow(1 - t_progress, 3)
-
-            if not screen_canvas then
-                screen_canvas = love.graphics.newCanvas(w, h)
-            end
-
-            -- Only render the new screen to the canvas ONCE at the start of the transition
-            if not _G.screen_canvas_ready then
-                love.graphics.setCanvas({screen_canvas, stencil = true})
-                love.graphics.clear()
-                drawCurrentScreen()
-                love.graphics.setCanvas()
-                _G.screen_canvas_ready = true
-            end
-
-            -- Draw background fill to avoid any gaps
-            love.graphics.clear(0.05, 0.05, 0.08, 1.0)
-
-            local dir = transition_direction or 1
-            local shadow_w = math.floor(20 * (_G.scale or 1))
-
-            if dir == 1 then
-                -- Forward screen slide
-                -- Parallax shift for old screen
-                local old_x = math.floor(-0.3 * w * p)
-                local new_x = math.floor(w * (1 - p))
-
-                -- Draw old screen
-                if old_screen_canvas then
-                    love.graphics.setColor(1, 1, 1, 1)
-                    love.graphics.setBlendMode("replace", "premultiplied")
-                    love.graphics.draw(old_screen_canvas, old_x, 0)
-                    love.graphics.setBlendMode("alpha", "alphamultiply")
-
-                    -- Dim old screen overlay
-                    love.graphics.setColor(0, 0, 0, 0.5 * p)
-                    love.graphics.rectangle("fill", old_x, 0, w, h)
-                end
-
-                -- 2. Draw shadow to the left of the new screen
-                for i = 0, shadow_w - 1 do
-                    local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                    love.graphics.setColor(0, 0, 0, alpha)
-                    love.graphics.rectangle("fill", new_x - shadow_w + i, 0, 1, h)
-                end
-
-                -- Draw new screen
-                love.graphics.setColor(1, 1, 1, 1)
-                love.graphics.setBlendMode("replace", "premultiplied")
-                love.graphics.draw(screen_canvas, new_x, 0)
-                love.graphics.setBlendMode("alpha", "alphamultiply")
-            else
-                -- Backward screen slide
-                -- Parallax shift for new screen
-                local new_x = math.floor(-0.3 * w * (1 - p))
-                local old_x = math.floor(w * p)
-
-                -- Draw new screen
-                love.graphics.setColor(1, 1, 1, 1)
-                love.graphics.setBlendMode("replace", "premultiplied")
-                love.graphics.draw(screen_canvas, new_x, 0)
-                love.graphics.setBlendMode("alpha", "alphamultiply")
-
-                -- Dim overlay
-                love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
-                love.graphics.rectangle("fill", new_x, 0, w, h)
-
-                if old_screen_canvas then
-                    -- Draw edge shadow
-                    for i = 0, shadow_w - 1 do
-                        local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                        love.graphics.setColor(0, 0, 0, alpha)
-                        love.graphics.rectangle("fill", old_x - shadow_w + i, 0, 1, h)
-                    end
-
-                    -- Draw old screen
-                    love.graphics.setColor(1, 1, 1, 1)
-                    love.graphics.setBlendMode("replace", "premultiplied")
-                    love.graphics.draw(old_screen_canvas, old_x, 0)
-                    love.graphics.setBlendMode("alpha", "alphamultiply")
-                end
-            end
-
-            love.graphics.setColor(1, 1, 1, 1)
-        else
-            _G.screen_canvas_ready = false
-            drawCurrentScreen()
-        end
     end
 
     local success, err = pcall(draw_internal)
@@ -2078,8 +2094,6 @@ end
 function love.quit()
     if sound and sound.stopWebServer then
         pcall(sound.stopWebServer)
-    else
-        os.execute("pkill -9 -f jukebox_server.py 2>/dev/null")
     end
     if game then
         pcall(function() game:saveGameState() end)
@@ -2096,4 +2110,20 @@ function love.quit()
         end)
     end
     os.exit()
+end
+
+function love.focus(f)
+    if not f then
+        if game and game.saveGameState then
+            pcall(function() game:saveGameState() end)
+        end
+    end
+end
+
+function love.visible(v)
+    if not v then
+        if game and game.saveGameState then
+            pcall(function() game:saveGameState() end)
+        end
+    end
 end

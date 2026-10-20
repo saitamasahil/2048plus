@@ -50,22 +50,25 @@ Download and extract `2048_Plus-win64.zip` from the [Releases](https://github.co
 
 Saves are stored in: `%APPDATA%\LOVE\2048plus\`
 
+### Android
+Download `2048plus.apk` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page, open it on your Android device (enable "Install from unknown sources" if prompted), and install.
+
 ## Controls
 
-| Action | Gamepad Button | Keyboard Key |
-|:---|:---|:---|
-| **Move Tiles** | D-Pad / Left Stick | Arrow Keys / WASD |
-| **Confirm / Select Item** | `A` | `Enter` |
-| **Undo Move / Back / Cancel** | `B` | `Backspace` |
-| **Quit to Menu** | `X` | `X` |
-| **Cycle Unlocked Themes** | `Y` | `Y` |
-| **Activate Swap Powerup** | `L1` | `Q` |
-| **Activate Bomb Powerup** | `R1` | `E` |
-| **Seek Music** | D-Pad Left / Right | Arrow Left / Right |
-| **Show Coin Balance** | `Select` | `Tab/Shift` |
-| **Pause Menu / Resume** | `Start` | `Space` |
-| **Toggle Fullscreen** | — | `F11` |
-| **Force Quit App** | `Menu + Start` | `Alt + F4` |
+| Action | Gamepad Button | Touchscreen / Virtual Console | Keyboard Key |
+|:---|:---|:---|:---|
+| **Move Tiles** | D-Pad / Left Stick | Swipe Anywhere (Board & Hidden D-Pad Area) | Arrow Keys / WASD |
+| **Confirm / Select Item** | `A` | `A` Button | `Enter` |
+| **Undo Move / Back / Cancel** | `B` | `B` Button | `Backspace` |
+| **Quit to Menu** | `X` | `X` Button | `X` |
+| **Cycle Unlocked Themes** | `Y` | `Y` Button | `Y` |
+| **Activate Swap Powerup** | `L1` | `L1` Trigger | `Q` |
+| **Activate Bomb Powerup** | `R1` | `R1` Trigger | `E` |
+| **Seek Music** | D-Pad Left / Right | D-Pad Left / Right | Arrow Left / Right |
+| **Show Coin Balance** | `Select` | `Select` Button | `Tab/Shift` |
+| **Pause Menu / Resume** | `Start` | `Start` Button | `Space` |
+| **Toggle Fullscreen** | — | — | `F11` |
+| **Force Quit App** | `Menu + Start` | Android Back Button | `Alt + F4` |
 
 *Note: Your progress is automatically saved after every move. You can safely close the game and pick up exactly where you left off.*
 
@@ -83,6 +86,19 @@ To automatically embed the custom 2048 icon into `2048 Plus.exe` during Windows 
   - `pip install pillow` or `sudo apt install python3-pil`
 
 If Wine or Pillow is not installed, the Windows package will build with the default LÖVE icon.
+
+### Android Prerequisites & APK Packaging
+The Android build target (`./build.sh android`) automatically produces both the `.love` package and the standalone signed `.apk` file:
+- **`apktool`**: Decompiles and packages the Android template (`sudo apt install apktool` or via your package manager).
+- **Android SDK Build-Tools** (`zipalign` and `apksigner`): Included with the Android SDK. Ensure either `$ANDROID_HOME` is set or build tools are in your `$PATH`.
+- **Python Pillow**: Used for generating high-resolution launcher icons across all screen densities (`pip install pillow` or `sudo apt install python3-pil`).
+
+#### Building from Source without a Release Key (Default / Contributors)
+Anyone can clone this repository and build a working, installable APK immediately without needing a private release key:
+```bash
+./build.sh android
+```
+The build script automatically creates a local debug keystore and signs the APK with standard debug credentials.
 
 ### Build Steps
 
@@ -107,9 +123,10 @@ If Wine or Pillow is not installed, the Windows package will build with the defa
    - **`2` (PortMaster)**: Generates the PortMaster package (`2048plus.zip`) in `build/`
    - **`3` (Linux)**: Generates the Linux AppImage in `build/`
    - **`4` (Windows)**: Generates the Windows 64-bit package in `build/`
-   - **`5` (All / Default)**: Generates all packages simultaneously
+   - **`5` (Android)**: Generates both `.love` and standalone signed `.apk` in `build/`
+   - **`6` (All / Default)**: Generates all packages simultaneously
 
-*Note: You can also build non-interactively via CLI arguments: `./build.sh muos`, `./build.sh portmaster`, `./build.sh linux`, `./build.sh windows`, or `./build.sh all`.*
+*Note: You can also build non-interactively via CLI arguments: `./build.sh muos`, `./build.sh portmaster`, `./build.sh linux`, `./build.sh windows`, `./build.sh android`, or `./build.sh all`.*
 
 ## Credits & Acknowledgements
 
