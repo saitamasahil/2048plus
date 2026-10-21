@@ -210,6 +210,10 @@ end
 local anim_chassis = {0.733, 0.678, 0.627}
 local anim_bezel   = {0.467, 0.431, 0.396}
 local dpad_anim_alpha = 1.0
+local swipe_box_anim = 0.0
+local swipe_text_alpha = 1.0
+local console_has_swiped = false
+local last_is_gameplay = false
 
 -- Layout geometry
 local geo = {
@@ -236,6 +240,7 @@ local geo = {
     real_w = 0,
     real_h = 0,
     buttons = {},
+    swipe_box = {x = 0, y = 0, w = 0, h = 0, r = 16},
 }
 
 local game_canvas = nil
@@ -591,6 +596,20 @@ function android_console.updateLayout()
         h = pill_h,
         event = input and input.events and input.events.START or "space",
     }
+
+    local pad_w = math.floor(w * 0.78)
+    local pad_x = origin_x + math.floor((w - pad_w) / 2)
+    local pad_top = ctrl_top + math.floor(10 * (h / 844))
+    local pad_bottom = pill_y - math.floor(14 * (h / 844))
+    local pad_h = pad_bottom - pad_top
+
+    geo.swipe_box = {
+        x = pad_x,
+        y = pad_top,
+        w = pad_w,
+        h = pad_h,
+        r = 16,
+    }
 end
 
 -- Check D-Pad direction based on touch offset from D-pad center
@@ -835,6 +854,7 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             local threshold = 24
             if abs_x > threshold or abs_y > threshold then
                 sw.fired = true
+                console_has_swiped = true
                 local ev = nil
                 if abs_x > abs_y then
                     ev = (diff_x > 0) and input.events.RIGHT or input.events.LEFT
@@ -890,6 +910,7 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
         local threshold = 24
         if abs_x > threshold or abs_y > threshold then
             sw.fired = true
+            console_has_swiped = true
             screen_overlay_visible = false
             local ev = nil
             if abs_x > abs_y then
@@ -1899,8 +1920,8 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     local target_dpad = is_gameplay and 0.0 or 1.0
     local dpad_lerp_rate = 1.0 - math.exp(-dt * 9.0)
     dpad_anim_alpha = dpad_anim_alpha + (target_dpad - dpad_anim_alpha) * dpad_lerp_rate
-    if dpad_anim_alpha < 0.005 then dpad_anim_alpha = 0.0 end
-    if dpad_anim_alpha > 0.995 then dpad_anim_alpha = 1.0 end
+    if dpad_anim_alpha < 0.015 then dpad_anim_alpha = 0.0 end
+    if dpad_anim_alpha > 0.985 then dpad_anim_alpha = 1.0 end
 
     local game_t = 1.0 - dpad_anim_alpha
     local t_curve = game_t * game_t * (3.0 - 2.0 * game_t)
@@ -1952,6 +1973,138 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
             local cx = geo.dpad_x
             local cy = geo.dpad_y + slide_y
             love.graphics.draw(dpad_img, cx - (dpad_img:getWidth() * s) / 2, cy - (dpad_img:getHeight() * s) / 2, 0, s, s)
+        end
+    end
+
+    -- Track swipe gesture state for gameplay session
+    if is_gameplay and not last_is_gameplay then
+        if not _G.game or not _G.game.moves or _G.game.moves == 0 then
+            console_has_swiped = false
+            swipe_text_alpha = 1.0
+        end
+    end
+    last_is_gameplay = is_gameplay
+
+    if is_gameplay and _G.game and _G.game.moves and _G.game.moves > 0 then
+        console_has_swiped = true
+    end
+
+    -- Swipe box appears after dpad fades and abxy finishes moving upward
+    local target_swipe_box = (is_gameplay and dpad_anim_alpha == 0.0) and 1.0 or 0.0
+    local box_lerp_rate = 1.0 - math.exp(-dt * 8.0)
+    swipe_box_anim = swipe_box_anim + (target_swipe_box - swipe_box_anim) * box_lerp_rate
+    if swipe_box_anim < 0.01 then swipe_box_anim = 0.0 end
+    if swipe_box_anim > 0.99 then swipe_box_anim = 1.0 end
+
+    local target_text = (console_has_swiped or not is_gameplay) and 0.0 or 1.0
+    local text_lerp_rate = 1.0 - math.exp(-dt * 9.5)
+    swipe_text_alpha = swipe_text_alpha + (target_text - swipe_text_alpha) * text_lerp_rate
+    if swipe_text_alpha < 0.02 then swipe_text_alpha = 0.0 end
+    if swipe_text_alpha > 0.98 then swipe_text_alpha = 1.0 end
+
+    if swipe_box_anim > 0.005 and geo.swipe_box then
+        local p = swipe_box_anim
+        local ease = p * p * (3.0 - 2.0 * p)
+        local box_alpha = ease * 0.95
+        local slide_y = (1.0 - ease) * 16
+
+        local bx = geo.swipe_box.x
+        local by = geo.swipe_box.y + slide_y
+        local bw = geo.swipe_box.w
+        local bh = geo.swipe_box.h
+        local br = geo.swipe_box.r or 18
+
+        -- Adapt styling to chassis luminance
+        local lum = cr * 0.299 + cg * 0.587 + cb * 0.114
+        local is_dark = (lum < 0.45)
+        local border_r = is_dark and 1.0 or bzr
+        local border_g = is_dark and 1.0 or bzg
+        local border_b = is_dark and 1.0 or bzb
+        local border_a = (is_dark and 0.22 or 0.35) * box_alpha
+
+        local hint_r = is_dark and 0.88 or bzr
+        local hint_g = is_dark and 0.88 or bzg
+        local hint_b = is_dark and 0.92 or bzb
+
+        -- Recessed trackpad fill
+        if is_dark then
+            love.graphics.setColor(0, 0, 0, 0.35 * box_alpha)
+        else
+            love.graphics.setColor(cr * 0.86, cg * 0.86, cb * 0.86, 0.60 * box_alpha)
+        end
+        love.graphics.rectangle("fill", bx, by, bw, bh, br, br)
+
+        -- Inset top shadow bevel
+        if is_dark then
+            love.graphics.setColor(0, 0, 0, 0.40 * box_alpha)
+        else
+            love.graphics.setColor(cr * 0.70, cg * 0.70, cb * 0.70, 0.45 * box_alpha)
+        end
+        love.graphics.rectangle("fill", bx + br, by + 1, bw - 2 * br, 2)
+
+        -- Inset bottom highlight rim
+        love.graphics.setColor(1, 1, 1, (is_dark and 0.08 or 0.30) * box_alpha)
+        love.graphics.line(bx + br, by + bh - 1, bx + bw - br, by + bh - 1)
+
+        -- Micropattern stipple texture
+        local dot_alpha = (is_dark and 0.07 or 0.11) * box_alpha
+        love.graphics.setColor(hint_r, hint_g, hint_b, dot_alpha)
+        for px = bx + 24, bx + bw - 24, 22 do
+            for py = by + 24, by + bh - 24, 22 do
+                love.graphics.rectangle("fill", px, py, 1.5, 1.5)
+            end
+        end
+
+        -- Border outline
+        love.graphics.setColor(border_r, border_g, border_b, border_a)
+        love.graphics.setLineWidth(1.5)
+        love.graphics.rectangle("line", bx, by, bw, bh, br, br)
+
+        -- Corner accent tick marks
+        local m_sz = 10
+        local m_ins = 12
+        love.graphics.setColor(border_r, border_g, border_b, (is_dark and 0.28 or 0.30) * box_alpha)
+        love.graphics.setLineWidth(1.4)
+        love.graphics.line(bx + m_ins, by + m_ins + m_sz, bx + m_ins, by + m_ins, bx + m_ins + m_sz, by + m_ins)
+        love.graphics.line(bx + bw - m_ins - m_sz, by + m_ins, bx + bw - m_ins, by + m_ins, bx + bw - m_ins, by + m_ins + m_sz)
+        love.graphics.line(bx + m_ins, by + bh - m_ins - m_sz, bx + m_ins, by + bh - m_ins, bx + m_ins + m_sz, by + bh - m_ins)
+        love.graphics.line(bx + bw - m_ins - m_sz, by + bh - m_ins, bx + bw - m_ins, by + bh - m_ins, bx + bw - m_ins, by + bh - m_ins - m_sz)
+
+        -- Directional arrow glyphs and text indicator
+        if swipe_text_alpha > 0.005 then
+            local t_alpha = swipe_text_alpha * box_alpha
+            local cx = bx + bw / 2
+            local cy = by + bh / 2
+
+            local glyph_alpha = (is_dark and 0.78 or 0.72) * t_alpha
+            love.graphics.setColor(hint_r, hint_g, hint_b, glyph_alpha)
+
+            -- Center touch ring
+            love.graphics.setLineWidth(1.8)
+            love.graphics.circle("line", cx, cy - 16, 4.5)
+            love.graphics.circle("fill", cx, cy - 16, 2.0)
+
+            -- Four directional arrowheads and stems
+            love.graphics.polygon("fill", cx, cy - 36, cx - 6, cy - 27, cx + 6, cy - 27)
+            love.graphics.polygon("fill", cx, cy + 4, cx - 6, cy - 5, cx + 6, cy - 5)
+            love.graphics.polygon("fill", cx - 20, cy - 16, cx - 11, cy - 22, cx - 11, cy - 10)
+            love.graphics.polygon("fill", cx + 20, cy - 16, cx + 11, cy - 22, cx + 11, cy - 10)
+
+            love.graphics.setLineWidth(2.0)
+            love.graphics.line(cx, cy - 21, cx, cy - 26)
+            love.graphics.line(cx, cy - 11, cx, cy - 6)
+            love.graphics.line(cx - 5, cy - 16, cx - 10, cy - 16)
+            love.graphics.line(cx + 5, cy - 16, cx + 10, cy - 16)
+
+            -- Text
+            local str = "Swipe to Play"
+            local f = assets.font_badge or assets.font_btn_label
+            if f then
+                love.graphics.setFont(f)
+                local tw = f:getWidth(str)
+                love.graphics.setColor(hint_r, hint_g, hint_b, (is_dark and 0.85 or 0.78) * t_alpha)
+                love.graphics.print(str, math.floor(cx - tw / 2), math.floor(cy + 16))
+            end
         end
     end
 
@@ -2067,6 +2220,18 @@ function android_console.draw(game_draw_fn)
     local is_gameplay = (_G.appState == "GAME")
     local dt = love.timer.getDelta()
     if dt > 0.1 then dt = 0.1 end
+
+    if is_gameplay and not last_is_gameplay then
+        if not _G.game or not _G.game.moves or _G.game.moves == 0 then
+            console_has_swiped = false
+            swipe_text_alpha = 1.0
+        end
+    end
+    last_is_gameplay = is_gameplay
+
+    if is_gameplay and _G.game and _G.game.moves and _G.game.moves > 0 then
+        console_has_swiped = true
+    end
 
     if screen_overlay_visible then
         screen_overlay_timer = screen_overlay_timer - dt
