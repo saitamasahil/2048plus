@@ -7,3 +7,4 @@ static/
 *.jks
 android/release.keystore
 android/debug.keystore
+test/saves/
