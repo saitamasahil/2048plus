@@ -723,4 +723,28 @@ function save.hasLastActiveGame()
     return s ~= 1 and s ~= 2
 end
 
+local ANDROID_VIEW_MODE_FILE = "android_view_mode.dat"
+
+function save.saveAndroidViewMode(mode)
+    local path = getFilePath(ANDROID_VIEW_MODE_FILE)
+    local file = io.open(path, "w")
+    if file then
+        file:write(mode)
+        file:close()
+    end
+end
+
+function save.loadAndroidViewMode()
+    local path = getFilePath(ANDROID_VIEW_MODE_FILE)
+    local file = io.open(path, "r")
+    if file then
+        local content = file:read("*all")
+        file:close()
+        if content and content ~= "" then
+            return content
+        end
+    end
+    return nil
+end
+
 return save

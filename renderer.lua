@@ -918,7 +918,7 @@ local themes = {
         super_tile_color = {hex("#5d4037")},
         dark_text        = {hex("#1b3a1f")},   -- deep forest green
         light_text       = {hex("#f9fbe7")},   -- pale lime white
-        ui_text          = {hex("#2e7d32")},   -- rich green
+        ui_text          = {hex("#2e7d32")},   -- deep green
         bg_color         = {hex("#efebe9")},
         board_color      = {hex("#bcaaa4")},
         score_bg_color   = {hex("#bcaaa4")},
@@ -970,7 +970,7 @@ local themes = {
             [0]    = {hex("#0b031a")},   -- near-black dark purple
             [2]    = {hex("#1d0e3a")},   -- deep violet
             [4]    = {hex("#2e114f")},   -- purple
-            [8]    = {hex("#4d1b7d")},   -- rich magenta-purple
+            [8]    = {hex("#4d1b7d")},   -- vivid magenta-purple
             [16]   = {hex("#7e1ba8")},   -- purple-pink
             [32]   = {hex("#b817b2")},   -- bright magenta
             [64]   = {hex("#d61596")},   -- neon pink
@@ -1120,7 +1120,7 @@ local themes = {
         help_key_text    = {hex("#ffffff")},
     },
     retrogold = {
-        -- Retro Gold: Rich amber yellows and deep gold textures on dark carbon.
+        -- Retro Gold: Amber yellows and gold textures on dark carbon.
         tile_colors = {
             [0]    = {hex("#24211b")},
             [2]    = {hex("#fffdf0")},
@@ -2587,7 +2587,7 @@ function renderer.drawDynamicBackground(themeName)
                 love.graphics.translate(x, y)
                 love.graphics.rotate(rot)
 
-                -- Curated forest green palette
+                -- Forest green palette
                 local greens = {
                     {0.15, 0.55, 0.18}, {0.30, 0.72, 0.20},
                     {0.08, 0.42, 0.12}, {0.45, 0.78, 0.22}
@@ -3050,7 +3050,7 @@ function renderer.drawDynamicBackground(themeName)
             local sparkle = math.sin(t * (3.5 + (i % 5) * 0.6) + i * 2.1) * 0.5 + 0.5
             local alpha = sparkle * life * 0.42
 
-            -- Color: pale gold → rich amber depending on sparkle
+            -- Color: pale gold to amber depending on sparkle
             local r_c = 1.0
             local g_c = 0.72 + sparkle * 0.18
             local b_c = 0.05 + sparkle * 0.15
@@ -3279,6 +3279,14 @@ function renderer.getThemeHighlightColors()
     return t.super_tile_color or {hex("#edc22e")}, t.board_color or {hex("#bbada0")}
 end
 
+function renderer.getLayout()
+    return layout
+end
+
+function renderer.getScoreBoxColors()
+    return score_bg_color, score_label, score_value, ui_text
+end
+
 -- Fonts
 
 -- ============================================================================
@@ -3303,28 +3311,48 @@ function renderer.updateLayout(size)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
 
-    local header_h = math.floor(65 * scale)   -- title + score boxes
-    local help_h   = math.floor(55 * scale)   -- controls help section
-    local padding  = math.floor(10 * scale)
+    local cell_size = 0
+    local cell_gap = 0
+    local board_size = 0
 
-    -- Available height for the board
-    local avail_h = h - header_h - help_h - padding * 2
-    local avail_w = w - padding * 2
+    if _G.android_fullscreen then
+        board_size = 358
+        cell_gap = math.floor(board_size * 0.022)
+        cell_size = math.floor((board_size - cell_gap * (size + 1)) / size)
+        board_size = cell_size * size + cell_gap * (size + 1)
 
-    -- Board is a square — fit to the smaller dimension
-    local board_size = math.min(avail_w, avail_h)
-    local cell_gap = math.floor(board_size * 0.022)
-    local cell_size = math.floor((board_size - cell_gap * (size + 1)) / size)
-    board_size = cell_size * size + cell_gap * (size + 1)
+        layout.board_size = board_size
+        layout.cell_size = cell_size
+        layout.cell_gap = cell_gap
+        layout.board_x = math.floor((w - board_size) / 2)
+        layout.board_y = _G.android_board_y or 124
+        layout.corner_radius = math.floor(cell_size * 0.06)
+        layout.help_y = 9999
+        layout.help_h = 0
+    else
+        local header_h = math.floor(65 * scale)   -- title + score boxes
+        local help_h   = math.floor(55 * scale)   -- controls help section
+        local padding  = math.floor(10 * scale)
 
-    layout.board_size = board_size
-    layout.cell_size = cell_size
-    layout.cell_gap = cell_gap
-    layout.board_x = math.floor((w - board_size) / 2)
-    layout.board_y = header_h + padding
-    layout.corner_radius = math.floor(cell_size * 0.06)
-    layout.help_y = layout.board_y + board_size + padding
-    layout.help_h = help_h
+        -- Available height for the board
+        local avail_h = h - header_h - help_h - padding * 2
+        local avail_w = w - padding * 2
+
+        -- Board is a square — fit to the smaller dimension
+        board_size = math.min(avail_w, avail_h)
+        cell_gap = math.floor(board_size * 0.022)
+        cell_size = math.floor((board_size - cell_gap * (size + 1)) / size)
+        board_size = cell_size * size + cell_gap * (size + 1)
+
+        layout.board_size = board_size
+        layout.cell_size = cell_size
+        layout.cell_gap = cell_gap
+        layout.board_x = math.floor((w - board_size) / 2)
+        layout.board_y = header_h + padding
+        layout.corner_radius = math.floor(cell_size * 0.06)
+        layout.help_y = layout.board_y + board_size + padding
+        layout.help_h = help_h
+    end
 
     -- Re-load fonts relative to the new cell size — using cache to avoid recreation lag
     local text_scale = 1.0
@@ -4831,6 +4859,9 @@ function renderer.drawScores(game)
 
     -- Center vertically above board
     local box_y = math.floor((layout.board_y - box_h) / 2)
+    if _G.android_fullscreen and _G.android_header_y then
+        box_y = _G.android_header_y - 2
+    end
 
     -- Dynamic vertical centering of text inside score boxes
     local label_h = font_label:getHeight()
@@ -5049,6 +5080,9 @@ function renderer.drawHeader(game)
 
     -- Normal gameplay position without subtitle
     local normal_title_y = math.floor((layout.board_y - title_h) / 2)
+    if _G.android_fullscreen and _G.android_header_y then
+        normal_title_y = _G.android_header_y
+    end
     local normal_y_2048 = normal_title_y
 
     -- Endless Mode position shifted up for subtitle
@@ -5474,7 +5508,7 @@ renderer.drawKeyBadge = drawKeyBadge
 -- Draw controls help section
 -- ============================================================================
 function renderer.drawHelp(game)
-    if love.system.getOS() == "Web" then return end
+    if love.system.getOS() == "Web" or _G.hide_game_footer then return end
 
     local sound = require("sound")
     local w, h = love.graphics.getDimensions()
@@ -7385,14 +7419,14 @@ function renderer.drawMainMenu(selection, skip_transition)
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
 
-    -- Dynamically space a beautiful theme-colored 2048 tile logo header
+    -- Space theme-colored 2048 tile logo header
     local header_h = math.floor((_G.text_size == "large" and 100 or 120) * scale)
 
     local total_h = header_h + math.floor(8 * scale) + menu_h
     local available_h = badge_y - math.floor(10 * scale)
     local start_y = math.max(math.floor(12 * scale), math.floor((available_h - total_h) * 0.35))
 
-    -- Draw beautifully stylized header
+    -- Draw header
     local tile_size = math.floor(header_h - math.floor(10 * scale))
     if tile_size > 0 then
         local tile_x = math.floor((w - tile_size) / 2)
@@ -9300,7 +9334,7 @@ function renderer.drawThemeSelect(skip_transition)
     local strip_gap = math.floor(12 * scale)
     local avail_h_for_board = avail_h - (panel_h + strip_gap)
 
-    -- Keep the palette card as a beautifully sized square/rect
+    -- Keep the palette card as a square
     local board_size = math.min(math.floor(190 * scale), avail_h_for_board)
     local board_x = math.floor((w - board_size) / 2)
 
@@ -9573,6 +9607,7 @@ end
 -- ============================================================================
 function renderer.draw(game, skip_transition)
     if game then
+        _G.game = game
         renderer.updateLayout(game.size)
     end
     -- Fill background
@@ -10550,7 +10585,7 @@ local function drawStoreItemIcon(item_id, cx, cy, radius, is_selected)
         love.graphics.polygon("fill", ax2 - 2 * scale, ay2 - 3 * scale, ax2 - 4 * scale, ay2 + 4 * scale, ax2 + 3 * scale, ay2 + 2 * scale)
 
     elseif item_id == "extra_bomb" then
-        -- Iconic Bomb: Sphere body + Top cap + S-fuse + Spark
+        -- Bomb: Sphere body + Top cap + S-fuse + Spark
         local b_r = radius * 0.38
         local b_cx = cx - 2 * scale
         local b_cy = cy + 3 * scale
