@@ -255,7 +255,13 @@ function android_console.init(input_ref)
     _G.sy = 1.0
     _G.scale = 1.0
 
-    -- Lock UI scale so game menus/tiles inside 640x480 virtual screen are never zoomed
+    _G.android_fullscreen = false
+    _G.hide_game_footer = false
+    _G.android_header_y = nil
+    _G.android_board_y = nil
+    custom_icons = {}
+
+    -- Lock UI scale so game menus and tiles inside virtual screen are never zoomed
     _G.update_ui_scale = function()
         _G.design_w = 640
         _G.design_h = 480
@@ -311,12 +317,21 @@ function android_console.init(input_ref)
         assets.font_btn_label = love.graphics.newFont(13)
     end
 
+    local ok_badge_font, badge_font = pcall(love.graphics.newFont, "assets/font/ClearSans-Bold.ttf", 16)
+    if ok_badge_font and badge_font then
+        assets.font_badge = badge_font
+    else
+        assets.font_badge = love.graphics.newFont(16)
+    end
+
     -- Load saved view mode preference
     local ok_save, save = pcall(require, "save")
     if ok_save and save and save.loadAndroidViewMode then
         local saved_mode = save.loadAndroidViewMode()
         if saved_mode == "fullscreen" or saved_mode == "console" then
             android_view_mode = saved_mode
+            transition_progress = (saved_mode == "fullscreen") and 1.0 or 0.0
+            transition_active = false
         end
     end
 
@@ -334,17 +349,43 @@ function android_console.init(input_ref)
     android_console.updateLayout()
 end
 
+local function triggerHaptic(duration)
+    pcall(function()
+        if love.system and love.system.vibrate then
+            love.system.vibrate(duration or 0.015)
+        end
+    end)
+end
+
+local transition_active = false
+local transition_progress = 0.0
+local transition_target = 0.0
+local transition_duration = 0.24
+local transition_dir = 1
+
 function android_console.getViewMode()
     return android_view_mode
 end
 
 function android_console.setViewMode(mode)
-    if mode == "fullscreen" or mode == "console" then
-        android_view_mode = mode
-        local ok_save, save = pcall(require, "save")
-        if ok_save and save and save.saveAndroidViewMode then
-            save.saveAndroidViewMode(mode)
-        end
+    if mode ~= "fullscreen" and mode ~= "console" then return end
+    if mode == android_view_mode and not transition_active then return end
+
+    local is_gameplay = (_G.appState == "GAME")
+    if is_gameplay then
+        transition_active = true
+        transition_dir = (mode == "fullscreen") and 1 or -1
+        transition_target = (mode == "fullscreen") and 1.0 or 0.0
+        triggerHaptic(0.02)
+    else
+        transition_active = false
+        transition_progress = (mode == "fullscreen") and 1.0 or 0.0
+    end
+
+    android_view_mode = mode
+    local ok_save, save = pcall(require, "save")
+    if ok_save and save and save.saveAndroidViewMode then
+        save.saveAndroidViewMode(mode)
     end
 end
 
@@ -620,14 +661,6 @@ local function getCrtShader()
     end
 end
 
-local function triggerHaptic(duration)
-    pcall(function()
-        if love.system and love.system.vibrate then
-            love.system.vibrate(duration or 0.015)
-        end
-    end)
-end
-
 local function emitEvent(event)
     if not event or not input then return end
     if input.state then input.state[event] = true end
@@ -647,6 +680,10 @@ local function releaseEvent(event)
 end
 
 function android_console.touchpressed(id, x, y, dx, dy, pressure)
+    if transition_active then
+        return
+    end
+
     local w, h = love.graphics.getDimensions()
     if x <= 1.0 and y <= 1.0 and w > 10 then
         x = x * w
@@ -679,10 +716,7 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
         if cb and vx >= cb.x - 4 and vx <= cb.x + cb.w + 4 and vy >= cb.y - 4 and vy <= cb.y + cb.h + 4 then
             fs_button_pressed = "console"
             fs_active_touches[id] = {type = "top_button", id = "console", action = "console"}
-            android_view_mode = "console"
-            local ok_save, save = pcall(require, "save")
-            if ok_save and save and save.saveAndroidViewMode then save.saveAndroidViewMode("console") end
-            triggerHaptic(0.02)
+            android_console.setViewMode("console")
             return
         end
 
@@ -693,9 +727,7 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
                     fs_button_pressed = btn.id
                     fs_active_touches[id] = {type = "fs_button", btn = btn}
                     if btn.action == "console" then
-                        android_view_mode = "console"
-                        local ok_save, save = pcall(require, "save")
-                        if ok_save and save and save.saveAndroidViewMode then save.saveAndroidViewMode("console") end
+                        android_console.setViewMode("console")
                     elseif btn.event then
                         emitEvent(btn.event)
                     end
@@ -781,6 +813,10 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
 end
 
 function android_console.touchmoved(id, x, y, dx, dy, pressure)
+    if transition_active then
+        return
+    end
+
     local w, h = love.graphics.getDimensions()
     if x <= 1.0 and y <= 1.0 and w > 10 then
         x = x * w
@@ -888,6 +924,10 @@ end
 
 
 function android_console.touchreleased(id, x, y, dx, dy, pressure)
+    if transition_active then
+        return
+    end
+
     local w, h = love.graphics.getDimensions()
     if x <= 1.0 and y <= 1.0 and w > 10 then
         x = x * w
@@ -1001,11 +1041,8 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                     local btn_x = geo.screen_x + geo.screen_w - btn_sz - 8
                     local btn_y = geo.screen_y + geo.screen_h - btn_sz - 8
                     if x >= btn_x - 6 and x <= btn_x + btn_sz + 6 and y >= btn_y - 6 and y <= btn_y + btn_sz + 6 then
-                        android_view_mode = "fullscreen"
                         screen_overlay_visible = false
-                        local ok_save, save = pcall(require, "save")
-                        if ok_save and save and save.saveAndroidViewMode then save.saveAndroidViewMode("fullscreen") end
-                        triggerHaptic(0.02)
+                        android_console.setViewMode("fullscreen")
                         swipe_track[id] = nil
                         return
                     else
@@ -1049,6 +1086,81 @@ function android_console.mousereleased(x, y, button)
     if button == 1 then
         android_console.touchreleased("mouse", x, y, 0, 0, 1)
     end
+end
+
+-- Icon cache and loader for custom UI sprites
+local custom_icons = {}
+
+local icon_files = {
+    pause = "pause",
+    play = "play",
+    console = "console",
+    fullscreen = "fullscreen",
+    undo = "undo",
+    theme = "theme",
+    bomb = "bomb",
+    swap = "swap",
+    restart = "restart",
+    skip = "skip",
+    quit = "quit",
+    shield = "shield",
+    confirm = "confirm",
+}
+
+local function getCustomIcon(name)
+    if custom_icons[name] ~= nil then
+        return custom_icons[name] or nil
+    end
+
+    local file_base = icon_files[name] or name
+    local search_names = {file_base}
+    if name == "console" and file_base ~= "gamepad" then
+        table.insert(search_names, "gamepad")
+    elseif name == "skip" and file_base ~= "music" then
+        table.insert(search_names, "music")
+    end
+
+    local search_dirs = {
+        "android/assets/icon/",
+        "android/icon/",
+        "assets/icon/",
+    }
+
+    for _, dir in ipairs(search_dirs) do
+        for _, sname in ipairs(search_names) do
+            local file_path = dir .. sname .. ".png"
+            local info = love.filesystem.getInfo and love.filesystem.getInfo(file_path)
+            if info then
+                local ok_data, img_data = pcall(love.image.newImageData, file_path)
+                if ok_data and img_data then
+                    pcall(function()
+                        img_data:mapPixel(function(x, y, r, g, b, a)
+                            if a > 0 then return 1, 1, 1, a end
+                            return 0, 0, 0, 0
+                        end)
+                    end)
+                    local ok_img, img = pcall(love.graphics.newImage, img_data, {mipmaps = true})
+                    if not ok_img then ok_img, img = pcall(love.graphics.newImage, img_data) end
+                    if ok_img and img then
+                        pcall(function() img:setFilter("linear", "linear", 4) end)
+                        custom_icons[name] = img
+                        return img
+                    end
+                else
+                    local ok, img = pcall(love.graphics.newImage, file_path, {mipmaps = true})
+                    if not ok then ok, img = pcall(love.graphics.newImage, file_path) end
+                    if ok and img then
+                        pcall(function() img:setFilter("linear", "linear", 4) end)
+                        custom_icons[name] = img
+                        return img
+                    end
+                end
+            end
+        end
+    end
+
+    custom_icons[name] = false
+    return nil
 end
 
 -- Vector icon rendering helpers for fullscreen and overlay controls
@@ -1196,7 +1308,18 @@ local function drawStarIcon(cx, cy, sz, col)
     love.graphics.polygon("fill", points)
 end
 
+-- Draw custom sprite or procedural vector fallback
 local function drawButtonIcon(name, cx, cy, sz, col)
+    local img = getCustomIcon(name)
+    if img then
+        local iw = img:getWidth()
+        local ih = img:getHeight()
+        local scale = (sz * 0.90) / math.max(iw, ih)
+        love.graphics.setColor(col or {1, 1, 1, 1})
+        love.graphics.draw(img, cx, cy, 0, scale, scale, iw / 2, ih / 2)
+        return
+    end
+
     if name == "pause" then drawPauseIcon(cx, cy, sz, col)
     elseif name == "play" then drawPlayIcon(cx, cy, sz, col)
     elseif name == "console" then drawConsoleIcon(cx, cy, sz, col)
@@ -1223,9 +1346,8 @@ local function getFullscreenButtons(game)
         table.insert(buttons, {id = "restart", label = "Restart", icon = "restart", event = input.events.CONFIRM})
         local ok_snd, sound = pcall(require, "sound")
         if ok_snd and sound and sound.isBgmEnabled and sound.isBgmEnabled() then
-            table.insert(buttons, {id = "skip", label = "Music", icon = "skip", event = input.events.L1})
+            table.insert(buttons, {id = "skip", label = "Skip Track", icon = "skip", event = input.events.L1})
         end
-        table.insert(buttons, {id = "console", label = "Handheld", icon = "console", action = "console"})
         table.insert(buttons, {id = "quit", label = "Quit", icon = "quit", event = input.events.X})
 
     elseif game.state == Game.STATE_LOST then
@@ -1267,7 +1389,6 @@ local function getFullscreenButtons(game)
                 table.insert(buttons, {id = "undo", label = "Undo", icon = "undo", event = input.events.BACK, disabled = not game.canUndo})
             end
             table.insert(buttons, {id = "theme", label = "Theme", icon = "theme", event = input.events.Y})
-            table.insert(buttons, {id = "coins", label = "Store", icon = "star", event = input.events.SELECT})
         end
     end
 
@@ -1275,7 +1396,7 @@ local function getFullscreenButtons(game)
 end
 
 -- Render fullscreen board and touch controls
-function android_console.drawFullscreen(game_draw_fn, dt)
+function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render_canvas)
     local real_w, real_h = love.graphics.getDimensions()
     local origin_x = geo.origin_x or 0
     local console_w = geo.console_w or real_w
@@ -1284,6 +1405,8 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     local vh = math.floor(vw * (console_h / console_w))
     local scale_fs_x = console_w / vw
     local scale_fs_y = console_h / vh
+    _G.android_fs_vw = vw
+    _G.android_fs_vh = vh
 
     if not fs_canvas or fs_canvas_w ~= vw or fs_canvas_h ~= vh then
         fs_canvas = love.graphics.newCanvas(vw, vh)
@@ -1301,13 +1424,20 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     end)
     local virt_safe_top = math.max(12, math.floor(safe_top / scale_fs_y))
 
+    local board_sz = 358
+    local ideal_board_y = math.floor((vh - board_sz) / 2)
+    local min_board_y = virt_safe_top + 110
+    _G.android_board_y = math.max(min_board_y, ideal_board_y)
+
+    local box_h = (_G.text_size == "large" and 56 or 48)
+    local ideal_header_y = _G.android_board_y - box_h - 20
+    _G.android_header_y = math.max(virt_safe_top + 42, ideal_header_y)
+
     _G.android_fullscreen = true
     _G.hide_game_footer = true
-    _G.android_header_y = virt_safe_top + 46
-    _G.android_board_y = virt_safe_top + 104
     _G.scale = 1.0
 
-    love.graphics.setCanvas(fs_canvas)
+    love.graphics.setCanvas({fs_canvas, stencil = true})
     love.graphics.clear(0, 0, 0, 1)
 
     local real_getDimensions = love.graphics.getDimensions
@@ -1324,6 +1454,12 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     love.graphics.getWidth = real_getWidth
     love.graphics.getHeight = real_getHeight
 
+    local anim_t = ui_anim_t or 1.0
+    local top_slide = (1 - anim_t) * (-50)
+    local top_alpha = math.min(1.0, anim_t * 1.5)
+    local bottom_slide = (1 - anim_t) * 70
+    local bottom_alpha = math.min(1.0, anim_t * 1.5)
+
     local renderer = require("renderer")
     local s_bg, s_lbl, s_val, ui_txt = renderer.getScoreBoxColors()
     if not s_bg then s_bg = {0.73, 0.68, 0.63, 0.95} end
@@ -1334,8 +1470,10 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     local bg = s_bg[2] or 0.68
     local bb = s_bg[3] or 0.63
 
+    local btn_content_col = renderer.getContrastTextColor(s_bg, ui_txt, {0.18, 0.16, 0.14, 1})
+
     -- Top bar controls
-    local y_bar = virt_safe_top + 4
+    local y_bar = virt_safe_top + 4 + top_slide
     local p_x = 16
     local p_y = y_bar
     local p_w = 40
@@ -1345,21 +1483,21 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     local is_pause_pressed = (fs_button_pressed == "pause")
     local p_offset = is_pause_pressed and 1.5 or 0
     if is_pause_pressed then
-        love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95)
+        love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * top_alpha)
     else
-        love.graphics.setColor(br, bg, bb, 0.92)
+        love.graphics.setColor(br, bg, bb, 0.92 * top_alpha)
     end
     love.graphics.rectangle("fill", p_x, p_y + p_offset, p_w, p_h, 8, 8)
-    love.graphics.setColor(1, 1, 1, 0.18)
+    love.graphics.setColor(1, 1, 1, 0.18 * top_alpha)
     love.graphics.setLineWidth(1)
     love.graphics.rectangle("line", p_x, p_y + p_offset, p_w, p_h, 8, 8)
 
     local is_paused = (_G.game and _G.game.state == Game.STATE_PAUSED)
-    local top_icon_col = {s_val[1] or 1, s_val[2] or 1, s_val[3] or 1, 0.95}
+    local top_icon_col = {btn_content_col[1], btn_content_col[2], btn_content_col[3], 0.95 * top_alpha}
     if is_paused then
-        drawPlayIcon(p_x + p_w / 2, p_y + p_offset + p_h / 2, 16, top_icon_col)
+        drawButtonIcon("play", p_x + p_w / 2, p_y + p_offset + p_h / 2, 18, top_icon_col)
     else
-        drawPauseIcon(p_x + p_w / 2, p_y + p_offset + p_h / 2, 16, top_icon_col)
+        drawButtonIcon("pause", p_x + p_w / 2, p_y + p_offset + p_h / 2, 18, top_icon_col)
     end
 
     -- Console switch button
@@ -1372,15 +1510,15 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     local is_con_pressed = (fs_button_pressed == "console")
     local c_offset = is_con_pressed and 1.5 or 0
     if is_con_pressed then
-        love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95)
+        love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * top_alpha)
     else
-        love.graphics.setColor(br, bg, bb, 0.92)
+        love.graphics.setColor(br, bg, bb, 0.92 * top_alpha)
     end
     love.graphics.rectangle("fill", c_x, c_y + c_offset, c_w, c_h, 8, 8)
-    love.graphics.setColor(1, 1, 1, 0.18)
+    love.graphics.setColor(1, 1, 1, 0.18 * top_alpha)
     love.graphics.setLineWidth(1)
     love.graphics.rectangle("line", c_x, c_y + c_offset, c_w, c_h, 8, 8)
-    drawConsoleIcon(c_x + c_w / 2, c_y + c_offset + c_h / 2, 22, top_icon_col)
+    drawButtonIcon("console", c_x + c_w / 2, c_y + c_offset + c_h / 2, 22, top_icon_col)
 
     -- Bottom action buttons
     local board_bottom = _G.android_board_y + 358
@@ -1393,11 +1531,13 @@ function android_console.drawFullscreen(game_draw_fn, dt)
     love.graphics.setFont(f_lbl)
 
     if n > 0 then
+        local gap = 8
         if n <= 4 then
-            local gap = 8
             local btn_w = math.floor((vw - 32 - (n - 1) * gap) / n)
             local btn_h = 62
-            local btn_y = board_bottom + math.max(16, math.floor((bottom_space - btn_h - 24) * 0.35))
+            local total_content_h = btn_h + 30
+            local pad_y = math.max(14, math.floor((bottom_space - total_content_h) * 0.42))
+            local btn_y = board_bottom + pad_y + bottom_slide
             for i, btn in ipairs(buttons) do
                 btn.x = 16 + (i - 1) * (btn_w + gap)
                 btn.y = btn_y
@@ -1405,9 +1545,10 @@ function android_console.drawFullscreen(game_draw_fn, dt)
                 btn.h = btn_h
             end
         else
-            local gap = 8
             local btn_h = 54
-            local y_start = board_bottom + math.max(12, math.floor((bottom_space - (btn_h * 2 + gap) - 24) * 0.30))
+            local total_content_h = btn_h * 2 + gap + 28
+            local pad_y = math.max(12, math.floor((bottom_space - total_content_h) * 0.38))
+            local y_start = board_bottom + pad_y + bottom_slide
             local row1_count = 3
             local btn_w1 = math.floor((vw - 32 - (row1_count - 1) * gap) / row1_count)
             for i = 1, 3 do
@@ -1430,50 +1571,50 @@ function android_console.drawFullscreen(game_draw_fn, dt)
         end
 
         for _, btn in ipairs(buttons) do
+            if btn.id == "theme" then
+                _G.android_fs_theme_x = btn.x + math.floor(btn.w / 2)
+                _G.android_fs_theme_y = btn.y + math.floor(btn.h / 2)
+            end
             local is_pressed = (fs_button_pressed == btn.id)
             local press_offset = is_pressed and 2 or 0
-            local alpha = btn.disabled and 0.35 or 1.0
 
             if is_pressed then
-                love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * alpha)
+                love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * bottom_alpha)
             else
-                love.graphics.setColor(br, bg, bb, 0.92 * alpha)
+                love.graphics.setColor(br, bg, bb, 0.92 * bottom_alpha)
             end
             love.graphics.rectangle("fill", btn.x, btn.y + press_offset, btn.w, btn.h, 10, 10)
 
-            love.graphics.setColor(1, 1, 1, 0.15 * alpha)
+            love.graphics.setColor(1, 1, 1, 0.15 * bottom_alpha)
             love.graphics.setLineWidth(1)
             love.graphics.rectangle("line", btn.x, btn.y + press_offset, btn.w, btn.h, 10, 10)
 
-            local icon_col = {s_val[1] or 1, s_val[2] or 1, s_val[3] or 1, alpha}
+            local content_alpha = (btn.disabled and not btn.badge and 0.40 or 0.95) * bottom_alpha
+            local icon_col = {btn_content_col[1], btn_content_col[2], btn_content_col[3], content_alpha}
             drawButtonIcon(btn.icon, btn.x + btn.w / 2, btn.y + press_offset + 20, 20, icon_col)
 
-            love.graphics.setColor(s_val[1] or 1, s_val[2] or 1, s_val[3] or 1, 0.95 * alpha)
+            love.graphics.setColor(btn_content_col[1], btn_content_col[2], btn_content_col[3], content_alpha)
             local lw = f_lbl:getWidth(btn.label)
             love.graphics.print(btn.label, btn.x + math.floor((btn.w - lw) / 2), btn.y + press_offset + 34)
 
             if btn.badge then
-                local badge_w = math.max(16, f_lbl:getWidth(btn.badge) + 6)
-                local badge_h = 15
-                local badge_x = btn.x + btn.w - badge_w - 4
-                local badge_y = btn.y + press_offset + 3
-                love.graphics.setColor(0.85, 0.25, 0.20, 0.95 * alpha)
-                love.graphics.rectangle("fill", badge_x, badge_y, badge_w, badge_h, 7, 7)
-                love.graphics.setColor(1, 1, 1, 1.0 * alpha)
-                local bw = f_lbl:getWidth(btn.badge)
-                love.graphics.print(btn.badge, badge_x + math.floor((badge_w - bw) / 2), badge_y + 1)
+                local f_badge = assets.font_badge or f_lbl
+                love.graphics.setFont(f_badge)
+                love.graphics.setColor(btn_content_col[1], btn_content_col[2], btn_content_col[3], 0.95 * bottom_alpha)
+                local bw = f_badge:getWidth(btn.badge)
+                local bx = btn.x + btn.w - bw - 7
+                local by = btn.y + press_offset + 4
+                love.graphics.print(btn.badge, bx, by)
+                love.graphics.setFont(f_lbl)
             end
         end
-
-        local last_btn = buttons[#buttons]
-        local hint_y = (last_btn and last_btn.y and (last_btn.y + last_btn.h + 12)) or (board_bottom + 80)
-        local hint_str = is_paused and "Game Paused" or "Swipe anywhere to move tiles"
-        love.graphics.setColor(ui_txt[1] or 1, ui_txt[2] or 1, ui_txt[3] or 1, 0.35)
-        local hw = f_lbl:getWidth(hint_str)
-        love.graphics.print(hint_str, math.floor((vw - hw) / 2), hint_y)
     end
 
     love.graphics.setCanvas()
+
+    if only_render_canvas then
+        return
+    end
 
     if real_w > real_h then
         love.graphics.setColor(0.04, 0.04, 0.06, 1)
@@ -1495,13 +1636,18 @@ function android_console.drawFullscreen(game_draw_fn, dt)
 end
 
 -- Render virtual retro handheld console and display
-function android_console.drawConsole(game_draw_fn, dt)
+function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_alpha, skip_screen_draw)
     local w, h = love.graphics.getDimensions()
     local is_gameplay = (_G.appState == "GAME")
 
+    _G.android_fullscreen = false
+    _G.hide_game_footer = false
+    _G.android_header_y = nil
+    _G.android_board_y = nil
+
     -- 1. Render game scene into virtual 640x480 canvas
     local canvas = android_console.getCanvas()
-    love.graphics.setCanvas(canvas)
+    love.graphics.setCanvas({canvas, stencil = true})
     love.graphics.clear(0, 0, 0, 1)
 
     -- Safety check: ensure directional states don't stay stuck when touches are released
@@ -1536,6 +1682,23 @@ function android_console.drawConsole(game_draw_fn, dt)
     love.graphics.setCanvas()
 
     love.graphics.push("all")
+
+    local c_alpha = chassis_alpha or 1.0
+    local slide_y = chassis_slide_y or 0
+    if slide_y ~= 0 then
+        love.graphics.translate(0, slide_y)
+    end
+
+    local old_setColor = love.graphics.setColor
+    if c_alpha < 0.999 then
+        love.graphics.setColor = function(r, g, b, a)
+            if type(r) == "table" then
+                old_setColor({r[1], r[2], r[3], (r[4] or 1) * c_alpha})
+            else
+                old_setColor(r, g, b, (a or 1) * c_alpha)
+            end
+        end
+    end
 
     -- Lerp towards target theme console colors
     dt = dt or love.timer.getDelta()
@@ -1626,32 +1789,34 @@ function android_console.drawConsole(game_draw_fn, dt)
     end
     love.graphics.circle("fill", led_x, led_y, led_r)
 
-    -- Render virtual screen with rounded corners
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.stencil(function()
-        love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
-    end, "replace", 1)
-    love.graphics.setStencilTest("greater", 0)
+    if not skip_screen_draw then
+        -- Render virtual screen with rounded corners
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.stencil(function()
+            love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
 
-    local crt = _G.crt_filter and getCrtShader()
-    if crt then
-        pcall(function()
-            crt:send("screen_size", {640, 480})
-            love.graphics.setShader(crt)
-        end)
+        local crt = _G.crt_filter and getCrtShader()
+        if crt then
+            pcall(function()
+                crt:send("screen_size", {640, 480})
+                love.graphics.setShader(crt)
+            end)
+        end
+
+        love.graphics.draw(canvas, geo.screen_x, geo.screen_y, 0, geo.scale_x, geo.scale_y)
+
+        if crt then
+            love.graphics.setShader()
+        end
+        love.graphics.setStencilTest()
+
+        -- Screen inner frame border
+        love.graphics.setColor(bzr * 0.75, bzg * 0.75, bzb * 0.75, 0.85)
+        love.graphics.setLineWidth(2)
+        love.graphics.rectangle("line", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
     end
-
-    love.graphics.draw(canvas, geo.screen_x, geo.screen_y, 0, geo.scale_x, geo.scale_y)
-
-    if crt then
-        love.graphics.setShader()
-    end
-    love.graphics.setStencilTest()
-
-    -- Screen inner frame border
-    love.graphics.setColor(bzr * 0.75, bzg * 0.75, bzb * 0.75, 0.85)
-    love.graphics.setLineWidth(2)
-    love.graphics.rectangle("line", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
 
     -- Chin branding
     local chin_top = geo.screen_y + geo.screen_h
@@ -1701,7 +1866,7 @@ function android_console.drawConsole(game_draw_fn, dt)
     end
 
     -- Screen overlay with full screen icon toggle button
-    if is_gameplay and screen_overlay_visible then
+    if not skip_screen_draw and is_gameplay and screen_overlay_visible then
         love.graphics.setColor(0, 0, 0, 0.45)
         love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
 
@@ -1715,7 +1880,7 @@ function android_console.drawConsole(game_draw_fn, dt)
         love.graphics.setLineWidth(1.5)
         love.graphics.rectangle("line", btn_x, btn_y, btn_sz, btn_sz, 8, 8)
 
-        drawFullscreenIcon(btn_x + btn_sz / 2, btn_y + btn_sz / 2, btn_sz * 0.65, {1, 1, 1, 0.95})
+        drawButtonIcon("fullscreen", btn_x + btn_sz / 2, btn_y + btn_sz / 2, btn_sz * 0.65, {1, 1, 1, 0.95})
 
         local lbl = "Full Screen"
         local f = assets.font_brand or love.graphics.getFont()
@@ -1829,8 +1994,72 @@ function android_console.drawConsole(game_draw_fn, dt)
         end
     end
 
+    if old_setColor then
+        love.graphics.setColor = old_setColor
+    end
     love.graphics.pop()
     love.graphics.setCanvas()
+    return canvas
+end
+
+-- Animated transition between console and fullscreen modes
+function android_console.drawModeTransition(game_draw_fn, dt, progress)
+    local real_w, real_h = love.graphics.getDimensions()
+    local origin_x = geo.origin_x or 0
+    local console_w = geo.console_w or real_w
+    local console_h = geo.console_h or real_h
+    local vw = 390
+    local vh = math.floor(vw * (console_h / console_w))
+    local scale_fs_x = console_w / vw
+    local scale_fs_y = console_h / vh
+
+    local p = math.max(0.0, math.min(1.0, progress))
+    local t = p * p * (3 - 2 * p)
+
+    local renderer = require("renderer")
+    local theme_bg = (renderer.getThemeBgColor and renderer.getThemeBgColor()) or {0.98, 0.97, 0.94}
+    love.graphics.setColor(theme_bg[1] or 0.98, theme_bg[2] or 0.97, theme_bg[3] or 0.94, 1)
+    love.graphics.rectangle("fill", 0, 0, real_w, real_h)
+
+    if real_w > real_h then
+        love.graphics.setColor(0.04, 0.04, 0.06, 1)
+        love.graphics.rectangle("fill", 0, 0, real_w, real_h)
+        love.graphics.setColor(theme_bg[1] or 0.98, theme_bg[2] or 0.97, theme_bg[3] or 0.94, 1)
+        love.graphics.rectangle("fill", origin_x, 0, console_w, console_h)
+    end
+
+    if transition_dir == 1 then
+        -- Console to Fullscreen
+        if t < 0.48 then
+            local fade_out = (1.0 - (t / 0.48)) ^ 1.5
+            local slide_y = (t / 0.48) * 24
+            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_out, false)
+        else
+            local in_p = (t - 0.48) / 0.52
+            local fade_in = in_p ^ 1.3
+            local settle_y = (1.0 - in_p) * 16
+            android_console.drawFullscreen(game_draw_fn, dt, in_p, true)
+
+            love.graphics.setColor(1, 1, 1, fade_in)
+            love.graphics.draw(fs_canvas, origin_x, settle_y, 0, scale_fs_x, scale_fs_y)
+        end
+    else
+        -- Fullscreen to Console
+        if t > 0.48 then
+            local out_p = (t - 0.48) / 0.52
+            local fade_out = out_p ^ 1.3
+            local slide_y = (1.0 - out_p) * -16
+            android_console.drawFullscreen(game_draw_fn, dt, out_p, true)
+
+            love.graphics.setColor(1, 1, 1, fade_out)
+            love.graphics.draw(fs_canvas, origin_x, slide_y, 0, scale_fs_x, scale_fs_y)
+        else
+            local in_p = 1.0 - (t / 0.48)
+            local fade_in = in_p ^ 1.4
+            local slide_y = (1.0 - in_p) * 20
+            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_in, false)
+        end
+    end
 end
 
 -- Primary draw dispatch
@@ -1844,6 +2073,26 @@ function android_console.draw(game_draw_fn)
         if screen_overlay_timer <= 0 then
             screen_overlay_visible = false
         end
+    end
+
+    if is_gameplay and transition_active then
+        local step = dt / transition_duration
+        if transition_dir == 1 then
+            transition_progress = math.min(1.0, transition_progress + step)
+            if transition_progress >= 1.0 then
+                transition_progress = 1.0
+                transition_active = false
+            end
+        else
+            transition_progress = math.max(0.0, transition_progress - step)
+            if transition_progress <= 0.0 then
+                transition_progress = 0.0
+                transition_active = false
+            end
+        end
+
+        android_console.drawModeTransition(game_draw_fn, dt, transition_progress)
+        return
     end
 
     if android_view_mode == "fullscreen" and is_gameplay then

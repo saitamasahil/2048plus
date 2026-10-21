@@ -3325,7 +3325,7 @@ function renderer.updateLayout(size)
         layout.cell_size = cell_size
         layout.cell_gap = cell_gap
         layout.board_x = math.floor((w - board_size) / 2)
-        layout.board_y = _G.android_board_y or 124
+        layout.board_y = _G.android_board_y or math.floor((h - board_size) / 2)
         layout.corner_radius = math.floor(cell_size * 0.06)
         layout.help_y = 9999
         layout.help_h = 0
@@ -4857,10 +4857,12 @@ function renderer.drawScores(game)
     local best_x = bx + bs - box_w
     local score_x = best_x - box_w - box_gap
 
-    -- Center vertically above board
+    -- Vertical placement above board
     local box_y = math.floor((layout.board_y - box_h) / 2)
     if _G.android_fullscreen and _G.android_header_y then
-        box_y = _G.android_header_y - 2
+        box_y = _G.android_header_y + math.floor(8 * scale)
+    elseif _G.android_fullscreen then
+        box_y = layout.board_y - box_h - 12
     end
 
     -- Dynamic vertical centering of text inside score boxes
@@ -5082,6 +5084,9 @@ function renderer.drawHeader(game)
     local normal_title_y = math.floor((layout.board_y - title_h) / 2)
     if _G.android_fullscreen and _G.android_header_y then
         normal_title_y = _G.android_header_y
+    elseif _G.android_fullscreen then
+        local box_h_std = math.floor((_G.text_size == "large" and 56 or 48) * scale)
+        normal_title_y = layout.board_y - box_h_std - 12
     end
     local normal_y_2048 = normal_title_y
 
@@ -5089,6 +5094,9 @@ function renderer.drawHeader(game)
     local eh = font_header_plus:getHeight()
     local total_h = title_h + eh - math.floor(2 * scale)
     local endless_title_y = math.floor((layout.board_y - total_h) / 2)
+    if _G.android_fullscreen then
+        endless_title_y = normal_title_y - math.floor(10 * scale)
+    end
     local endless_y_2048 = endless_title_y
 
     -- Only active when player has continued past the win screen into endless play
@@ -6004,7 +6012,10 @@ local function drawStencilCircle()
         p = 1 - p
     end
     local w, h = 640, 480
-    if not _G.android_console then
+    if _G.android_fullscreen then
+        w = _G.android_fs_vw or love.graphics.getWidth()
+        h = _G.android_fs_vh or love.graphics.getHeight()
+    elseif not _G.android_console then
         w, h = love.graphics.getDimensions()
     end
     local dx = math.max(transition_center_x, w - transition_center_x)
@@ -6019,7 +6030,10 @@ function renderer.startThemeTransition(drawTarget, direction)
         return
     end
     local w, h = 640, 480
-    if not _G.android_console then
+    if _G.android_fullscreen then
+        w = _G.android_fs_vw or 390
+        h = _G.android_fs_vh or 693
+    elseif not _G.android_console then
         w, h = love.graphics.getDimensions()
     end
     if not transition_canvas or transition_canvas:getWidth() ~= w or transition_canvas:getHeight() ~= h then
@@ -6028,13 +6042,33 @@ function renderer.startThemeTransition(drawTarget, direction)
     love.graphics.setCanvas({transition_canvas, stencil = true})
     love.graphics.clear()
 
-    if _G.android_console then
+    if _G.android_console and not _G.android_fullscreen then
         local real_getDims = love.graphics.getDimensions
         local real_getW = love.graphics.getWidth
         local real_getH = love.graphics.getHeight
         love.graphics.getDimensions = function() return 640, 480 end
         love.graphics.getWidth = function() return 640 end
         love.graphics.getHeight = function() return 480 end
+        local prev_scale = _G.scale
+        _G.scale = 1.0
+
+        if type(drawTarget) == "function" then
+            drawTarget()
+        else
+            renderer.draw(drawTarget, true)
+        end
+
+        _G.scale = prev_scale
+        love.graphics.getDimensions = real_getDims
+        love.graphics.getWidth = real_getW
+        love.graphics.getHeight = real_getH
+    elseif _G.android_fullscreen then
+        local real_getDims = love.graphics.getDimensions
+        local real_getW = love.graphics.getWidth
+        local real_getH = love.graphics.getHeight
+        love.graphics.getDimensions = function() return w, h end
+        love.graphics.getWidth = function() return w end
+        love.graphics.getHeight = function() return h end
         local prev_scale = _G.scale
         _G.scale = 1.0
 
@@ -6060,8 +6094,11 @@ function renderer.startThemeTransition(drawTarget, direction)
     transition_timer = transition_duration
     local dir = direction or 1
     transition_direction = dir
-    local scale_factor = _G.android_console and 1.0 or (_G.scale or 1.0)
-    if dir < 0 then
+    local scale_factor = (_G.android_console and not _G.android_fullscreen) and 1.0 or (_G.scale or 1.0)
+    if _G.android_fullscreen then
+        transition_center_x = _G.android_fs_theme_x or math.floor(w / 2)
+        transition_center_y = _G.android_fs_theme_y or math.floor(h - 50)
+    elseif dir < 0 then
         transition_center_x = renderer.theme_prev_button_x or (w - math.floor(180 * scale_factor))
         transition_center_y = renderer.theme_prev_button_y or (h - math.floor(30 * scale_factor))
     else
