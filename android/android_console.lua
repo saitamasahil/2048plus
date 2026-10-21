@@ -1943,18 +1943,6 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         love.graphics.rectangle("line", btn_x, btn_y, btn_sz, btn_sz, 8, 8)
 
         drawButtonIcon("fullscreen", btn_x + btn_sz / 2, btn_y + btn_sz / 2, btn_sz * 0.65, {1, 1, 1, 0.95})
-
-        local lbl = "Full Screen"
-        local f = assets.font_brand or love.graphics.getFont()
-        love.graphics.setFont(f)
-        local lw = f:getWidth(lbl) + 14
-        local lh = f:getHeight() + 6
-        local lx = btn_x - lw - 6
-        local ly = btn_y + math.floor((btn_sz - lh) / 2)
-        love.graphics.setColor(0.10, 0.10, 0.14, 0.85)
-        love.graphics.rectangle("fill", lx, ly, lw, lh, 6, 6)
-        love.graphics.setColor(1, 1, 1, 0.92)
-        love.graphics.print(lbl, lx + 7, ly + 1)
     end
 
     -- Controls rendering
