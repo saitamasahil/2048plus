@@ -376,6 +376,20 @@ function android_console.setViewMode(mode)
     if mode ~= "fullscreen" and mode ~= "console" then return end
     if mode == android_view_mode and not transition_active then return end
 
+    fs_button_pressed = nil
+    for k in pairs(button_states) do button_states[k] = false end
+    for _, touch in pairs(fs_active_touches) do
+        if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
+        if touch.event then releaseEvent(touch.event) end
+    end
+    fs_active_touches = {}
+    for _, touch in pairs(active_touches) do
+        if touch.event then releaseEvent(touch.event) end
+    end
+    active_touches = {}
+    fs_swipe_track = {}
+    swipe_track = {}
+
     local is_gameplay = (_G.appState == "GAME")
     if is_gameplay then
         transition_active = true
@@ -735,7 +749,7 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
         if cb and vx >= cb.x - 4 and vx <= cb.x + cb.w + 4 and vy >= cb.y - 4 and vy <= cb.y + cb.h + 4 then
             fs_button_pressed = "console"
             fs_active_touches[id] = {type = "top_button", id = "console", action = "console"}
-            android_console.setViewMode("console")
+            triggerHaptic(0.018)
             return
         end
 
@@ -746,7 +760,7 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
                     fs_button_pressed = btn.id
                     fs_active_touches[id] = {type = "fs_button", btn = btn}
                     if btn.action == "console" then
-                        android_console.setViewMode("console")
+                        -- Dispatched on touch release
                     elseif btn.event then
                         emitEvent(btn.event)
                     end
@@ -945,7 +959,30 @@ end
 
 
 function android_console.touchreleased(id, x, y, dx, dy, pressure)
+    if fs_button_pressed then fs_button_pressed = nil end
+
     if transition_active then
+        if fs_active_touches[id] then
+            local touch = fs_active_touches[id]
+            if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
+            if touch.event then releaseEvent(touch.event) end
+            fs_active_touches[id] = nil
+        end
+        if active_touches[id] then
+            local touch = active_touches[id]
+            if touch.event then releaseEvent(touch.event) end
+            if touch.name then button_states[touch.name] = nil end
+            if touch.type == "dpad" then
+                button_states["dpad"] = nil
+                releaseEvent(input.events.UP)
+                releaseEvent(input.events.DOWN)
+                releaseEvent(input.events.LEFT)
+                releaseEvent(input.events.RIGHT)
+            end
+            active_touches[id] = nil
+        end
+        fs_swipe_track[id] = nil
+        swipe_track[id] = nil
         return
     end
 
@@ -958,9 +995,13 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
 
     -- Fullscreen touch release
     if is_gameplay and android_view_mode == "fullscreen" then
-        if fs_button_pressed then fs_button_pressed = nil end
         local touch = fs_active_touches[id]
         if touch then
+            if touch.action == "console" or (touch.btn and touch.btn.action == "console") then
+                fs_active_touches[id] = nil
+                android_console.setViewMode("console")
+                return
+            end
             if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
             if touch.event then releaseEvent(touch.event) end
             fs_active_touches[id] = nil
@@ -2247,12 +2288,14 @@ function android_console.draw(game_draw_fn)
             if transition_progress >= 1.0 then
                 transition_progress = 1.0
                 transition_active = false
+                fs_button_pressed = nil
             end
         else
             transition_progress = math.max(0.0, transition_progress - step)
             if transition_progress <= 0.0 then
                 transition_progress = 0.0
                 transition_active = false
+                fs_button_pressed = nil
             end
         end
 
