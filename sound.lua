@@ -977,9 +977,15 @@ end
 
 function sound.vibrate(duration)
     if not _G.vibration then return end
+    local dur = duration or 0.1
+    pcall(function()
+        if love.system and love.system.vibrate then
+            love.system.vibrate(dur)
+        end
+    end)
     local j = getJoystick()
     if j and j:isVibrationSupported() then
-        j:setVibration(0.6, 0.6, duration or 0.1)
+        j:setVibration(0.6, 0.6, dur)
     end
 end
 return sound

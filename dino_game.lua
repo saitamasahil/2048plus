@@ -550,6 +550,8 @@ local function triggerGameOver()
     game.state = "over"
     game.overTimer = 0
     playSound(sounds.hit)
+    local ok_snd, snd = pcall(require, "sound")
+    if ok_snd and snd and snd.vibrate then snd.vibrate(0.3) end
     if game.score > game.hiscore then
         game.hiscore = game.score
         saveHiscore(game.hiscore)
@@ -613,6 +615,8 @@ local function updateAchievementFlash(dt)
             game.flashTimer = 0
             game.flashIterations = 0
             playSound(sounds.reached)
+            local ok_snd, snd = pcall(require, "sound")
+            if ok_snd and snd and snd.vibrate then snd.vibrate(0.15) end
         end
         game.scoreVisible = true
         return
