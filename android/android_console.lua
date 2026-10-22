@@ -11,6 +11,12 @@ local button_states = {}
 local android_view_mode = "console"
 local screen_overlay_visible = false
 local screen_overlay_timer = 0
+local transition_active = false
+local transition_progress = 0.0
+local transition_target = 0.0
+local transition_duration = 0.24
+local transition_dir = 1
+local custom_icons = {}
 local fs_active_touches = {}
 local fs_button_pressed = nil
 local fs_buttons = {}
@@ -374,6 +380,24 @@ function android_console.init(input_ref)
     android_console.updateLayout()
 end
 
+local function emitEvent(event)
+    if not event or not input then return end
+    if input.state then input.state[event] = true end
+    if input.emit then
+        input.emit(event, false)
+    elseif love.keypressed then
+        love.keypressed(event)
+    end
+end
+
+local function releaseEvent(event)
+    if not event or not input then return end
+    if input.state then input.state[event] = false end
+    if love.keyreleased then
+        love.keyreleased(event)
+    end
+end
+
 local function triggerHaptic(duration)
     pcall(function()
         if love.system and love.system.vibrate then
@@ -381,12 +405,6 @@ local function triggerHaptic(duration)
         end
     end)
 end
-
-local transition_active = false
-local transition_progress = 0.0
-local transition_target = 0.0
-local transition_duration = 0.24
-local transition_dir = 1
 
 function android_console.getViewMode()
     return android_view_mode
@@ -711,24 +729,6 @@ local function getCrtShader()
     else
         crt_shader_failed = true
         return nil
-    end
-end
-
-local function emitEvent(event)
-    if not event or not input then return end
-    if input.state then input.state[event] = true end
-    if input.emit then
-        input.emit(event, false)
-    elseif love.keypressed then
-        love.keypressed(event)
-    end
-end
-
-local function releaseEvent(event)
-    if not event or not input then return end
-    if input.state then input.state[event] = false end
-    if love.keyreleased then
-        love.keyreleased(event)
     end
 end
 
@@ -1171,8 +1171,6 @@ function android_console.mousereleased(x, y, button)
 end
 
 -- Icon cache and loader for custom UI sprites
-local custom_icons = {}
-
 local icon_files = {
     pause = "pause",
     play = "play",
