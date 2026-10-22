@@ -275,20 +275,46 @@ function android_console.init(input_ref)
         _G.scale = 1.0
     end
 
-    -- Load Vector D-Pad sprites with mipmaps & anisotropic filtering
-    local dpad_names = {"cross", "cross_u", "cross_d", "cross_l", "cross_r", "cross_ul", "cross_ur", "cross_dl", "cross_dr"}
-    for _, name in ipairs(dpad_names) do
-        local ok, img = pcall(love.graphics.newImage, "android/assets/dpad/" .. name .. ".png", {mipmaps = true})
-        if not ok then ok, img = pcall(love.graphics.newImage, "assets/dpad/" .. name .. ".png", {mipmaps = true}) end
-        if not ok then ok, img = pcall(love.graphics.newImage, "android/assets/dpad/" .. name .. ".png") end
-        if not ok then ok, img = pcall(love.graphics.newImage, "assets/dpad/" .. name .. ".png") end
+    -- Safe image loader with format fallback
+    local function loadSafeImage(path)
+        local ok, img = pcall(love.graphics.newImage, path, {mipmaps = true})
+        if not ok then ok, img = pcall(love.graphics.newImage, path) end
+        if not ok then
+            local ok_data, idata = pcall(love.image.newImageData, path)
+            if ok_data and idata then
+                if idata.getFormat and idata:getFormat() ~= "rgba8" then
+                    local w, h = idata:getDimensions()
+                    local ok_conv, idata8 = pcall(function()
+                        local d8 = love.image.newImageData(w, h, "rgba8")
+                        d8:paste(idata, 0, 0, 0, 0, w, h)
+                        return d8
+                    end)
+                    if ok_conv and idata8 then idata = idata8 end
+                end
+                ok, img = pcall(love.graphics.newImage, idata)
+            end
+        end
         if ok and img then
             pcall(function() img:setFilter("linear", "linear", 4) end)
+            return img
+        end
+        return nil
+    end
+
+    local function loadAsset(subpath)
+        return loadSafeImage("android/assets/" .. subpath) or loadSafeImage("assets/" .. subpath)
+    end
+
+    -- Load D-Pad sprites
+    local dpad_names = {"cross", "cross_u", "cross_d", "cross_l", "cross_r", "cross_ul", "cross_ur", "cross_dl", "cross_dr"}
+    for _, name in ipairs(dpad_names) do
+        local img = loadAsset("dpad/" .. name .. ".png")
+        if img then
             assets.dpad[name] = img
         end
     end
 
-    -- Load Vector Button sprites with mipmaps & anisotropic filtering
+    -- Load button sprites
     local btn_names = {
         "a", "b", "x", "y",
         "a_pressed", "b_pressed", "x_pressed", "y_pressed",
@@ -296,12 +322,8 @@ function android_console.init(input_ref)
         "l_pressed", "r_pressed", "select_pressed", "start_pressed"
     }
     for _, name in ipairs(btn_names) do
-        local ok, img = pcall(love.graphics.newImage, "android/assets/buttons/" .. name .. ".png", {mipmaps = true})
-        if not ok then ok, img = pcall(love.graphics.newImage, "assets/buttons/" .. name .. ".png", {mipmaps = true}) end
-        if not ok then ok, img = pcall(love.graphics.newImage, "android/assets/buttons/" .. name .. ".png") end
-        if not ok then ok, img = pcall(love.graphics.newImage, "assets/buttons/" .. name .. ".png") end
-        if ok and img then
-            pcall(function() img:setFilter("linear", "linear", 4) end)
+        local img = loadAsset("buttons/" .. name .. ".png")
+        if img then
             assets.buttons[name] = img
         end
     end
@@ -340,12 +362,10 @@ function android_console.init(input_ref)
         end
     end
 
-    -- Support custom brand PNG with mipmaps & anisotropic filtering for razor-sharp rendering
+    -- Support custom brand image
     for _, brand_path in ipairs({"android/assets/brand.png", "android/assets/2048_plus.png", "assets/brand.png", "assets/2048_plus.png"}) do
-        local ok_b, img_b = pcall(love.graphics.newImage, brand_path, {mipmaps = true})
-        if not ok_b then ok_b, img_b = pcall(love.graphics.newImage, brand_path) end
-        if ok_b and img_b then
-            pcall(function() img_b:setFilter("linear", "linear", 4) end)
+        local img_b = loadSafeImage(brand_path)
+        if img_b then
             assets.brand_image = img_b
             break
         end
@@ -1985,6 +2005,19 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
                 local sx = btn.w / img:getWidth()
                 local sy = btn.h / img:getHeight()
                 love.graphics.draw(img, btn.x, btn.y + press_offset, 0, sx, sy)
+            else
+                love.graphics.setColor(0.24 * shade, 0.24 * shade, 0.28 * shade, btn_alpha)
+                love.graphics.rectangle("fill", btn.x, btn.y + press_offset, btn.w, btn.h, 8, 8)
+                love.graphics.setColor(1, 1, 1, 0.20 * btn_alpha)
+                love.graphics.setLineWidth(1.5)
+                love.graphics.rectangle("line", btn.x, btn.y + press_offset, btn.w, btn.h, 8, 8)
+                local f = assets.font_badge or love.graphics.getFont()
+                love.graphics.setFont(f)
+                local lbl = s_name:upper() .. "1"
+                local tw = f:getWidth(lbl)
+                local th = f:getHeight()
+                love.graphics.setColor(1, 1, 1, 0.90 * btn_alpha)
+                love.graphics.print(lbl, math.floor(btn.x + (btn.w - tw) / 2), math.floor(btn.y + press_offset + (btn.h - th) / 2))
             end
         end
     end
@@ -1994,14 +2027,26 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         local dpad_dir = button_states["dpad"]
         local dpad_sprite_name = dpad_dir and ("cross_" .. dpad_dir) or "cross"
         local dpad_img = assets.dpad[dpad_sprite_name] or assets.dpad["cross"]
+        local current_scale = 0.85 + 0.15 * dpad_anim_alpha
+        local slide_y = (1.0 - dpad_anim_alpha) * math.floor(18 * (w / 390))
+        local cx = geo.dpad_x
+        local cy = geo.dpad_y + slide_y
+
         if dpad_img then
             love.graphics.setColor(1, 1, 1, dpad_anim_alpha * 0.95)
-            local current_scale = 0.85 + 0.15 * dpad_anim_alpha
-            local slide_y = (1.0 - dpad_anim_alpha) * math.floor(18 * (w / 390))
             local s = (geo.dpad_size * current_scale) / dpad_img:getWidth()
-            local cx = geo.dpad_x
-            local cy = geo.dpad_y + slide_y
             love.graphics.draw(dpad_img, cx - (dpad_img:getWidth() * s) / 2, cy - (dpad_img:getHeight() * s) / 2, 0, s, s)
+        else
+            local sz = geo.dpad_size * current_scale
+            local arm_w = math.floor(sz * 0.35)
+            local a = dpad_anim_alpha * 0.95
+
+            love.graphics.setColor(0.18, 0.18, 0.22, a)
+            love.graphics.rectangle("fill", cx - arm_w / 2, cy - sz / 2, arm_w, sz, 6, 6)
+            love.graphics.rectangle("fill", cx - sz / 2, cy - arm_w / 2, sz, arm_w, 6, 6)
+
+            love.graphics.setColor(0.12, 0.12, 0.15, a)
+            love.graphics.circle("fill", cx, cy, arm_w * 0.40)
         end
     end
 
@@ -2154,6 +2199,34 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
                 local ix = cx - (img:getWidth() * s) / 2
                 local iy = cy + press_offset - (img:getHeight() * s) / 2
                 love.graphics.draw(img, ix, iy, 0, s, s)
+            else
+                local r = btn.w / 2
+                local col_map = {
+                    y = {0.28, 0.76, 0.38},
+                    b = {0.92, 0.72, 0.18},
+                    a = {0.88, 0.24, 0.24},
+                    x = {0.24, 0.54, 0.88},
+                }
+                local base_col = col_map[b_name] or {0.6, 0.6, 0.6}
+                local factor = is_pressed and 0.80 or 1.0
+
+                love.graphics.setColor(0, 0, 0, 0.35 * btn_alpha)
+                love.graphics.circle("fill", cx, cy + press_offset + 2.5, r)
+
+                love.graphics.setColor(base_col[1] * factor, base_col[2] * factor, base_col[3] * factor, btn_alpha)
+                love.graphics.circle("fill", cx, cy + press_offset, r)
+
+                love.graphics.setColor(1, 1, 1, 0.25 * btn_alpha)
+                love.graphics.setLineWidth(1.5)
+                love.graphics.circle("line", cx, cy + press_offset, r)
+
+                local f = assets.font_badge or love.graphics.getFont()
+                love.graphics.setFont(f)
+                local lbl = b_name:upper()
+                local tw = f:getWidth(lbl)
+                local th = f:getHeight()
+                love.graphics.setColor(1, 1, 1, 0.95 * btn_alpha)
+                love.graphics.print(lbl, math.floor(cx - tw / 2), math.floor(cy + press_offset - th / 2))
             end
         end
     end
@@ -2172,6 +2245,19 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
                 local sx = btn.w / img:getWidth()
                 local sy = btn.h / img:getHeight()
                 love.graphics.draw(img, btn.x, btn.y + press_offset, 0, sx, sy)
+            else
+                love.graphics.setColor(0.24 * shade, 0.24 * shade, 0.28 * shade, btn_alpha)
+                love.graphics.rectangle("fill", btn.x, btn.y + press_offset, btn.w, btn.h, 6, 6)
+                love.graphics.setColor(1, 1, 1, 0.18 * btn_alpha)
+                love.graphics.setLineWidth(1.2)
+                love.graphics.rectangle("line", btn.x, btn.y + press_offset, btn.w, btn.h, 6, 6)
+                local f = assets.font_btn_label or love.graphics.getFont()
+                love.graphics.setFont(f)
+                local lbl = p_name:upper()
+                local tw = f:getWidth(lbl)
+                local th = f:getHeight()
+                love.graphics.setColor(1, 1, 1, 0.90 * btn_alpha)
+                love.graphics.print(lbl, math.floor(btn.x + (btn.w - tw) / 2), math.floor(btn.y + press_offset + (btn.h - th) / 2))
             end
         end
     end
