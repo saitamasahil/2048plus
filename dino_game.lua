@@ -178,7 +178,12 @@ local function playSound(source)
 end
 
 local function updateScreenSize()
-    SCREEN_W, SCREEN_H = love.graphics.getDimensions()
+    if _G.android_console then
+        SCREEN_W = 640
+        SCREEN_H = 480
+    else
+        SCREEN_W, SCREEN_H = love.graphics.getDimensions()
+    end
     GROUND_Y = SCREEN_H - GROUND_MARGIN_BOTTOM
     PTERO_LOW_Y = GROUND_Y - PTERO_LOW_OFFSET
     PTERO_HIGH_Y = GROUND_Y - PTERO_HIGH_OFFSET
