@@ -25,6 +25,10 @@ local fs_swipe_track = {}
 local fs_canvas = nil
 local fs_canvas_w = 0
 local fs_canvas_h = 0
+local fs_tutorial_seen = false
+local fs_tutorial_active = false
+local fs_tutorial_time = 0.0
+local console_swipe_count = 0
 
 -- MrBreakfast animated prompts
 local assets = {
@@ -367,6 +371,12 @@ function android_console.init(input_ref)
             transition_progress = (saved_mode == "fullscreen") and 1.0 or 0.0
             transition_active = false
         end
+        if save.loadFullscreenTutorialSeen then
+            fs_tutorial_seen = save.loadFullscreenTutorialSeen()
+        end
+    end
+    if android_view_mode == "fullscreen" then
+        fs_tutorial_seen = true
     end
 
     -- Support custom brand image
@@ -444,6 +454,13 @@ function android_console.setViewMode(mode)
     local ok_save, save = pcall(require, "save")
     if ok_save and save and save.saveAndroidViewMode then
         save.saveAndroidViewMode(mode)
+    end
+    if mode == "fullscreen" then
+        fs_tutorial_seen = true
+        fs_tutorial_active = false
+        if ok_save and save and save.saveFullscreenTutorialSeen then
+            save.saveFullscreenTutorialSeen()
+        end
     end
 end
 
@@ -971,6 +988,11 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             sw.fired = true
             console_has_swiped = true
             screen_overlay_visible = false
+            console_swipe_count = console_swipe_count + 1
+            if not fs_tutorial_seen and not fs_tutorial_active and console_swipe_count >= 8 then
+                fs_tutorial_active = true
+                fs_tutorial_time = 0.0
+            end
             local ev = nil
             if abs_x > abs_y then
                 if diff_x > 0 then
@@ -1157,6 +1179,23 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
 
             -- Tap screen during gameplay to toggle overlay with full screen icon
             if is_gameplay then
+                if fs_tutorial_active then
+                    local btn_sz = math.floor(geo.screen_w * 0.12)
+                    local btn_x = geo.screen_x + geo.screen_w - btn_sz - 8
+                    local btn_y = geo.screen_y + geo.screen_h - btn_sz - 8
+                    if x >= btn_x - 14 and x <= btn_x + btn_sz + 14 and y >= btn_y - 14 and y <= btn_y + btn_sz + 14 then
+                        fs_tutorial_active = false
+                        fs_tutorial_seen = true
+                        screen_overlay_visible = false
+                        android_console.setViewMode("fullscreen")
+                        local ok_save, save = pcall(require, "save")
+                        if ok_save and save and save.saveFullscreenTutorialSeen then
+                            save.saveFullscreenTutorialSeen()
+                        end
+                        swipe_track[id] = nil
+                        return
+                    end
+                end
                 if screen_overlay_visible then
                     local btn_sz = math.floor(geo.screen_w * 0.12)
                     local btn_x = geo.screen_x + geo.screen_w - btn_sz - 8
@@ -1453,6 +1492,128 @@ local function drawButtonIcon(name, cx, cy, sz, col)
     elseif name == "confirm" then drawConfirmIcon(cx, cy, sz, col)
     elseif name == "star" then drawStarIcon(cx, cy, sz, col)
     else drawFullscreenIcon(cx, cy, sz, col) end
+end
+
+local function drawTapIcon(cx, cy, sz, col, pulse)
+    local s = sz / 40
+    local p = pulse or 0
+    local alpha = (col and col[4]) or 1.0
+
+    if p > 0.05 and p < 0.95 then
+        local ring_r = (10 + 18 * p) * s
+        local ring_a = math.max(0, (1 - p) * 0.75 * alpha)
+        love.graphics.setColor(1, 1, 1, ring_a)
+        love.graphics.setLineWidth(math.max(1.5, 2 * s))
+        love.graphics.circle("line", cx, cy, ring_r)
+    end
+
+    love.graphics.push()
+    love.graphics.translate(cx, cy)
+    love.graphics.rotate(math.rad(36))
+
+    local bounce = math.sin(p * math.pi) * 4 * s
+    love.graphics.translate(0, bounce)
+
+    love.graphics.setColor(0, 0, 0, 0.4 * alpha)
+    love.graphics.rectangle("fill", -4 * s, 2 * s, 8 * s, 24 * s, 4 * s, 4 * s)
+    love.graphics.rectangle("fill", -1 * s, 14 * s, 16 * s, 20 * s, 5 * s, 5 * s)
+
+    local cr = (col and col[1]) or 1
+    local cg = (col and col[2]) or 1
+    local cb = (col and col[3]) or 1
+    love.graphics.setColor(cr, cg, cb, alpha)
+    love.graphics.rectangle("fill", -4 * s, 0, 8 * s, 24 * s, 4 * s, 4 * s)
+    love.graphics.rectangle("fill", -1 * s, 12 * s, 16 * s, 20 * s, 5 * s, 5 * s)
+    love.graphics.rectangle("fill", -7 * s, 16 * s, 7 * s, 12 * s, 3.5 * s, 3.5 * s)
+
+    love.graphics.setColor(0.1, 0.1, 0.1, 0.3 * alpha)
+    love.graphics.setLineWidth(1.5 * s)
+    love.graphics.line(3 * s, 15 * s, 3 * s, 25 * s)
+
+    love.graphics.pop()
+end
+
+local function drawTutorialPill(text, cx, cy, alpha)
+    local f = assets.font_btn_label or love.graphics.getFont()
+    love.graphics.setFont(f)
+    local tw = f:getWidth(text)
+    local th = f:getHeight()
+    local pw = tw + 20
+    local ph = th + 10
+    local px = math.floor(cx - pw / 2)
+    local py = math.floor(cy - ph / 2)
+
+    love.graphics.setColor(0, 0, 0, 0.35 * alpha)
+    love.graphics.rectangle("fill", px, py + 1, pw, ph, 8, 8)
+
+    love.graphics.setColor(0.12, 0.12, 0.16, 0.92 * alpha)
+    love.graphics.rectangle("fill", px, py, pw, ph, 8, 8)
+
+    love.graphics.setColor(1, 1, 1, 0.25 * alpha)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", px, py, pw, ph, 8, 8)
+
+    love.graphics.setColor(1, 1, 1, 0.95 * alpha)
+    love.graphics.print(text, px + 10, py + 5)
+end
+
+local function drawFullscreenTutorial(dt)
+    if not fs_tutorial_active or not geo or not geo.screen_w then return end
+
+    fs_tutorial_time = fs_tutorial_time + dt
+    local loop_duration = 3.6
+    local t = fs_tutorial_time % loop_duration
+
+    local scx = math.floor(geo.screen_x + geo.screen_w / 2)
+    local scy = math.floor(geo.screen_y + geo.screen_h / 2)
+
+    local btn_sz = math.floor(geo.screen_w * 0.12)
+    local btn_x = geo.screen_x + geo.screen_w - btn_sz - 8
+    local btn_y = geo.screen_y + geo.screen_h - btn_sz - 8
+    local target_x = math.floor(btn_x + btn_sz / 2)
+    local target_y = math.floor(btn_y + btn_sz / 2)
+
+    local btn_alpha = 1.0
+    if t < 0.6 then
+        btn_alpha = math.min(1.0, 0.4 + 0.6 * (t / 0.6))
+    elseif t > 3.0 then
+        btn_alpha = math.max(0.4, (3.5 - t) / 0.5)
+    end
+
+    love.graphics.setColor(0.12, 0.12, 0.16, 0.92 * btn_alpha)
+    love.graphics.rectangle("fill", btn_x, btn_y, btn_sz, btn_sz, 8, 8)
+    love.graphics.setColor(1, 1, 1, 0.50 * btn_alpha)
+    love.graphics.setLineWidth(1.5)
+    love.graphics.rectangle("line", btn_x, btn_y, btn_sz, btn_sz, 8, 8)
+    drawButtonIcon("fullscreen", target_x, target_y, btn_sz * 0.65, {1, 1, 1, 0.95 * btn_alpha})
+
+    if t < 1.1 then
+        local alpha = math.min(1.0, t / 0.25)
+        local pulse = (t % 0.55) / 0.55
+        drawTutorialPill("Tap screen for Fullscreen", scx, scy - 48, alpha)
+        drawTapIcon(scx, scy, 36, {1, 1, 1, alpha}, pulse)
+    elseif t < 1.8 then
+        local p = (t - 1.1) / 0.7
+        local p_ease = p * p * (3 - 2 * p)
+        local fx = math.floor(scx + (target_x - scx) * p_ease)
+        local fy = math.floor(scy + (target_y - scy) * p_ease)
+        drawTapIcon(fx, fy, 36, {1, 1, 1, 1.0}, 0)
+    elseif t < 3.0 then
+        local pulse = ((t - 1.8) % 0.6) / 0.6
+        local glow = 0.5 + 0.5 * math.sin((t - 1.8) * 8)
+        love.graphics.setColor(0.96, 0.72, 0.22, glow)
+        love.graphics.setLineWidth(2)
+        love.graphics.rectangle("line", btn_x - 3, btn_y - 3, btn_sz + 6, btn_sz + 6, 10, 10)
+
+        local pill_cx = math.max(geo.screen_x + 90, btn_x - 76)
+        drawTutorialPill("Play in Fullscreen", pill_cx, target_y, 1.0)
+        drawTapIcon(target_x, target_y, 36, {1, 1, 1, 1.0}, pulse)
+    else
+        local fade = math.max(0, (3.4 - t) / 0.4)
+        if fade > 0 then
+            drawTapIcon(target_x, target_y, 36, {1, 1, 1, fade}, 0)
+        end
+    end
 end
 
 -- Resolve dynamic touch action buttons based on gameplay state
@@ -2002,6 +2163,10 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         love.graphics.rectangle("line", btn_x, btn_y, btn_sz, btn_sz, 8, 8)
 
         drawButtonIcon("fullscreen", btn_x + btn_sz / 2, btn_y + btn_sz / 2, btn_sz * 0.65, {1, 1, 1, 0.95})
+    end
+
+    if not skip_screen_draw and is_gameplay and fs_tutorial_active then
+        drawFullscreenTutorial(dt)
     end
 
     -- Controls rendering

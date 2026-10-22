@@ -747,4 +747,26 @@ function save.loadAndroidViewMode()
     return nil
 end
 
+local FULLSCREEN_TUTORIAL_FILE = "fullscreen_tutorial_seen.dat"
+
+function save.saveFullscreenTutorialSeen()
+    local path = getFilePath(FULLSCREEN_TUTORIAL_FILE)
+    local file = io.open(path, "w")
+    if file then
+        file:write("1")
+        file:close()
+    end
+end
+
+function save.loadFullscreenTutorialSeen()
+    local path = getFilePath(FULLSCREEN_TUTORIAL_FILE)
+    local file = io.open(path, "r")
+    if file then
+        local content = file:read("*all")
+        file:close()
+        return content == "1"
+    end
+    return false
+end
+
 return save
