@@ -203,21 +203,25 @@ local function spawnToastParticles()
         possible_colors = { {0.93, 0.76, 0.18}, {0.95, 0.69, 0.39}, {0.96, 0.49, 0.25}, {0.96, 0.37, 0.23} }
     end
     
+    local target_y = 10 * _G.scale
+    if _G.android_fullscreen then
+        target_y = (_G.android_toast_y or 46) * _G.scale
+    end
     local cx = w / 2
-    local cy = (10 + 20) * _G.scale
+    local cy = target_y + 17 * _G.scale
     
     for i = 1, 45 do
         local angle = love.math.random() * math.pi * 2
-        local speed = love.math.random(100, 400) * _G.scale
+        local speed = love.math.random(100, 300) * _G.scale
         local p_color = possible_colors[love.math.random(#possible_colors)]
         
         table.insert(toast_particles, {
             x = cx + (love.math.random() - 0.5) * 120 * _G.scale,
-            y = cy + (love.math.random() - 0.5) * 20 * _G.scale,
+            y = cy + (love.math.random() - 0.5) * 16 * _G.scale,
             vx = math.cos(angle) * speed,
-            vy = math.sin(angle) * speed - love.math.random(50, 150) * _G.scale,
-            life = 0.6 + love.math.random() * 0.5,
-            size = love.math.random(2, 6) * _G.scale,
+            vy = math.sin(angle) * speed - love.math.random(40, 100) * _G.scale,
+            life = 0.5 + love.math.random() * 0.4,
+            size = love.math.random(2, 5) * _G.scale,
             color = p_color,
             drag = 0.94 + love.math.random() * 0.04
         })
@@ -1574,6 +1578,7 @@ local font_header_plus
 local font_cheats_title
 local font_label
 local font_message
+local font_toast
 local font_help_key
 local font_help_label
 local font_path = "assets/font/ClearSans-Bold.ttf"
@@ -3404,6 +3409,7 @@ function renderer.init()
     font_cheats_title = love.graphics.newFont(font_path, math.floor(56 * scale))
     font_label      = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_message    = love.graphics.newFont(font_path, math.floor(28 * scale * text_scale))
+    font_toast      = love.graphics.newFont(font_path, math.floor(14 * scale * text_scale))
     font_help_key   = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_help_label = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_bgm        = love.graphics.newFont(font_path, math.floor(13 * scale))
@@ -6448,16 +6454,18 @@ local function drawToast()
     if toast_timer <= 0 or not toast_message then return end
 
     local w, h = love.graphics.getDimensions()
-    love.graphics.setFont(font_message)
+    local scale = _G.scale or 1.0
+    local text_scale = (_G.text_size == "large") and 1.15 or 1.0
+    if not font_toast then
+        font_toast = love.graphics.newFont(font_path, math.floor(14 * scale * text_scale))
+    end
+    love.graphics.setFont(font_toast)
 
-    local tw = font_message:getWidth(toast_message)
-    local font_h = font_message:getHeight()
-    local padX = 20 * _G.scale
-    local padY = 10 * _G.scale
-    local max_text_w = w - (padX * 2) - (40 * _G.scale)
-
-    local text_w, wrapped_lines = font_message:getWrap(toast_message, max_text_w)
-    local th = font_h * #wrapped_lines
+    local font_h = font_toast:getHeight()
+    local padX = math.floor(14 * scale)
+    local padY = math.floor(7 * scale)
+    local icon_sz = math.floor(20 * scale)
+    local icon_gap = math.floor(8 * scale)
 
     local ach_img = nil
     if toast_ach_id then
@@ -6476,12 +6484,16 @@ local function drawToast()
         if ach_img == false then ach_img = nil end
     end
 
-    local icon_sz = math.floor(32 * _G.scale)
-    local icon_gap = math.floor(10 * _G.scale)
-    local boxW = text_w + padX * 2 + (ach_img and (icon_sz + icon_gap) or 0)
+    local icon_reserve = ach_img and (icon_sz + icon_gap) or 0
+    local max_text_w = w - (padX * 2) - icon_reserve - math.floor(20 * scale)
+
+    local text_w, wrapped_lines = font_toast:getWrap(toast_message, max_text_w)
+    local th = font_h * #wrapped_lines
+
+    local boxW = text_w + padX * 2 + icon_reserve
     local boxH = math.max(th, ach_img and icon_sz or 0) + padY * 2
 
-    -- Fade in/out
+    -- Fade in out
     local alpha = 1.0
     if toast_timer < 0.3 then
         alpha = toast_timer / 0.3
@@ -6489,13 +6501,17 @@ local function drawToast()
         alpha = (toast_max_duration - toast_timer) / 0.3
     end
 
-    -- Slide down from the top banner
-    local target_y = 10 * _G.scale
-    local y = target_y - (1.0 - alpha) * 20 * _G.scale
+    -- Slide down from banner position
+    local target_y = math.floor(10 * scale)
+    if _G.android_fullscreen then
+        target_y = math.floor((_G.android_toast_y or 46) * scale)
+    end
+    local slide_dist = (_G.android_fullscreen and 10 or 20) * scale
+    local y = target_y - (1.0 - alpha) * slide_dist
     local box_x = (w - boxW) / 2
 
-    love.graphics.setColor(0.1, 0.1, 0.1, 0.85 * alpha)
-    roundedRect("fill", box_x, y, boxW, boxH, 12 * _G.scale)
+    love.graphics.setColor(0.1, 0.1, 0.1, 0.88 * alpha)
+    roundedRect("fill", box_x, y, boxW, boxH, math.floor(8 * scale))
 
     local content_x = box_x + padX
     if ach_img then

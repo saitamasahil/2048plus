@@ -270,6 +270,7 @@ function android_console.init(input_ref)
     _G.hide_game_footer = false
     _G.android_header_y = nil
     _G.android_board_y = nil
+    _G.android_toast_y = nil
     custom_icons = {}
 
     -- Lock UI scale so game menus and tiles inside virtual screen are never zoomed
@@ -1550,6 +1551,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     local box_h = (_G.text_size == "large" and 56 or 48)
     local ideal_header_y = _G.android_board_y - box_h - 20
     _G.android_header_y = math.max(virt_safe_top + 42, ideal_header_y)
+    _G.android_toast_y = virt_safe_top + 46
 
     _G.android_fullscreen = true
     _G.hide_game_footer = true
@@ -1762,6 +1764,7 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     _G.hide_game_footer = false
     _G.android_header_y = nil
     _G.android_board_y = nil
+    _G.android_toast_y = nil
 
     -- 1. Render game scene into virtual 640x480 canvas
     local canvas = android_console.getCanvas()
