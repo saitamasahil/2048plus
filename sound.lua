@@ -21,20 +21,22 @@ local bgmStoppedBySystem = false
 local bgmPausedByUser = false
 
 local activeJoystick = nil
-local joystickInitialized = false
 
 local function getJoystick()
-    if joystickInitialized then
+    if activeJoystick and activeJoystick:isConnected() then
         return activeJoystick
     end
     if love.joystick then
         local joysticks = love.joystick.getJoysticks()
-        if #joysticks > 0 then
-            activeJoystick = joysticks[1]
-            joystickInitialized = true
+        for _, j in ipairs(joysticks) do
+            if j:isConnected() then
+                activeJoystick = j
+                return activeJoystick
+            end
         end
     end
-    return activeJoystick
+    activeJoystick = nil
+    return nil
 end
 
 local function triangle(phase)
@@ -983,9 +985,13 @@ function sound.vibrate(duration)
             love.system.vibrate(dur)
         end
     end)
-    local j = getJoystick()
-    if j and j:isVibrationSupported() then
-        j:setVibration(0.6, 0.6, dur)
+    if love.joystick then
+        local joysticks = love.joystick.getJoysticks()
+        for _, j in ipairs(joysticks) do
+            if j:isConnected() and j:isVibrationSupported() then
+                j:setVibration(0.6, 0.6, dur)
+            end
+        end
     end
 end
 return sound
