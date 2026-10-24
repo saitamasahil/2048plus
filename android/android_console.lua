@@ -951,32 +951,8 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
         return
     end
 
-    -- Gesture swipe during Dino runner
-    local sw = swipe_track[id]
-    if sw and not sw.fired and _G.appState == "DINO" then
-        local diff_x = x - sw.start_x
-        local diff_y = y - sw.start_y
-        local abs_x = math.abs(diff_x)
-        local abs_y = math.abs(diff_y)
-        local threshold = 20
-        if abs_x > threshold or abs_y > threshold then
-            sw.fired = true
-            if abs_y >= abs_x then
-                local ev = (diff_y > 0) and input.events.DOWN or input.events.UP
-                emitEvent(ev)
-                triggerHaptic(0.015)
-                pcall(function()
-                    local timer = require("timer")
-                    timer.after(0.12, function()
-                        releaseEvent(ev)
-                    end)
-                end)
-            end
-        end
-        return
-    end
-
     -- Gesture swipe during gameplay
+    local sw = swipe_track[id]
     if sw and not sw.fired and is_gameplay then
         local diff_x = x - sw.start_x
         local diff_y = y - sw.start_y
@@ -1134,20 +1110,6 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
         if dur < 0.35 and dist_sq < 160 then
             local gx = (x - geo.screen_x) / geo.scale_x
             local gy = (y - geo.screen_y) / geo.scale_y
-
-            -- Tap screen during Dino runner to jump
-            if _G.appState == "DINO" then
-                emitEvent(input.events.CONFIRM)
-                triggerHaptic(0.015)
-                pcall(function()
-                    local timer = require("timer")
-                    timer.after(0.08, function()
-                        releaseEvent(input.events.CONFIRM)
-                    end)
-                end)
-                swipe_track[id] = nil
-                return
-            end
 
             -- Powerup tile targeting
             if _G.powerup_targeting and _G.grid and _G.grid_x and _G.grid_y and _G.cell_size then

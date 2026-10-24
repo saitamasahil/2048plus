@@ -259,6 +259,7 @@ function love.touchpressed(id, x, y, dx, dy, pressure)
         _G.android_console.touchpressed(id, x, y, dx, dy, pressure)
         return
     end
+    if _G.appState == "DINO" then return end
     -- Only track the first finger to avoid multi-touch confusion
     if not active_touch_id then
         active_touch_id = id
@@ -273,6 +274,7 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
         _G.android_console.touchreleased(id, x, y, dx, dy, pressure)
         return
     end
+    if _G.appState == "DINO" then return end
     if active_touch_id ~= id then return end
     active_touch_id = nil
 
@@ -346,6 +348,7 @@ function love.touchmoved(id, x, y, dx, dy, pressure)
         _G.android_console.touchmoved(id, x, y, dx, dy, pressure)
         return
     end
+    if _G.appState == "DINO" then return end
 end
 
 return input
