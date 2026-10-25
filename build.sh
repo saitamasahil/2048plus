@@ -231,7 +231,7 @@ build_linux() {
         [ -f "$PC_SOURCE_DIR/2048plus.desktop" ] && cp "$PC_SOURCE_DIR/2048plus.desktop" squashfs-root/love.desktop
         [ -f "$PC_SOURCE_DIR/2048plus.desktop" ] && cp "$PC_SOURCE_DIR/2048plus.desktop" squashfs-root/share/applications/love.desktop
         [ -f "$PROJECT_ROOT/LICENSE" ] && cp "$PROJECT_ROOT/LICENSE" squashfs-root/LICENSE
-        [ -f "$PROJECT_ROOT/licenses/ClearSans.LICENSE" ] && cp "$PROJECT_ROOT/licenses/ClearSans.LICENSE" squashfs-root/ClearSans_LICENSE.txt
+        [ -d "$PROJECT_ROOT/licenses" ] && cp -r "$PROJECT_ROOT/licenses" squashfs-root/
 
         local icon_src="$PROJECT_ROOT/assets/logo/logo_2048.png"
         if [ -f "$icon_src" ]; then
@@ -287,7 +287,7 @@ build_windows() {
         cp win_extract/love-11.5-win64/*.dll "$WIN_DIST_DIR/"
         cp win_extract/love-11.5-win64/license.txt "$WIN_DIST_DIR/love_license.txt"
         [ -f "$PROJECT_ROOT/LICENSE" ] && cp "$PROJECT_ROOT/LICENSE" "$WIN_DIST_DIR/LICENSE"
-        [ -f "$PROJECT_ROOT/licenses/ClearSans.LICENSE" ] && cp "$PROJECT_ROOT/licenses/ClearSans.LICENSE" "$WIN_DIST_DIR/ClearSans_LICENSE.txt"
+        [ -d "$PROJECT_ROOT/licenses" ] && cp -r "$PROJECT_ROOT/licenses" "$WIN_DIST_DIR/"
 
         OUTPUT_WIN_ZIP="$BUILD_DIR/2048_Plus-win64.zip"
         (cd "$WORKSPACE_DIR" && zip -9 -q -r "$OUTPUT_WIN_ZIP" "2048_Plus-win64")
