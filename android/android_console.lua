@@ -393,11 +393,11 @@ end
 
 local function emitEvent(event)
     if not event or not input then return end
-    if input.state then input.state[event] = true end
-    if input.emit then
-        input.emit(event, false)
-    elseif love.keypressed then
+    if love.keypressed then
         love.keypressed(event)
+    elseif input.emit then
+        if input.state then input.state[event] = true end
+        input.emit(event, false)
     end
 end
 
@@ -434,6 +434,12 @@ function android_console.setViewMode(mode)
     fs_active_touches = {}
     for _, touch in pairs(active_touches) do
         if touch.event then releaseEvent(touch.event) end
+        if touch.type == "dpad" then
+            releaseEvent(input.events.UP)
+            releaseEvent(input.events.DOWN)
+            releaseEvent(input.events.LEFT)
+            releaseEvent(input.events.RIGHT)
+        end
     end
     active_touches = {}
     fs_swipe_track = {}
@@ -947,6 +953,13 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             if new_dir:find("l") then emitEvent(input.events.LEFT) end
             if new_dir:find("r") then emitEvent(input.events.RIGHT) end
             triggerHaptic(0.012)
+        elseif not new_dir and button_states["dpad"] then
+            releaseEvent(input.events.UP)
+            releaseEvent(input.events.DOWN)
+            releaseEvent(input.events.LEFT)
+            releaseEvent(input.events.RIGHT)
+            button_states["dpad"] = nil
+            touch.dir = nil
         end
         return
     end
@@ -1894,13 +1907,13 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     love.graphics.setCanvas({canvas, stencil = true})
     love.graphics.clear(0, 0, 0, 1)
 
-    -- Safety check: ensure directional states don't stay stuck when touches are released
+    -- Ensure directional states clear when touches are inactive
     if next(active_touches) == nil and next(swipe_track) == nil and input and input.state and input.events then
         if not love.keyboard or not (love.keyboard.isDown("up") or love.keyboard.isDown("down") or love.keyboard.isDown("left") or love.keyboard.isDown("right")) then
-            input.state[input.events.UP] = false
-            input.state[input.events.DOWN] = false
-            input.state[input.events.LEFT] = false
-            input.state[input.events.RIGHT] = false
+            if input.state[input.events.UP] then releaseEvent(input.events.UP) end
+            if input.state[input.events.DOWN] then releaseEvent(input.events.DOWN) end
+            if input.state[input.events.LEFT] then releaseEvent(input.events.LEFT) end
+            if input.state[input.events.RIGHT] then releaseEvent(input.events.RIGHT) end
         end
     end
 
