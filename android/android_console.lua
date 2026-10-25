@@ -1139,6 +1139,29 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                 end
             end
 
+            -- Customization tab button tap
+            if _G.appState == "THEME_SELECT" and _G.customization_tab_bounds then
+                for idx, b in ipairs(_G.customization_tab_bounds) do
+                    if gx >= b.x and gx <= b.x + b.w and gy >= b.y and gy <= b.y + b.h then
+                        local cur_tab = _G.customization_tab or 1
+                        if idx ~= cur_tab then
+                            local sound = require("sound")
+                            if sound and sound.playMenuMove then sound.playMenuMove() end
+                            local renderer = require("renderer")
+                            local dir = (idx > cur_tab) and 1 or -1
+                            if _G.screen_transitions and renderer.startCustomizationTabTransition then
+                                renderer.startCustomizationTabTransition(cur_tab, idx, dir)
+                            else
+                                _G.customization_tab = idx
+                            end
+                            triggerHaptic(0.015)
+                        end
+                        swipe_track[id] = nil
+                        return
+                    end
+                end
+            end
+
             -- Store sort button tap
             if _G.appState == "STORE" and _G.store_sort_btn_bounds then
                 local b = _G.store_sort_btn_bounds

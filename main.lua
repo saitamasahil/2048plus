@@ -716,10 +716,7 @@ function love.update(dt)
 
     -- Process input events
     input.processEvents(function(event)
-        if event == input.events.Y then
-            if _G.appState == "THEME_SELECT" and sound and sound.playMenuMove then
-                sound.playMenuMove()
-            end
+        if event == input.events.Y and _G.appState ~= "THEME_SELECT" then
             if _G.cycleTheme then
                 _G.cycleTheme(1)
             end
@@ -789,9 +786,32 @@ function love.update(dt)
                         _G.play_select_selection = 1
                         _G.arcade_selection = 1
                         renderer.setArcadeMenuOpen(true)
-                    elseif sel:match("^Select Theme") then
+                    elseif sel:match("^Select Theme") or sel == "Customization" then
                         _G.themeSelectPrevState = "MENU"
                         _G.themeSelectInitialTheme = _G.theme
+                        _G.customization_tab = _G.customization_tab or 1
+                        -- Sync indices to currently equipped items
+                        if renderer.getBoardSkinsCatalog then
+                            for i, s in ipairs(renderer.getBoardSkinsCatalog()) do
+                                if s.id == (_G.board_skin or "default") then
+                                    _G.custom_board_idx = i
+                                    break
+                                end
+                            end
+                        end
+                        if renderer.getPetsCatalog then
+                            _G.custom_pet_idx = 1
+                            if _G.active_companion == "cat" then
+                                _G.custom_pet_idx = 2
+                            elseif _G.active_companion == "dog" then
+                                for i, p in ipairs(renderer.getPetsCatalog()) do
+                                    if p.type == "dog" and p.breed_id == (_G.active_dog_breed or "roxy") then
+                                        _G.custom_pet_idx = i
+                                        break
+                                    end
+                                end
+                            end
+                        end
                         _G.appState = "THEME_SELECT"
                     elseif sel == "Achievements" or sel == "Achievements & Stats" then
                         _G.appState = "ACHIEVEMENTS"
@@ -894,11 +914,11 @@ function love.update(dt)
                             if _G.active_companion == "cat" then
                                 _G.active_companion = "none"
                                 if save and save.saveCompanion then save.saveCompanion("none") end
-                                renderer.showToast("Unequipped Cat Companion")
+                                renderer.showToast("Unequipped Luna")
                             else
                                 _G.active_companion = "cat"
                                 if save and save.saveCompanion then save.saveCompanion("cat") end
-                                renderer.showToast("Equipped Cat Companion!")
+                                renderer.showToast("Equipped Luna!")
                             end
                         elseif (_G.stats.coins or 0) >= sel_item.cost then
                             _G.stats.coins = _G.stats.coins - sel_item.cost
@@ -907,7 +927,7 @@ function love.update(dt)
                             save.saveStats(_G.stats)
                             _G.active_companion = "cat"
                             if save and save.saveCompanion then save.saveCompanion("cat") end
-                            renderer.showToast("Purchased & Equipped Cat Companion!")
+                            renderer.showToast("Purchased & Equipped Luna!")
                         else
                             renderer.showToast("Not enough Coins!")
                         end
@@ -1410,29 +1430,127 @@ function love.update(dt)
             end
             return
         elseif _G.appState == "THEME_SELECT" then
-            if event == input.events.CONFIRM then
-                sound.playMenuSelect()
-                queueTransitionAction(event, 0.08, function()
-                    save.saveTheme(_G.theme)
-                    if game then game:saveGameState() end
-                    _G.appState = _G.themeSelectPrevState or "MENU"
-                end)
+            local tab = _G.customization_tab or 1
+            if event == input.events.L1 then
+                local next_tab = (tab > 1) and (tab - 1) or 3
+                if next_tab ~= tab then
+                    sound.playMenuMove()
+                    if _G.screen_transitions and renderer.startCustomizationTabTransition then
+                        renderer.startCustomizationTabTransition(tab, next_tab, -1)
+                    else
+                        _G.customization_tab = next_tab
+                    end
+                end
+            elseif event == input.events.R1 then
+                local next_tab = (tab < 3) and (tab + 1) or 1
+                if next_tab ~= tab then
+                    sound.playMenuMove()
+                    if _G.screen_transitions and renderer.startCustomizationTabTransition then
+                        renderer.startCustomizationTabTransition(tab, next_tab, 1)
+                    else
+                        _G.customization_tab = next_tab
+                    end
+                end
             elseif event == input.events.BACK then
-                sound.playMenuSelect()
+                sound.playMenuBack()
                 queueTransitionAction(event, 0.08, function()
                     _G.theme = _G.themeSelectInitialTheme or "light"
                     renderer.applyTheme()
                     _G.appState = _G.themeSelectPrevState or "MENU"
                 end)
-            elseif event == input.events.X or event == input.events.LEFT or event == input.events.UP then
-                if sound and sound.playMenuMove then sound.playMenuMove() end
-                if _G.cycleTheme then
-                    _G.cycleTheme(-1)
+            elseif event == input.events.CONFIRM then
+                if tab == 1 then
+                    -- Theme tab: save theme and return to previous state
+                    sound.playMenuSelect()
+                    queueTransitionAction(event, 0.08, function()
+                        save.saveTheme(_G.theme)
+                        if game then game:saveGameState() end
+                        _G.appState = _G.themeSelectPrevState or "MENU"
+                    end)
+                elseif tab == 2 then
+                    -- Board tab: equip or unequip selected skin
+                    local skin = renderer.getSelectedBoardSkin and renderer.getSelectedBoardSkin()
+                    if skin then
+                        local is_owned = (skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id])
+                        if is_owned then
+                            sound.playMenuSelect()
+                            if _G.board_skin == skin.id and skin.id ~= "default" then
+                                _G.board_skin = "default"
+                                save.saveBoardSkin("default")
+                                renderer.showToast("Equipped Classic Board")
+                            else
+                                _G.board_skin = skin.id
+                                save.saveBoardSkin(skin.id)
+                                renderer.showToast("Equipped " .. skin.name)
+                            end
+                        else
+                            sound.playMenuBack()
+                            renderer.showToast("Unlock in Store")
+                        end
+                    end
+                elseif tab == 3 then
+                    -- Pet tab: equip or unequip selected pet
+                    local pet = renderer.getSelectedPet and renderer.getSelectedPet()
+                    if pet then
+                        local is_owned = (pet.type == "none")
+                            or (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
+                            or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"])
+                        if is_owned then
+                            sound.playMenuSelect()
+                            if pet.type == "none" then
+                                _G.active_companion = "none"
+                                save.saveCompanion("none")
+                                renderer.showToast("Unequipped Pet")
+                            elseif pet.type == "cat" then
+                                if _G.active_companion == "cat" then
+                                    _G.active_companion = "none"
+                                    save.saveCompanion("none")
+                                    renderer.showToast("Unequipped Luna")
+                                else
+                                    _G.active_companion = "cat"
+                                    save.saveCompanion("cat")
+                                    renderer.showToast("Equipped Luna!")
+                                end
+                            elseif pet.type == "dog" then
+                                if _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id then
+                                    _G.active_companion = "none"
+                                    save.saveCompanion("none")
+                                    renderer.showToast("Unequipped " .. pet.name)
+                                else
+                                    _G.active_companion = "dog"
+                                    _G.active_dog_breed = pet.breed_id
+                                    save.saveCompanion("dog")
+                                    if save.saveDogBreed then save.saveDogBreed(pet.breed_id) end
+                                    renderer.showToast("Equipped " .. pet.name .. "!")
+                                end
+                            end
+                        else
+                            sound.playMenuBack()
+                            renderer.showToast("Unlock in Store")
+                        end
+                    end
                 end
-            elseif event == input.events.RIGHT or event == input.events.DOWN then
-                if sound and sound.playMenuMove then sound.playMenuMove() end
-                if _G.cycleTheme then
-                    _G.cycleTheme(1)
+            elseif event == input.events.LEFT or event == input.events.X or event == input.events.UP then
+                if tab == 1 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if _G.cycleTheme then _G.cycleTheme(-1) end
+                elseif tab == 2 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
+                elseif tab == 3 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cyclePet then renderer.cyclePet(-1) end
+                end
+            elseif event == input.events.RIGHT or event == input.events.Y or event == input.events.DOWN then
+                if tab == 1 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if _G.cycleTheme then _G.cycleTheme(1) end
+                elseif tab == 2 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
+                elseif tab == 3 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cyclePet then renderer.cyclePet(1) end
                 end
             end
             return
@@ -2080,6 +2198,25 @@ end
 
 function love.mousereleased(x, y, button, istouch, presses)
     if button == 1 then
+        -- Customization tab click
+        if _G.appState == "THEME_SELECT" and _G.customization_tab_bounds then
+            for idx, b in ipairs(_G.customization_tab_bounds) do
+                if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
+                    local cur_tab = _G.customization_tab or 1
+                    if idx ~= cur_tab then
+                        local sound = require("sound")
+                        if sound and sound.playMenuMove then sound.playMenuMove() end
+                        local dir = (idx > cur_tab) and 1 or -1
+                        if _G.screen_transitions and renderer.startCustomizationTabTransition then
+                            renderer.startCustomizationTabTransition(cur_tab, idx, dir)
+                        else
+                            _G.customization_tab = idx
+                        end
+                    end
+                    return
+                end
+            end
+        end
         if _G.appState == "STORE" and _G.store_sort_btn_bounds then
             local b = _G.store_sort_btn_bounds
             if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then

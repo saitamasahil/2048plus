@@ -3,6 +3,7 @@
 ## [7.0.2]
 ### Added
 - Native Android & PC Versions: Added standalone release builds for Android, Linux, and Windows
+- Customization Hub: Preview and equip themes, board skins, and companion pets
 
 ### Changed
 - Ocean Theme: Redesigned with maritime blue tiles and animated underwater effects
