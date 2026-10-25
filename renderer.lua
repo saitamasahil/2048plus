@@ -513,36 +513,36 @@ local themes = {
         help_key_color   = {hex("#ec4899")},
         help_key_text    = {hex("#0d0e15")},
     },
-    -- Simple themes with default light tile colors
+    -- Ocean theme
     ocean = {
         tile_colors = {
-            [0]    = {hex("#b8d4e3")},
-            [2]    = {hex("#eee4da")},
-            [4]    = {hex("#ede0c8")},
-            [8]    = {hex("#f2b179")},
-            [16]   = {hex("#f59563")},
-            [32]   = {hex("#f67c5f")},
-            [64]   = {hex("#f65e3b")},
-            [128]  = {hex("#edcf72")},
-            [256]  = {hex("#edcc61")},
-            [512]  = {hex("#edc850")},
-            [1024] = {hex("#edc53f")},
-            [2048] = {hex("#edc22e")},
+            [0]    = {hex("#0a1c38")},
+            [2]    = {hex("#edf4fc")},
+            [4]    = {hex("#cce0f5")},
+            [8]    = {hex("#9dc2ee")},
+            [16]   = {hex("#6da2e4")},
+            [32]   = {hex("#4382d6")},
+            [64]   = {hex("#2566c4")},
+            [128]  = {hex("#1b4fb0")},
+            [256]  = {hex("#153b8f")},
+            [512]  = {hex("#0e2a6d")},
+            [1024] = {hex("#081a48")},
+            [2048] = {hex("#f59e0b")},
         },
-        super_tile_color = {hex("#1a5276")},
-        dark_text        = {hex("#1a5276")},
-        light_text       = {hex("#ffffff")},
-        ui_text          = {hex("#1a5276")},
-        bg_color         = {hex("#d6eaf8")},
-        board_color      = {hex("#aed6f1")},
-        score_bg_color   = {hex("#aed6f1")},
-        score_label      = {hex("#2980b9")},
-        score_value      = {hex("#1a5276")},
-        overlay_win      = {hex("#2980b9")},
-        overlay_lose     = {hex("#aed6f1")},
-        help_bg_color    = {hex("#aed6f1")},
-        help_key_color   = {hex("#2980b9")},
-        help_key_text    = {hex("#ffffff")},
+        super_tile_color = {hex("#f59e0b")},
+        dark_text        = {hex("#0a2240")},
+        light_text       = {hex("#f0f8ff")},
+        ui_text          = {hex("#60a5fa")},
+        bg_color         = {hex("#061527")},
+        board_color      = {hex("#0c274c")},
+        score_bg_color   = {hex("#0c274c")},
+        score_label      = {hex("#60a5fa")},
+        score_value      = {hex("#ffffff")},
+        overlay_win      = {hex("#f59e0b")},
+        overlay_lose     = {hex("#0c274c")},
+        help_bg_color    = {hex("#0c274c")},
+        help_key_color   = {hex("#f59e0b")},
+        help_key_text    = {hex("#0a2240")},
     },
     forest = {
         tile_colors = {
@@ -2509,23 +2509,99 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Rising bubbles
-        love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
-        for i = 1, 15 do
-            local start_x = w * ((i * 0.72) % 1.0)
-            local speed = 12 + (i % 5) * 6
-            local y_cycle = h + 30 * scale
-            local y = h + 15 * scale - ((t * speed + i * 29.3) % y_cycle)
-            local x = start_x + math.sin(t * 0.7 + i) * 12 * scale
-            local radius = (2.0 + (i % 3) * 1.5) * scale
-            local alpha = 0.12 * (1.0 - (h - y) / h)
-            
-            love.graphics.setColor(0.55, 0.85, 1.0, alpha)
-            love.graphics.circle("line", x, y, radius)
-            -- Small reflection dot inside bubble
-            love.graphics.setColor(1.0, 1.0, 1.0, alpha * 0.5)
-            love.graphics.circle("fill", x - radius * 0.3, y - radius * 0.3, radius * 0.15)
+        -- Sunbeams piercing ocean surface
+        local num_rays = 5
+        for r = 1, num_rays do
+            local sway = math.sin(t * 0.25 + r * 1.5) * 25 * scale
+            local top_x = w * (0.12 + (r - 1) * 0.20) + sway
+            local top_w = (22 + r * 8) * scale
+            local bot_x = top_x + (w * 0.16) + math.sin(t * 0.20 + r) * 35 * scale
+            local bot_w = (65 + r * 20) * scale
+            local pulse = 0.5 + 0.5 * math.sin(t * 0.55 + r * 1.7)
+            local alpha = 0.020 + pulse * 0.028
+
+            love.graphics.setColor(0.35, 0.85, 1.0, alpha)
+            love.graphics.polygon("fill",
+                top_x, 0,
+                top_x + top_w, 0,
+                bot_x + bot_w, h,
+                bot_x, h
+            )
         end
+
+        -- Deep water swells
+        local wave_layers = {
+            {y_ratio = 0.32, amp = 20, freq = 0.003, speed = 0.7, alpha = 0.045, color = {0.0, 0.7, 0.95}},
+            {y_ratio = 0.62, amp = 26, freq = 0.0025, speed = -0.5, alpha = 0.050, color = {0.1, 0.85, 0.9}},
+            {y_ratio = 0.85, amp = 18, freq = 0.0035, speed = 0.45, alpha = 0.040, color = {0.0, 0.55, 0.85}},
+        }
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        for _, wl in ipairs(wave_layers) do
+            local base_y = h * wl.y_ratio
+            love.graphics.setColor(wl.color[1], wl.color[2], wl.color[3], wl.alpha)
+            local pts = {}
+            local step = math.max(16, math.floor(w / 32))
+            for x = -step, w + step, step do
+                local wy = base_y + math.sin(x * wl.freq + t * wl.speed) * wl.amp * scale
+                                 + math.cos(x * wl.freq * 1.7 - t * wl.speed * 0.6) * (wl.amp * 0.4) * scale
+                table.insert(pts, x)
+                table.insert(pts, wy)
+            end
+            if #pts >= 4 then
+                love.graphics.line(pts)
+            end
+        end
+
+        -- Drifting marine motes
+        local mote_rng = love.math.newRandomGenerator(1024)
+        for i = 1, 28 do
+            local mx_base = mote_rng:random() * w
+            local my_base = mote_rng:random() * h
+            local speed_x = 7 + mote_rng:random() * 12
+            local speed_y = 3 + mote_rng:random() * 7
+            local mx = (mx_base + t * speed_x + math.sin(t * 0.7 + i) * 14 * scale) % w
+            local my = (my_base - t * speed_y + math.cos(t * 0.5 + i) * 10 * scale) % h
+            local pulse = 0.4 + 0.6 * math.sin(t * 1.8 + i * 2.1)
+            local sz = (1.2 + (i % 3) * 0.8) * scale
+            local is_teal = (i % 2 == 0)
+            if is_teal then
+                love.graphics.setColor(0.0, 0.96, 0.83, 0.16 * pulse)
+            else
+                love.graphics.setColor(0.22, 0.74, 0.97, 0.18 * pulse)
+            end
+            love.graphics.circle("fill", mx, my, sz * 2.2)
+            love.graphics.setColor(1.0, 1.0, 1.0, 0.45 * pulse)
+            love.graphics.circle("fill", mx, my, sz)
+        end
+
+        -- Multi-depth rising bubbles
+        love.graphics.setLineWidth(math.max(1, math.floor(1.2 * scale)))
+        for i = 1, 22 do
+            local seed_x = w * ((i * 0.618033) % 1.0)
+            local speed = 18 + (i % 6) * 9
+            local y_cycle = h + 50 * scale
+            local by = (h + 25 * scale - ((t * speed + i * 47.1) % y_cycle))
+            local wobble_amp = (5 + (i % 4) * 4) * scale
+            local bx = seed_x + math.sin(t * 1.2 + i * 1.7) * wobble_amp
+            local radius = (2.2 + (i % 5) * 1.6) * scale
+            local depth_fade = math.min(1.0, by / (h * 0.25)) * math.min(1.0, (h - by) / (h * 0.08))
+            local pulse = 0.7 + 0.3 * math.sin(t * 2.0 + i)
+            local alpha = (0.20 + (i % 3) * 0.08) * depth_fade * pulse
+
+            love.graphics.setColor(0.15, 0.75, 0.95, alpha * 0.25)
+            love.graphics.circle("fill", bx, by, radius)
+
+            love.graphics.setColor(0.55, 0.90, 1.0, alpha)
+            love.graphics.circle("line", bx, by, radius)
+
+            love.graphics.setColor(1.0, 1.0, 1.0, alpha * 0.8)
+            love.graphics.circle("fill", bx - radius * 0.35, by - radius * 0.35, radius * 0.25)
+        end
+
+        -- Seafloor ambient radiance
+        local glow_pulse = 0.5 + 0.5 * math.sin(t * 0.8)
+        love.graphics.setColor(0.0, 0.75, 0.90, 0.04 + 0.02 * glow_pulse)
+        love.graphics.circle("fill", w * 0.5, h + 40 * scale, w * 0.75)
 
         love.graphics.pop()
 
@@ -3816,7 +3892,7 @@ local function getTileTextColor(value)
     end
 
     -- Preserve classic 2048 text colors for default themes
-    if _G.theme == "light" or _G.theme == "dark" or _G.theme == "ocean" or _G.theme == "forest" then
+    if _G.theme == "light" or _G.theme == "dark" or _G.theme == "forest" then
         if value <= 4 then return dark_text end
         if value >= 4096 and _G.theme == "dark" then return dark_text end
         return light_text
@@ -4509,6 +4585,7 @@ function renderer.drawTile(tile, slideProgress, popProgress)
     local color = getTileColor(tile.value)
     love.graphics.setColor(color)
     roundedRect("fill", sx, sy, scaledW, scaledH, cr)
+
 
 
 

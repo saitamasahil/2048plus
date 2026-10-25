@@ -2095,56 +2095,56 @@ const THEMES_CATALOG = [
   },
   {
     "id": "ocean",
-    "name": "Ocean Breeze",
-    "bg": "#d6eaf8",
-    "board": "#aed6f1",
-    "accent": "#2980b9",
-    "text": "#1a5276",
-    "is_dark": false,
+    "name": "Ocean",
+    "bg": "#061527",
+    "board": "#0c274c",
+    "accent": "#f59e0b",
+    "text": "#60a5fa",
+    "is_dark": true,
     "tiles": {
       "2": {
-        "bg": "#eee4da",
-        "color": "#1a5276"
+        "bg": "#edf4fc",
+        "color": "#0a2240"
       },
       "4": {
-        "bg": "#ede0c8",
-        "color": "#1a5276"
+        "bg": "#cce0f5",
+        "color": "#0a2240"
       },
       "8": {
-        "bg": "#f2b179",
-        "color": "#1a5276"
+        "bg": "#9dc2ee",
+        "color": "#0a2240"
       },
       "16": {
-        "bg": "#f59563",
-        "color": "#1a5276"
+        "bg": "#6da2e4",
+        "color": "#0a2240"
       },
       "32": {
-        "bg": "#f67c5f",
-        "color": "#1a5276"
+        "bg": "#4382d6",
+        "color": "#ffffff"
       },
       "64": {
-        "bg": "#f65e3b",
+        "bg": "#2566c4",
         "color": "#ffffff"
       },
       "128": {
-        "bg": "#edcf72",
-        "color": "#1a5276"
+        "bg": "#1b4fb0",
+        "color": "#ffffff"
       },
       "256": {
-        "bg": "#edcc61",
-        "color": "#1a5276"
+        "bg": "#153b8f",
+        "color": "#ffffff"
       },
       "512": {
-        "bg": "#edc850",
-        "color": "#1a5276"
+        "bg": "#0e2a6d",
+        "color": "#ffffff"
       },
       "1024": {
-        "bg": "#edc53f",
-        "color": "#1a5276"
+        "bg": "#081a48",
+        "color": "#ffffff"
       },
       "2048": {
-        "bg": "#edc22e",
-        "color": "#1a5276"
+        "bg": "#f59e0b",
+        "color": "#381e02"
       }
     }
   },
@@ -5143,24 +5143,65 @@ function drawForest(ctx, w, h, t, pos) {
 
 // Ocean theme
 function drawOcean(ctx, w, h, t) {
-  ctx.lineWidth = 1.2;
-  for (let i = 1; i <= 15; i++) {
-    const startX = w * ((i * 0.72) % 1.0);
-    const speed = 12 + (i % 5) * 6;
-    const yCycle = h + 24;
-    const y = h + 12 - ((t * speed + i * 29.3) % yCycle);
-    const x = startX + Math.sin(t * 0.7 + i) * 10;
-    const radius = 2.0 + (i % 3) * 1.5;
-    const alpha = 0.22 * (1.0 - (h - y) / (h + 10));
+  // Sunbeams piercing water surface
+  for (let r = 1; r <= 4; r++) {
+    const sway = Math.sin(t * 0.25 + r * 1.5) * 18;
+    const topX = w * (0.15 + (r - 1) * 0.22) + sway;
+    const topW = 18 + r * 6;
+    const botX = topX + (w * 0.16) + Math.sin(t * 0.2 + r) * 25;
+    const botW = 50 + r * 16;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.55 + r * 1.7);
+    const alpha = 0.03 + pulse * 0.03;
 
-    ctx.strokeStyle = `rgba(140, 217, 255, ${alpha})`;
+    ctx.fillStyle = `rgba(90, 215, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.moveTo(topX, 0);
+    ctx.lineTo(topX + topW, 0);
+    ctx.lineTo(botX + botW, h);
+    ctx.lineTo(botX, h);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Drifting marine motes
+  for (let i = 1; i <= 16; i++) {
+    const mx = ((i * 0.618033 * w) + t * 9 + Math.sin(t * 0.7 + i) * 10) % w;
+    const my = ((i * 0.414213 * h) - t * 5 + Math.cos(t * 0.5 + i) * 8) % h;
+    const pulse = 0.4 + 0.6 * Math.sin(t * 1.8 + i * 2.1);
+    const sz = 1.2 + (i % 3) * 0.7;
+    const isTeal = (i % 2 === 0);
+    ctx.fillStyle = isTeal ? `rgba(0, 245, 212, ${0.35 * pulse})` : `rgba(56, 189, 248, ${0.4 * pulse})`;
+    ctx.beginPath();
+    ctx.arc(mx, my, sz, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Multi-depth rising bubbles
+  ctx.lineWidth = 1.2;
+  for (let i = 1; i <= 18; i++) {
+    const startX = w * ((i * 0.618033) % 1.0);
+    const speed = 16 + (i % 6) * 8;
+    const yCycle = h + 30;
+    const y = h + 15 - ((t * speed + i * 47.1) % yCycle);
+    const x = startX + Math.sin(t * 1.2 + i * 1.7) * (5 + (i % 4) * 3);
+    const radius = 2.2 + (i % 4) * 1.4;
+    const depthFade = Math.min(1.0, y / (h * 0.25)) * Math.min(1.0, (h - y) / (h * 0.08));
+    const pulse = 0.7 + 0.3 * Math.sin(t * 2.0 + i);
+    const alpha = (0.22 + (i % 3) * 0.08) * depthFade * pulse;
+
+    ctx.fillStyle = `rgba(38, 192, 242, ${alpha * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = `rgba(140, 230, 255, ${alpha})`;
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
     ctx.beginPath();
-    ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.2, 0, Math.PI * 2);
+    ctx.arc(x - radius * 0.35, y - radius * 0.35, radius * 0.25, 0, Math.PI * 2);
     ctx.fill();
   }
 }
