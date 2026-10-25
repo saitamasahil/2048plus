@@ -547,31 +547,31 @@ local themes = {
     forest = {
         tile_colors = {
             [0]    = {hex("#c8dbbe")},
-            [2]    = {hex("#eee4da")},
-            [4]    = {hex("#ede0c8")},
-            [8]    = {hex("#f2b179")},
-            [16]   = {hex("#f59563")},
-            [32]   = {hex("#f67c5f")},
-            [64]   = {hex("#f65e3b")},
-            [128]  = {hex("#edcf72")},
-            [256]  = {hex("#edcc61")},
-            [512]  = {hex("#edc850")},
-            [1024] = {hex("#edc53f")},
-            [2048] = {hex("#edc22e")},
+            [2]    = {hex("#edf7ed")},
+            [4]    = {hex("#d7ecd5")},
+            [8]    = {hex("#bce0b8")},
+            [16]   = {hex("#98cf92")},
+            [32]   = {hex("#6fba67")},
+            [64]   = {hex("#4ba342")},
+            [128]  = {hex("#358b2d")},
+            [256]  = {hex("#25731d")},
+            [512]  = {hex("#195c13")},
+            [1024] = {hex("#0f420b")},
+            [2048] = {hex("#059669")},
         },
-        super_tile_color = {hex("#1e6b3a")},
-        dark_text        = {hex("#2d5016")},
-        light_text       = {hex("#f9f6f2")},
-        ui_text          = {hex("#2d5016")},
+        super_tile_color = {hex("#064e3b")},
+        dark_text        = {hex("#1b3a1f")},
+        light_text       = {hex("#f9fbe7")},
+        ui_text          = {hex("#1b5e20")},
         bg_color         = {hex("#e8f5e9")},
         board_color      = {hex("#a5d6a7")},
         score_bg_color   = {hex("#a5d6a7")},
-        score_label      = {hex("#388e3c")},
+        score_label      = {hex("#2e7d32")},
         score_value      = {hex("#1b5e20")},
-        overlay_win      = {hex("#388e3c")},
+        overlay_win      = {hex("#059669")},
         overlay_lose     = {hex("#a5d6a7")},
         help_bg_color    = {hex("#a5d6a7")},
-        help_key_color   = {hex("#388e3c")},
+        help_key_color   = {hex("#059669")},
         help_key_text    = {hex("#ffffff")},
     },
     sunset = {
@@ -3892,7 +3892,7 @@ local function getTileTextColor(value)
     end
 
     -- Preserve classic 2048 text colors for default themes
-    if _G.theme == "light" or _G.theme == "dark" or _G.theme == "forest" then
+    if _G.theme == "light" or _G.theme == "dark" then
         if value <= 4 then return dark_text end
         if value >= 4096 and _G.theme == "dark" then return dark_text end
         return light_text

@@ -5,7 +5,8 @@
 - Native Android & PC Versions: Added standalone release builds for Android, Linux, and Windows
 
 ### Changed
-- Ocean Theme: Overhauled with deep maritime blues, animated caustic sunbeams, ocean swells, rising bubbles, and sunken treasure gold
+- Ocean Theme: Redesigned with maritime blue tiles and animated underwater effects
+- Forest Theme: Redesigned tiles with a forest green progression
 - Replaced Huge Mode icon with animated campfire sprite by Devs In Exile Studio
 - Improved animation speed of Classic Mode preview sprite
 
