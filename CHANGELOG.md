@@ -2,9 +2,10 @@
 
 ## [7.0.2]
 ### Added
-- Native PC Version: Added standalone release builds for Linux and Windows
+- Native Android & PC Versions: Added standalone release builds for Android, Linux, and Windows
 
 ### Changed
+- Ocean Theme: Overhauled with deep maritime blues, animated caustic sunbeams, ocean swells, rising bubbles, and sunken treasure gold
 - Replaced Huge Mode icon with animated campfire sprite by Devs In Exile Studio
 - Improved animation speed of Classic Mode preview sprite
 

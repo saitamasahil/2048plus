@@ -117,8 +117,8 @@ local theme_console_colors = {
     },
     -- Ocean / Guardian
     ocean = {
-        chassis = {0.220, 0.380, 0.480},
-        bezel   = {0.125, 0.235, 0.315},
+        chassis = {0.110, 0.260, 0.400},
+        bezel   = {0.045, 0.125, 0.220},
     },
     guardian = {
         chassis = {0.200, 0.340, 0.450},
