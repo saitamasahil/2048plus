@@ -6,7 +6,9 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WIDTH="${1:-640}"
 HEIGHT="${2:-480}"
 
-STAGE_DIR="/tmp/2048plus_pm_test_$$"
+TEMP_ROOT="${TMPDIR:-/tmp}"
+[ ! -w "$TEMP_ROOT" ] && TEMP_ROOT="$PROJECT_ROOT/build/.tmp"
+STAGE_DIR="$TEMP_ROOT/2048plus_pm_test_$$"
 mkdir -p "$STAGE_DIR"
 trap 'rm -rf "$STAGE_DIR"' EXIT INT TERM
 

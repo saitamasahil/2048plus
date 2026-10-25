@@ -31,6 +31,18 @@ fi
 TAG="v${MAJOR}.${MINOR}.${PATCH}"
 mkdir -p "$BUILD_DIR"
 
+# Writable temporary directory fallback for Termux and systems without root tmp
+if [ -n "$TMPDIR" ] && (mkdir -p "$TMPDIR" 2>/dev/null) && [ -w "$TMPDIR" ]; then
+    TEMP_DIR="$TMPDIR"
+elif [ -d "/tmp" ] && [ -w "/tmp" ]; then
+    TEMP_DIR="/tmp"
+elif [ -n "$PREFIX" ] && (mkdir -p "$PREFIX/tmp" 2>/dev/null) && [ -w "$PREFIX/tmp" ]; then
+    TEMP_DIR="$PREFIX/tmp"
+else
+    TEMP_DIR="$BUILD_DIR/.tmp"
+    mkdir -p "$TEMP_DIR"
+fi
+
 # Helper function to download files to cache
 download_cached() {
     local url="$1"
@@ -60,7 +72,7 @@ prepare_pc_love() {
     fi
 
     echo "Staging PC build..."
-    TMP_STAGE="/tmp/pc_stage_$$"
+    TMP_STAGE="$TEMP_DIR/pc_stage_$$"
     rm -rf "$TMP_STAGE"
     mkdir -p "$TMP_STAGE"
 
@@ -148,7 +160,7 @@ build_portmaster() {
     echo ""
     echo "Building PortMaster Package..."
 
-    TMP_STAGE="/tmp/pm_stage_$$"
+    TMP_STAGE="$TEMP_DIR/pm_stage_$$"
     mkdir -p "$TMP_STAGE/gamedata"
 
     # Stage runtime assets and scripts
@@ -173,7 +185,7 @@ build_portmaster() {
     echo "[OK] gamedata.tar.gz created ($TAR_SIZE)"
 
     # Build standalone PortMaster release zip
-    ZIP_STAGE="/tmp/pm_zip_$$"
+    ZIP_STAGE="$TEMP_DIR/pm_zip_$$"
     mkdir -p "$ZIP_STAGE/2048plus/gamedata/assets/music"
     mkdir -p "$ZIP_STAGE/2048plus/licenses"
 
@@ -206,9 +218,15 @@ build_linux() {
     echo ""
     echo "Building Linux AppImage..."
 
+    ARCH_HOST=$(uname -m)
+    if [ "$ARCH_HOST" != "x86_64" ]; then
+        echo "[SKIP] Linux x86_64 AppImage can only be packaged on x86_64 host: detected $ARCH_HOST"
+        return 0
+    fi
+
     prepare_pc_love
 
-    WORKSPACE_DIR="/tmp/linux_workspace_$$"
+    WORKSPACE_DIR="$TEMP_DIR/linux_workspace_$$"
     rm -rf "$WORKSPACE_DIR"
     mkdir -p "$WORKSPACE_DIR"
 
@@ -259,7 +277,7 @@ build_windows() {
 
     prepare_pc_love
 
-    WORKSPACE_DIR="/tmp/win_workspace_$$"
+    WORKSPACE_DIR="$TEMP_DIR/win_workspace_$$"
     rm -rf "$WORKSPACE_DIR"
     mkdir -p "$WORKSPACE_DIR"
 
@@ -304,8 +322,8 @@ build_android() {
     echo ""
     echo "Building Android APK..."
 
-    TMP_STAGE="/tmp/android_stage_$$"
-    TMP_LOVE="/tmp/2048plus_android_$$.love"
+    TMP_STAGE="$TEMP_DIR/android_stage_$$"
+    TMP_LOVE="$TEMP_DIR/2048plus_android_$$.love"
     rm -rf "$TMP_STAGE" "$TMP_LOVE"
     mkdir -p "$TMP_STAGE"
 

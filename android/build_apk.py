@@ -2,6 +2,7 @@
 import os
 import sys
 import shutil
+import tempfile
 import subprocess
 from PIL import Image
 
@@ -109,7 +110,7 @@ if not os.path.isfile(KEYSTORE):
         sys.exit(1)
 
 # 3. Decompile with apktool
-WORK_DIR = f"/tmp/apk_build_{os.getpid()}"
+WORK_DIR = os.path.join(tempfile.gettempdir(), f"apk_build_{os.getpid()}")
 shutil.rmtree(WORK_DIR, ignore_errors=True)
 os.makedirs(WORK_DIR, exist_ok=True)
 decomp_dir = os.path.join(WORK_DIR, "decompiled")
