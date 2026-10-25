@@ -10,6 +10,9 @@
 - Replaced Huge Mode icon with animated campfire sprite by Devs In Exile Studio
 - Improved animation speed of Classic Mode preview sprite
 
+### Fixed
+- Cosmic Theme: Fixed number visibility on 2048 and higher number tiles
+
 ## [7.0.1]
 ### Added
 - Added smooth board cascade animation when starting or continuing a game
