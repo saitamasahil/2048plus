@@ -55,20 +55,20 @@ Download `2048plus.apk` from the [Releases](https://github.com/saitamasahil/2048
 
 ## Controls
 
-| Action | Gamepad Button | Touchscreen / Virtual Console | Keyboard Key |
-|:---|:---|:---|:---|
-| **Move Tiles** | D-Pad / Left Stick | Swipe Anywhere (Board & Hidden D-Pad Area) | Arrow Keys / WASD |
-| **Confirm / Select Item** | `A` | `A` Button | `Enter` |
-| **Undo Move / Back / Cancel** | `B` | `B` Button | `Backspace` |
-| **Quit to Menu** | `X` | `X` Button | `X` |
-| **Cycle Unlocked Themes** | `Y` | `Y` Button | `Y` |
-| **Activate Swap Powerup** | `L1` | `L1` Trigger | `Q` |
-| **Activate Bomb Powerup** | `R1` | `R1` Trigger | `E` |
-| **Seek Music** | D-Pad Left / Right | D-Pad Left / Right | Arrow Left / Right |
-| **Show Coin Balance** | `Select` | `Select` Button | `Tab/Shift` |
-| **Pause Menu / Resume** | `Start` | `Start` Button | `Space` |
-| **Toggle Fullscreen** | — | — | `F11` |
-| **Force Quit App** | `Menu + Start` | Android Back Button | `Alt + F4` |
+| Action | Gamepad Button | Keyboard Key |
+|:---|:---|:---|
+| **Move Tiles** | D-Pad / Left Stick | Arrow Keys / WASD |
+| **Confirm / Select Item** | `A` | `Enter` |
+| **Undo Move / Back / Cancel** | `B` | `Backspace` |
+| **Quit to Menu** | `X` | `X` |
+| **Cycle Unlocked Themes** | `Y` | `Y` |
+| **Activate Swap Powerup** | `L1` | `Q` |
+| **Activate Bomb Powerup** | `R1` | `E` |
+| **Seek Music** | D-Pad Left / Right | Arrow Left / Right |
+| **Show Coin Balance** | `Select` | `Tab/Shift` |
+| **Pause Menu / Resume** | `Start` | `Space` |
+| **Toggle Fullscreen** | — | `F11` |
+| **Force Quit App** | `Menu + Start` | `Alt + F4` |
 
 *Note: Your progress is automatically saved after every move. You can safely close the game and pick up exactly where you left off.*
 
