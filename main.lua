@@ -1341,17 +1341,21 @@ function love.update(dt)
                     sound.playMenuMove()
                 end
             elseif event == input.events.DOWN and _G.achievements_tab == 1 then
-                -- 31 achievements total, allow scrolling only if items overflow visible area
-                local w, h = love.graphics.getDimensions()
-
-                local scale = _G.scale
-                local item_h = math.floor(85 * scale)
-                local header_h = math.floor(115 * scale)
-                local footer_h = math.floor(55 * scale)
-                local visible_area = h - header_h - footer_h
-                local total_items = (renderer.getAchievementsCount and renderer.getAchievementsCount()) or 22
-                local total_height = total_items * item_h
-                local max_scroll = math.max(0, math.ceil((total_height - visible_area) / item_h))
+                local max_scroll = _G.achievements_max_scroll
+                if not max_scroll and renderer.getAchievementsMaxScroll then
+                    max_scroll = renderer.getAchievementsMaxScroll()
+                end
+                if not max_scroll then
+                    local h = (_G.android_console and not _G.android_fullscreen) and 480 or love.graphics.getHeight()
+                    local scale = (_G.android_console and not _G.android_fullscreen) and 1.0 or (_G.scale or 1.0)
+                    local item_h = math.floor(85 * scale)
+                    local header_h = math.floor(115 * scale)
+                    local footer_h = math.floor(55 * scale)
+                    local visible_area = h - header_h - footer_h
+                    local total_items = (renderer.getAchievementsCount and renderer.getAchievementsCount()) or 34
+                    local total_height = total_items * item_h
+                    max_scroll = math.max(0, math.ceil((total_height - visible_area) / item_h))
+                end
                 local old_target = _G.achievements_scroll_target or 0
                 _G.achievements_scroll_target = math.min(max_scroll, old_target + 1)
                 if _G.achievements_scroll_target ~= old_target then
@@ -2212,6 +2216,26 @@ function love.mousereleased(x, y, button, istouch, presses)
                         else
                             _G.customization_tab = idx
                         end
+                    end
+                    return
+                end
+            end
+        end
+        -- Achievements tab click
+        if _G.appState == "ACHIEVEMENTS" and _G.achievements_tab_bounds then
+            for idx, b in ipairs(_G.achievements_tab_bounds) do
+                if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
+                    local cur_tab = _G.achievements_tab or 1
+                    if idx ~= cur_tab then
+                        local sound = require("sound")
+                        if sound and sound.playMenuMove then sound.playMenuMove() end
+                        if _G.screen_transitions then
+                            renderer.captureOldAchievementsSlide(cur_tab)
+                            _G.achievements_slide_dir = (idx > cur_tab) and 1 or -1
+                            _G.achievements_slide_timer = 0.20
+                            _G.achievements_slide_ready = false
+                        end
+                        _G.achievements_tab = idx
                     end
                     return
                 end

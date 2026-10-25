@@ -10428,6 +10428,26 @@ function renderer.getAchievementsCount()
     return #achievementsList
 end
 
+function renderer.getAchievementsMaxScroll()
+    if _G.achievements_max_scroll then
+        return _G.achievements_max_scroll
+    end
+    local h = (_G.android_console and not _G.android_fullscreen) and 480 or love.graphics.getHeight()
+    local scale = (_G.android_console and not _G.android_fullscreen) and 1.0 or (_G.scale or 1.0)
+    local padding = math.floor(20 * scale)
+    local title_h = font_title and font_title:getHeight() or math.floor(36 * scale)
+    local tab_y = padding + title_h + math.floor(10 * scale)
+    local score_h = font_score and font_score:getHeight() or math.floor(24 * scale)
+    local line_y = tab_y + score_h + math.floor(4 * scale)
+    local list_y = line_y + math.floor(12 * scale)
+    local footer_h = math.floor(55 * scale)
+    local avail_h = h - list_y - footer_h
+    local item_h = math.floor(85 * scale)
+    local total_items = #achievementsList
+    local total_height = total_items * item_h
+    return math.max(0, math.ceil((total_height - avail_h) / item_h))
+end
+
 function renderer.drawAchievements(scroll, skip_transition, static_only, override_tab)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
@@ -10589,8 +10609,18 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         love.graphics.rectangle("fill", t2_x, line_y, t2_w, line_h)
     end
 
+    -- Record tab hitboxes
+    _G.achievements_tab_bounds = {
+        {x = t1_x, y = tab_y, w = t1_w, h = line_y + line_h - tab_y + math.floor(8 * scale)},
+        {x = t2_x, y = tab_y, w = t2_w, h = line_y + line_h - tab_y + math.floor(8 * scale)}
+    }
+
     local list_y = line_y + math.floor(12 * scale)
     local footer_h = math.floor(55 * scale)
+    local avail_h = h - list_y - footer_h
+    local item_h = math.floor(85 * scale)
+    local total_items = #achievementsList
+    _G.achievements_max_scroll = math.max(0, math.ceil((total_items * item_h - avail_h) / item_h))
 
     -- Helper to format numbers with commas
     local function formatNum(n)

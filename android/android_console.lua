@@ -964,8 +964,42 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
         return
     end
 
-    -- Gesture swipe during gameplay
     local sw = swipe_track[id]
+
+    -- Gesture swipe or drag in Achievements
+    if sw and _G.appState == "ACHIEVEMENTS" and sw.in_screen then
+        local diff_y = y - (sw.last_y or sw.start_y)
+        local diff_x = x - (sw.last_x or sw.start_x)
+        local drag_threshold = 24
+        if math.abs(diff_y) >= drag_threshold then
+            local ev = (diff_y < 0) and input.events.DOWN or input.events.UP
+            emitEvent(ev)
+            pcall(function()
+                local timer = require("timer")
+                timer.after(0.08, function()
+                    releaseEvent(ev)
+                end)
+            end)
+            sw.last_y = y
+            sw.last_x = x
+            sw.fired = true
+        elseif not sw.fired and math.abs(diff_x) >= 40 and math.abs(diff_x) > math.abs(diff_y) * 1.5 then
+            local ev = (diff_x < 0) and input.events.RIGHT or input.events.LEFT
+            emitEvent(ev)
+            pcall(function()
+                local timer = require("timer")
+                timer.after(0.08, function()
+                    releaseEvent(ev)
+                end)
+            end)
+            sw.last_x = x
+            sw.last_y = y
+            sw.fired = true
+        end
+        return
+    end
+
+    -- Gesture swipe during gameplay
     if sw and not sw.fired and is_gameplay then
         local diff_x = x - sw.start_x
         local diff_y = y - sw.start_y
@@ -1154,6 +1188,30 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                             else
                                 _G.customization_tab = idx
                             end
+                            triggerHaptic(0.015)
+                        end
+                        swipe_track[id] = nil
+                        return
+                    end
+                end
+            end
+
+            -- Achievements tab button tap
+            if _G.appState == "ACHIEVEMENTS" and _G.achievements_tab_bounds then
+                for idx, b in ipairs(_G.achievements_tab_bounds) do
+                    if gx >= b.x and gx <= b.x + b.w and gy >= b.y and gy <= b.y + b.h then
+                        local cur_tab = _G.achievements_tab or 1
+                        if idx ~= cur_tab then
+                            local sound = require("sound")
+                            if sound and sound.playMenuMove then sound.playMenuMove() end
+                            local renderer = require("renderer")
+                            if _G.screen_transitions then
+                                renderer.captureOldAchievementsSlide(cur_tab)
+                                _G.achievements_slide_dir = (idx > cur_tab) and 1 or -1
+                                _G.achievements_slide_timer = 0.20
+                                _G.achievements_slide_ready = false
+                            end
+                            _G.achievements_tab = idx
                             triggerHaptic(0.015)
                         end
                         swipe_track[id] = nil
