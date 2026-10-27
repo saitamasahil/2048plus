@@ -4,6 +4,7 @@
 ### Added
 - Native Android & PC Versions: Added standalone release builds for Android, Linux, and Windows
 - Customization Hub: Preview and equip themes, board skins, and companion pets
+- Soundtrack: Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic) to background music, used with permission
 
 ### Changed
 - Ocean Theme: Redesigned with maritime blue tiles and animated underwater effects
@@ -13,6 +14,8 @@
 
 ### Fixed
 - Cosmic Theme: Fixed number visibility on 2048 and higher number tiles
+- Non-Mali Devices: Added support for non-Mali chipsets by removing hardcoded libmali loading and prioritizing system EGL drivers
+- File Permissions: Added execute permissions for launch script for muOS
 
 ## [7.0.1]
 ### Added
