@@ -29,6 +29,9 @@ SET_LOVE_ENVIRONMENT() {
     export XDG_DATA_HOME="$APP_STATIC_DIRECTORY"
     export HOME="$APP_STATIC_DIRECTORY"
     export LD_LIBRARY_PATH="/usr/lib:/usr/lib/aarch64-linux-gnu:${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$APP_BINARY_DIRECTORY/libs.aarch64"
+
+    # Ensure binary execution permissions
+    chmod +x "$LOVE_BINARY" 2>/dev/null || true
 }
 
 SET_MALI_EGL_DRIVER() {

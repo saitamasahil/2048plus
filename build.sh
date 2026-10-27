@@ -145,6 +145,10 @@ build_muos() {
         cp "$PROJECT_ROOT/assets/glyph/logo_2048.svg" "$WORKDIR/$APP_NAME/glyph/"
     fi
 
+    # Ensure script and binary execution permissions
+    chmod +x "$WORKDIR/$APP_NAME/mux_launch.sh"
+    chmod +x "$WORKDIR/$APP_NAME/.game/bin/love" 2>/dev/null || true
+
     # Create the .muxapp package
     (cd "$WORKDIR" && zip -qr "package.muxapp" ./"$APP_NAME" && mv "package.muxapp" "$OUTPUT")
     rm -rf "$WORKDIR"
