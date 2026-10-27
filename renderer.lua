@@ -9441,7 +9441,6 @@ local board_skins_catalog = {
 }
 
 local pets_catalog = {
-    { id = "none",  type = "none", name = "None" },
     { id = "cat",   type = "cat",  name = "Luna" },
     { id = "roxy",  type = "dog",  breed_id = "roxy",  name = "Roxy" },
     { id = "milo",  type = "dog",  breed_id = "milo",  name = "Milo" },
@@ -9905,17 +9904,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local function drawPetSprite(pet_item, off_p, alpha_p)
             local pcx = math.floor(box_cx + off_p)
             local pcy = math.floor(box_cy)
-            if pet_item.type == "none" then
-                love.graphics.setFont(font_help_label)
-                love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.50 * alpha_p)
-                local no_txt = "No Companion\nActive"
-                local inner_pad = math.floor(16 * scale)
-                local box_left = board_x + off_p + inner_pad
-                local box_w = board_size - inner_pad * 2
-                local line_h = font_help_label:getHeight()
-                local total_h = line_h * 2 + math.floor(3 * scale)
-                love.graphics.printf(no_txt, box_left, pcy - total_h / 2, box_w, "center")
-            elseif pet_item.type == "cat" then
+            if pet_item.type == "cat" then
                 local frames = pet_cat_sit_frames
                 if not frames or #frames == 0 then frames = pet_cat_idle_down_frames end
                 if frames and #frames > 0 then
@@ -9971,25 +9960,17 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             drawPetSprite(pet, p_dir * p_slide * (1 - pp), pp * a)
             love.graphics.setScissor()
 
-            local prev_is_owned = (prev_pet.type == "none")
-                or (prev_pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
+            local prev_is_owned = (prev_pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
                 or (prev_pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"])
-            local prev_is_equipped = (prev_pet.type == "none" and (_G.active_companion or "none") == "none")
-                or (prev_pet.type == "cat" and _G.active_companion == "cat")
+            local prev_is_equipped = (prev_pet.type == "cat" and _G.active_companion == "cat")
                 or (prev_pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == prev_pet.breed_id)
-            local prev_eq_txt = (prev_pet.type == "none") and "NO PET ACTIVE" or "ACTIVE"
-            local prev_un_txt = (prev_pet.type == "none") and "PRESS A TO UNEQUIP" or "PRESS A TO EQUIP"
-            drawStatusBadge(prev_is_equipped, prev_is_owned, -p_dir * text_slide * pp, 1 - pp, prev_eq_txt, prev_un_txt)
+            drawStatusBadge(prev_is_equipped, prev_is_owned, -p_dir * text_slide * pp, 1 - pp)
 
-            local cur_is_owned = (pet.type == "none")
-                or (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
+            local cur_is_owned = (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
                 or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"])
-            local cur_is_equipped = (pet.type == "none" and (_G.active_companion or "none") == "none")
-                or (pet.type == "cat" and _G.active_companion == "cat")
+            local cur_is_equipped = (pet.type == "cat" and _G.active_companion == "cat")
                 or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id)
-            local cur_eq_txt = (pet.type == "none") and "NO PET ACTIVE" or "ACTIVE"
-            local cur_un_txt = (pet.type == "none") and "PRESS A TO UNEQUIP" or "PRESS A TO EQUIP"
-            drawStatusBadge(cur_is_equipped, cur_is_owned, p_dir * text_slide * (1 - pp), pp, cur_eq_txt, cur_un_txt)
+            drawStatusBadge(cur_is_equipped, cur_is_owned, p_dir * text_slide * (1 - pp), pp)
         else
             local cur_subtitle = pet.name .. " (" .. cur_idx .. "/" .. #pets_catalog .. ")"
             local cur_sw = font_help_label:getWidth(cur_subtitle)
@@ -9999,15 +9980,11 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
             drawPetSprite(pet, 0, a)
 
-            local is_owned = (pet.type == "none")
-                or (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
+            local is_owned = (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
                 or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"])
-            local is_equipped = (pet.type == "none" and (_G.active_companion or "none") == "none")
-                or (pet.type == "cat" and _G.active_companion == "cat")
+            local is_equipped = (pet.type == "cat" and _G.active_companion == "cat")
                 or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id)
-            local eq_txt = (pet.type == "none") and "NO PET ACTIVE" or "ACTIVE"
-            local un_txt = (pet.type == "none") and "PRESS A TO UNEQUIP" or "PRESS A TO EQUIP"
-            drawStatusBadge(is_equipped, is_owned, 0, 1.0, eq_txt, un_txt)
+            drawStatusBadge(is_equipped, is_owned, 0, 1.0)
         end
     end
 end
@@ -10139,17 +10116,11 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
         end
     elseif tab == 3 then
         local pet = pets_catalog[_G.custom_pet_idx or 1]
-        local is_owned = pet and ((pet.type == "none")
-            or (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
+        local is_owned = pet and ((pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
             or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"]))
-        local is_equipped = pet and ((pet.type == "none" and (_G.active_companion or "none") == "none")
-            or (pet.type == "cat" and _G.active_companion == "cat")
+        local is_equipped = pet and ((pet.type == "cat" and _G.active_companion == "cat")
             or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id))
-        if pet and pet.type == "none" then
-            action_a_label = is_equipped and "Active" or "Unequip"
-        else
-            action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
-        end
+        action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
     end
 
     local actions = {

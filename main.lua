@@ -802,7 +802,12 @@ function love.update(dt)
                         if renderer.getPetsCatalog then
                             _G.custom_pet_idx = 1
                             if _G.active_companion == "cat" then
-                                _G.custom_pet_idx = 2
+                                for i, p in ipairs(renderer.getPetsCatalog()) do
+                                    if p.type == "cat" then
+                                        _G.custom_pet_idx = i
+                                        break
+                                    end
+                                end
                             elseif _G.active_companion == "dog" then
                                 for i, p in ipairs(renderer.getPetsCatalog()) do
                                     if p.type == "dog" and p.breed_id == (_G.active_dog_breed or "roxy") then
@@ -1496,16 +1501,11 @@ function love.update(dt)
                     -- Pet tab: equip or unequip selected pet
                     local pet = renderer.getSelectedPet and renderer.getSelectedPet()
                     if pet then
-                        local is_owned = (pet.type == "none")
-                            or (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
+                        local is_owned = (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
                             or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"])
                         if is_owned then
                             sound.playMenuSelect()
-                            if pet.type == "none" then
-                                _G.active_companion = "none"
-                                save.saveCompanion("none")
-                                renderer.showToast("Unequipped Pet")
-                            elseif pet.type == "cat" then
+                            if pet.type == "cat" then
                                 if _G.active_companion == "cat" then
                                     _G.active_companion = "none"
                                     save.saveCompanion("none")
