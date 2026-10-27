@@ -144,7 +144,9 @@ The build script automatically creates a local debug keystore and signs the APK 
 - Android Virtual Controller Buttons & D-Pad Sprites by: [Mr. Breakfast](https://itch.io/profile/mrbreakfastsdelight)
 - Icons provided by [Flaticon](https://www.flaticon.com/)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!
-- Background Music tracks provided via [Chosic](https://www.chosic.com/) by authors: AudioCoffee, Ghostrifter Official, Purrple Cat, Roa, Sakura Girl, and Tokyo Music Walker.
+- Background Music:
+  - "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic)
+  - More music by AudioCoffee, Ghostrifter Official, Purrple Cat, Roa, Sakura Girl, and Tokyo Music Walker via [Chosic](https://www.chosic.com/)
 
 ---
 
