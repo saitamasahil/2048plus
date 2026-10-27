@@ -28,10 +28,14 @@ SET_LOVE_ENVIRONMENT() {
     export SDL_GAMECONTROLLERCONFIG_FILE="/usr/lib/gamecontrollerdb.txt"
     export XDG_DATA_HOME="$APP_STATIC_DIRECTORY"
     export HOME="$APP_STATIC_DIRECTORY"
-    export LD_LIBRARY_PATH="$APP_BINARY_DIRECTORY/libs.aarch64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH="/usr/lib:/usr/lib/aarch64-linux-gnu:${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$APP_BINARY_DIRECTORY/libs.aarch64"
 }
 
 SET_MALI_EGL_DRIVER() {
+    if [ ! -e /dev/mali0 ] && [ ! -e /dev/mali ]; then
+        return 0
+    fi
+
     for MALI_LIBRARY in /usr/lib/libmali.so /usr/lib/aarch64-linux-gnu/libmali.so; do
         if [ -e "$MALI_LIBRARY" ]; then
             export SDL_VIDEO_EGL_DRIVER="$MALI_LIBRARY"
@@ -50,7 +54,6 @@ START_LOVE() {
 
 # Check for SETUP_APP
 if command -v SETUP_APP >/dev/null 2>&1; then
-    # --- Jacaranda Logic ---
     SETUP_STAGE_OVERLAY
     APP_BIN="bin/love"
     SETUP_APP "love" ""
@@ -58,9 +61,6 @@ if command -v SETUP_APP >/dev/null 2>&1; then
     cd "$APP_GAME_DIRECTORY" || exit
 
     SET_LOVE_ENVIRONMENT
-
-    # Point SDL at the Mali EGL driver, past the bundled libglvnd
-    SET_MALI_EGL_DRIVER
 
     START_LOVE
 
