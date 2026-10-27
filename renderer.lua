@@ -9648,7 +9648,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
     local cr = math.floor(board_size * 0.02)
     local theme_accent = tile_colors[2048] or help_key_color or {0.93, 0.76, 0.18, 1.0}
 
-    local function drawStatusBadge(is_eq, is_ow, b_off_x, b_alpha)
+    local function drawStatusBadge(is_eq, is_ow, b_off_x, b_alpha, custom_badge_txt, custom_unowned_txt)
         local cur_off = b_off_x or 0
         local cur_a = (b_alpha or 1.0) * a
         local badge_bg_col
@@ -9665,12 +9665,12 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             else
                 badge_txt_col = {0.98, 0.98, 0.98, cur_a}
             end
-            badge_txt = "EQUIPPED"
+            badge_txt = custom_badge_txt or "ACTIVE"
         elseif is_ow then
             badge_bg_col = {ui_text[1], ui_text[2], ui_text[3], 0.14 * cur_a}
             badge_border_col = {ui_text[1], ui_text[2], ui_text[3], 0.25 * cur_a}
             badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.95 * cur_a}
-            badge_txt = "PRESS A TO EQUIP"
+            badge_txt = custom_unowned_txt or "PRESS A TO EQUIP"
         else
             badge_bg_col = {0, 0, 0, 0.24 * cur_a}
             badge_border_col = {ui_text[1], ui_text[2], ui_text[3], 0.12 * cur_a}
@@ -9696,7 +9696,8 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
         love.graphics.setColor(badge_txt_col)
         local bth = font_help_label:getHeight()
-        love.graphics.printf(badge_txt, badge_x, status_badge_y + (badge_panel_h - bth) / 2, badge_w, "center")
+        local text_y = status_badge_y + math.floor((badge_panel_h - bth) / 2) - math.floor(2 * scale)
+        love.graphics.printf(badge_txt, badge_x, text_y, badge_w, "center")
     end
 
     if tab == 1 then
@@ -9843,12 +9844,12 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             -- Outgoing status badge
             local prev_is_owned = (prev_skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. prev_skin.id])
             local prev_is_equipped = ((_G.board_skin or "default") == prev_skin.id)
-            drawStatusBadge(prev_is_equipped, prev_is_owned, -b_dir * text_slide * bp, 1 - bp)
+            drawStatusBadge(prev_is_equipped, prev_is_owned, -b_dir * text_slide * bp, 1 - bp, "ACTIVE")
 
             -- Incoming status badge
             local cur_is_owned = (skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id])
             local cur_is_equipped = ((_G.board_skin or "default") == skin.id)
-            drawStatusBadge(cur_is_equipped, cur_is_owned, b_dir * text_slide * (1 - bp), bp)
+            drawStatusBadge(cur_is_equipped, cur_is_owned, b_dir * text_slide * (1 - bp), bp, "ACTIVE")
         else
             local cur_subtitle = skin.name .. " (" .. cur_idx .. "/" .. #board_skins_catalog .. ")"
             local cur_sw = font_help_label:getWidth(cur_subtitle)
@@ -9872,7 +9873,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
             local is_owned = (skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id])
             local is_equipped = ((_G.board_skin or "default") == skin.id)
-            drawStatusBadge(is_equipped, is_owned, 0, 1.0)
+            drawStatusBadge(is_equipped, is_owned, 0, 1.0, "ACTIVE")
         end
 
     elseif tab == 3 then
@@ -9907,7 +9908,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             if pet_item.type == "none" then
                 love.graphics.setFont(font_help_label)
                 love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.50 * alpha_p)
-                local no_txt = "No Companion\nEquipped"
+                local no_txt = "No Companion\nActive"
                 local inner_pad = math.floor(16 * scale)
                 local box_left = board_x + off_p + inner_pad
                 local box_w = board_size - inner_pad * 2
@@ -9976,7 +9977,9 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local prev_is_equipped = (prev_pet.type == "none" and (_G.active_companion or "none") == "none")
                 or (prev_pet.type == "cat" and _G.active_companion == "cat")
                 or (prev_pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == prev_pet.breed_id)
-            drawStatusBadge(prev_is_equipped, prev_is_owned, -p_dir * text_slide * pp, 1 - pp)
+            local prev_eq_txt = (prev_pet.type == "none") and "NO PET ACTIVE" or "ACTIVE"
+            local prev_un_txt = (prev_pet.type == "none") and "PRESS A TO UNEQUIP" or "PRESS A TO EQUIP"
+            drawStatusBadge(prev_is_equipped, prev_is_owned, -p_dir * text_slide * pp, 1 - pp, prev_eq_txt, prev_un_txt)
 
             local cur_is_owned = (pet.type == "none")
                 or (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
@@ -9984,7 +9987,9 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local cur_is_equipped = (pet.type == "none" and (_G.active_companion or "none") == "none")
                 or (pet.type == "cat" and _G.active_companion == "cat")
                 or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id)
-            drawStatusBadge(cur_is_equipped, cur_is_owned, p_dir * text_slide * (1 - pp), pp)
+            local cur_eq_txt = (pet.type == "none") and "NO PET ACTIVE" or "ACTIVE"
+            local cur_un_txt = (pet.type == "none") and "PRESS A TO UNEQUIP" or "PRESS A TO EQUIP"
+            drawStatusBadge(cur_is_equipped, cur_is_owned, p_dir * text_slide * (1 - pp), pp, cur_eq_txt, cur_un_txt)
         else
             local cur_subtitle = pet.name .. " (" .. cur_idx .. "/" .. #pets_catalog .. ")"
             local cur_sw = font_help_label:getWidth(cur_subtitle)
@@ -10000,7 +10005,9 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local is_equipped = (pet.type == "none" and (_G.active_companion or "none") == "none")
                 or (pet.type == "cat" and _G.active_companion == "cat")
                 or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id)
-            drawStatusBadge(is_equipped, is_owned, 0, 1.0)
+            local eq_txt = (pet.type == "none") and "NO PET ACTIVE" or "ACTIVE"
+            local un_txt = (pet.type == "none") and "PRESS A TO UNEQUIP" or "PRESS A TO EQUIP"
+            drawStatusBadge(is_equipped, is_owned, 0, 1.0, eq_txt, un_txt)
         end
     end
 end
@@ -10125,7 +10132,11 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
         local skin = board_skins_catalog[_G.custom_board_idx or 1]
         local is_owned = skin and ((skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id]))
         local is_equipped = skin and ((_G.board_skin or "default") == skin.id)
-        action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
+        if skin and skin.id == "default" then
+            action_a_label = is_equipped and "Active" or "Equip"
+        else
+            action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
+        end
     elseif tab == 3 then
         local pet = pets_catalog[_G.custom_pet_idx or 1]
         local is_owned = pet and ((pet.type == "none")
@@ -10134,7 +10145,11 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
         local is_equipped = pet and ((pet.type == "none" and (_G.active_companion or "none") == "none")
             or (pet.type == "cat" and _G.active_companion == "cat")
             or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id))
-        action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
+        if pet and pet.type == "none" then
+            action_a_label = is_equipped and "Active" or "Unequip"
+        else
+            action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
+        end
     end
 
     local actions = {
