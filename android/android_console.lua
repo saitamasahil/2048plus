@@ -1582,43 +1582,97 @@ local function drawButtonIcon(name, cx, cy, sz, col)
     else drawFullscreenIcon(cx, cy, sz, col) end
 end
 
+local touch_app_img = nil
 local function drawTapIcon(cx, cy, sz, col, pulse)
     local s = sz / 40
     local p = pulse or 0
     local alpha = (col and col[4]) or 1.0
+    local cr = (col and col[1]) or 0
+    local cg = (col and col[2]) or 0
+    local cb = (col and col[3]) or 0
 
     if p > 0.05 and p < 0.95 then
-        local ring_r = (10 + 18 * p) * s
+        local ring_r = (8 + 20 * p) * s
         local ring_a = math.max(0, (1 - p) * 0.75 * alpha)
-        love.graphics.setColor(1, 1, 1, ring_a)
-        love.graphics.setLineWidth(math.max(1.5, 2 * s))
+        love.graphics.setColor(cr, cg, cb, ring_a)
+        love.graphics.setLineWidth(math.max(1.5, 2.5 * s))
         love.graphics.circle("line", cx, cy, ring_r)
     end
 
-    love.graphics.push()
-    love.graphics.translate(cx, cy)
-    love.graphics.rotate(math.rad(36))
+    if touch_app_img == nil then
+        local candidates = {
+            "assets/icon/touch_app.png",
+            "android/assets/icon/touch_app.png",
+            "android/icon/touch_app.png",
+        }
+        for _, path in ipairs(candidates) do
+            local ok_data, img_data = pcall(love.image.newImageData, path)
+            if ok_data and img_data then
+                pcall(function()
+                    img_data:mapPixel(function(x, y, r, g, b, a)
+                        if a > 0 then return 1, 1, 1, a end
+                        return 0, 0, 0, 0
+                    end)
+                end)
+                local ok, img = pcall(love.graphics.newImage, img_data)
+                if ok and img then
+                    pcall(function() img:setFilter("linear", "linear") end)
+                    touch_app_img = img
+                    break
+                end
+            else
+                local ok, img = pcall(love.graphics.newImage, path)
+                if ok and img then
+                    pcall(function() img:setFilter("linear", "linear") end)
+                    touch_app_img = img
+                    break
+                end
+            end
+        end
+        if not touch_app_img then
+            touch_app_img = false
+        end
+    end
 
-    local bounce = math.sin(p * math.pi) * 4 * s
-    love.graphics.translate(0, bounce)
+    local bounce = math.sin(p * math.pi) * 3 * s
 
-    love.graphics.setColor(0, 0, 0, 0.4 * alpha)
-    love.graphics.rectangle("fill", -4 * s, 2 * s, 8 * s, 24 * s, 4 * s, 4 * s)
-    love.graphics.rectangle("fill", -1 * s, 14 * s, 16 * s, 20 * s, 5 * s, 5 * s)
+    if touch_app_img then
+        local target_h = math.floor(48 * s)
+        local iw, ih = touch_app_img:getDimensions()
+        local img_scale = target_h / ih
+        -- Touch contact point in normalized coordinates
+        local ox = iw * 0.47
+        local oy = ih * 0.23
+        local draw_x = cx
+        local draw_y = cy + bounce
 
-    local cr = (col and col[1]) or 1
-    local cg = (col and col[2]) or 1
-    local cb = (col and col[3]) or 1
-    love.graphics.setColor(cr, cg, cb, alpha)
-    love.graphics.rectangle("fill", -4 * s, 0, 8 * s, 24 * s, 4 * s, 4 * s)
-    love.graphics.rectangle("fill", -1 * s, 12 * s, 16 * s, 20 * s, 5 * s, 5 * s)
-    love.graphics.rectangle("fill", -7 * s, 16 * s, 7 * s, 12 * s, 3.5 * s, 3.5 * s)
+        -- Subtle white border for contrast across light and dark backgrounds
+        love.graphics.setColor(1, 1, 1, 0.85 * alpha)
+        love.graphics.draw(touch_app_img, draw_x - 1, draw_y, 0, img_scale, img_scale, ox, oy)
+        love.graphics.draw(touch_app_img, draw_x + 1, draw_y, 0, img_scale, img_scale, ox, oy)
+        love.graphics.draw(touch_app_img, draw_x, draw_y - 1, 0, img_scale, img_scale, ox, oy)
+        love.graphics.draw(touch_app_img, draw_x, draw_y + 1, 0, img_scale, img_scale, ox, oy)
 
-    love.graphics.setColor(0.1, 0.1, 0.1, 0.3 * alpha)
-    love.graphics.setLineWidth(1.5 * s)
-    love.graphics.line(3 * s, 15 * s, 3 * s, 25 * s)
+        -- Black icon
+        love.graphics.setColor(cr, cg, cb, alpha)
+        love.graphics.draw(touch_app_img, draw_x, draw_y, 0, img_scale, img_scale, ox, oy)
+    else
+        love.graphics.push()
+        love.graphics.translate(cx, cy)
+        love.graphics.rotate(math.rad(36))
+        love.graphics.translate(0, bounce)
 
-    love.graphics.pop()
+        -- Subtle white border for procedural fallback
+        love.graphics.setColor(1, 1, 1, 0.75 * alpha)
+        love.graphics.rectangle("fill", -5 * s, -1 * s, 10 * s, 26 * s, 4 * s, 4 * s)
+        love.graphics.rectangle("fill", -2 * s, 11 * s, 18 * s, 22 * s, 5 * s, 5 * s)
+
+        love.graphics.setColor(cr, cg, cb, alpha)
+        love.graphics.rectangle("fill", -4 * s, 0, 8 * s, 24 * s, 4 * s, 4 * s)
+        love.graphics.rectangle("fill", -1 * s, 12 * s, 16 * s, 20 * s, 5 * s, 5 * s)
+        love.graphics.rectangle("fill", -7 * s, 16 * s, 7 * s, 12 * s, 3.5 * s, 3.5 * s)
+        love.graphics.pop()
+    end
 end
 
 local function drawTutorialPill(text, cx, cy, alpha)
@@ -1679,13 +1733,13 @@ local function drawFullscreenTutorial(dt)
         local alpha = math.min(1.0, t / 0.25)
         local pulse = (t % 0.55) / 0.55
         drawTutorialPill("Tap screen for Fullscreen", scx, scy - 48, alpha)
-        drawTapIcon(scx, scy, 36, {1, 1, 1, alpha}, pulse)
+        drawTapIcon(scx, scy, 36, {0, 0, 0, alpha}, pulse)
     elseif t < 1.8 then
         local p = (t - 1.1) / 0.7
         local p_ease = p * p * (3 - 2 * p)
         local fx = math.floor(scx + (target_x - scx) * p_ease)
         local fy = math.floor(scy + (target_y - scy) * p_ease)
-        drawTapIcon(fx, fy, 36, {1, 1, 1, 1.0}, 0)
+        drawTapIcon(fx, fy, 36, {0, 0, 0, 1.0}, 0)
     elseif t < 3.0 then
         local pulse = ((t - 1.8) % 0.6) / 0.6
         local glow = 0.5 + 0.5 * math.sin((t - 1.8) * 8)
@@ -1695,11 +1749,11 @@ local function drawFullscreenTutorial(dt)
 
         local pill_cx = math.max(geo.screen_x + 90, btn_x - 76)
         drawTutorialPill("Play in Fullscreen", pill_cx, target_y, 1.0)
-        drawTapIcon(target_x, target_y, 36, {1, 1, 1, 1.0}, pulse)
+        drawTapIcon(target_x, target_y, 36, {0, 0, 0, 1.0}, pulse)
     else
         local fade = math.max(0, (3.4 - t) / 0.4)
         if fade > 0 then
-            drawTapIcon(target_x, target_y, 36, {1, 1, 1, fade}, 0)
+            drawTapIcon(target_x, target_y, 36, {0, 0, 0, fade}, 0)
         end
     end
 end
