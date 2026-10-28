@@ -208,7 +208,7 @@ local function spawnToastParticles()
         target_y = (_G.android_toast_y or 46) * _G.scale
     end
     local cx = w / 2
-    local cy = target_y + 17 * _G.scale
+    local cy = target_y + 19 * _G.scale
     
     for i = 1, 45 do
         local angle = love.math.random() * math.pi * 2
@@ -3485,7 +3485,7 @@ function renderer.init()
     font_cheats_title = love.graphics.newFont(font_path, math.floor(56 * scale))
     font_label      = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_message    = love.graphics.newFont(font_path, math.floor(28 * scale * text_scale))
-    font_toast      = love.graphics.newFont(font_path, math.floor(14 * scale * text_scale))
+    font_toast      = love.graphics.newFont(font_path, math.floor(17 * scale * text_scale))
     font_help_key   = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_help_label = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_bgm        = love.graphics.newFont(font_path, math.floor(13 * scale))
@@ -6545,15 +6545,15 @@ local function drawToast()
     local scale = _G.scale or 1.0
     local text_scale = (_G.text_size == "large") and 1.15 or 1.0
     if not font_toast then
-        font_toast = love.graphics.newFont(font_path, math.floor(14 * scale * text_scale))
+        font_toast = love.graphics.newFont(font_path, math.floor(17 * scale * text_scale))
     end
     love.graphics.setFont(font_toast)
 
     local font_h = font_toast:getHeight()
-    local padX = math.floor(14 * scale)
-    local padY = math.floor(7 * scale)
-    local icon_sz = math.floor(20 * scale)
-    local icon_gap = math.floor(8 * scale)
+    local padX = math.floor(16 * scale)
+    local padY = math.floor(8 * scale)
+    local icon_sz = math.floor(24 * scale)
+    local icon_gap = math.floor(9 * scale)
 
     local ach_img = nil
     if toast_ach_id then
@@ -6599,7 +6599,7 @@ local function drawToast()
     local box_x = (w - boxW) / 2
 
     love.graphics.setColor(0.1, 0.1, 0.1, 0.88 * alpha)
-    roundedRect("fill", box_x, y, boxW, boxH, math.floor(8 * scale))
+    roundedRect("fill", box_x, y, boxW, boxH, math.floor(9 * scale))
 
     local content_x = box_x + padX
     if ach_img then
