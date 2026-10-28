@@ -522,52 +522,21 @@ function Game:move(direction)
                     end
 
                     -- Check powerup milestone unlocks
-                    if self.mode == "plus" and merged.value >= 128 then
+                    if self.mode == "plus" and merged.value >= 256 then
                         local m_str = tostring(merged.value)
                         if not self.milestonesReached[m_str] then
                             self.milestonesReached[m_str] = true
 
-                            local function grantRandomPowerup(g)
-                                local p = g.rng and g.rng:random(1, 3) or love.math.random(1, 3)
-                                if p == 1 then
-                                    g.powerups.undo = g.powerups.undo + 1
-                                    return "Undo"
-                                elseif p == 2 then
-                                    g.powerups.swap = g.powerups.swap + 1
-                                    return "Swap"
-                                else
-                                    g.powerups.bomb = g.powerups.bomb + 1
-                                    return "Bomb"
-                                end
-                            end
-
-                            if merged.value == 128 then
-                                local name = grantRandomPowerup(self)
-                                self:addFloatingNotification("+" .. name, merged.x, merged.y)
-                            elseif merged.value == 256 then
-                                local name = grantRandomPowerup(self)
+                            if merged.value == 256 then
                                 self.powerups.undo = self.powerups.undo + 1
-                                self:addFloatingNotification("+" .. name .. " & +1 Undo", merged.x, merged.y)
                             elseif merged.value == 512 then
+                                self.powerups.swap = self.powerups.swap + 1
+                            elseif merged.value == 1024 then
+                                self.powerups.bomb = self.powerups.bomb + 1
+                            elseif merged.value >= 2048 then
                                 self.powerups.undo = self.powerups.undo + 1
                                 self.powerups.bomb = self.powerups.bomb + 1
                                 self.powerups.swap = self.powerups.swap + 1
-                                self:addFloatingNotification("All Powerups +1", merged.x, merged.y)
-                            elseif merged.value == 1024 then
-                                self.powerups.undo = self.powerups.undo + 2
-                                self.powerups.bomb = self.powerups.bomb + 2
-                                self.powerups.swap = self.powerups.swap + 2
-                                self:addFloatingNotification("All Powerups +2", merged.x, merged.y)
-                            elseif merged.value == 2048 then
-                                self.powerups.undo = self.powerups.undo + 2
-                                self.powerups.bomb = self.powerups.bomb + 2
-                                self.powerups.swap = self.powerups.swap + 2
-                                self:addFloatingNotification("All Powerups +2", merged.x, merged.y)
-                            elseif merged.value >= 4096 then
-                                self.powerups.undo = self.powerups.undo + 3
-                                self.powerups.bomb = self.powerups.bomb + 3
-                                self.powerups.swap = self.powerups.swap + 3
-                                self:addFloatingNotification("All Powerups +3", merged.x, merged.y)
                             end
                         end
                     end

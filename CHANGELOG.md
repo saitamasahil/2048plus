@@ -11,6 +11,7 @@
 - Forest Theme: Redesigned tiles with a forest green progression
 - Replaced Huge Mode icon with animated campfire sprite by Devs In Exile Studio
 - Improved animation speed of Classic Mode preview sprite
+- Rebalance plus mode powerup milestone rewards
 
 ### Fixed
 - Cosmic Theme: Fixed number visibility on 2048 and higher number tiles
