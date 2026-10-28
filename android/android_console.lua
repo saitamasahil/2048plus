@@ -756,6 +756,21 @@ local function getCrtShader()
     end
 end
 
+local function getBottomNavMargin(w, h)
+    local safe_bottom = 0
+    pcall(function()
+        if love.window and love.window.getSafeArea then
+            local _, sy, _, sh = love.window.getSafeArea()
+            local win_h = select(2, love.graphics.getDimensions())
+            if sh and sh > 0 and win_h and win_h > 0 then
+                safe_bottom = math.max(0, win_h - ((sy or 0) + sh))
+            end
+        end
+    end)
+    local min_gesture_margin = math.max(math.floor(h * 0.075), math.floor(54 * (w / 390)), 50)
+    return math.max(safe_bottom, min_gesture_margin)
+end
+
 function android_console.touchpressed(id, x, y, dx, dy, pressure)
     if transition_active then
         return
@@ -812,6 +827,12 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
                 end
                 return
             end
+        end
+
+        -- Ignore swipes starting in bottom navigation bar gesture zone
+        local nav_margin = getBottomNavMargin(w, h)
+        if y >= h - nav_margin then
+            return
         end
 
         -- Gesture swipe track
@@ -879,13 +900,16 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
 
     -- Gameplay swipe gesture area outside buttons
     if is_gameplay then
-        swipe_track[id] = {
-            start_x = x,
-            start_y = y,
-            fired = false,
-            time = love.timer.getTime(),
-            in_screen = false,
-        }
+        local nav_margin = getBottomNavMargin(w, h)
+        if y < h - nav_margin then
+            swipe_track[id] = {
+                start_x = x,
+                start_y = y,
+                fired = false,
+                time = love.timer.getTime(),
+                in_screen = false,
+            }
+        end
     end
 end
 
@@ -905,6 +929,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
     if is_gameplay and android_view_mode == "fullscreen" then
         local sw = fs_swipe_track[id]
         if sw and not sw.fired then
+            local nav_margin = getBottomNavMargin(w, h)
+            if sw.start_y >= h - nav_margin then
+                return
+            end
             local diff_x = x - sw.start_x
             local diff_y = y - sw.start_y
             local abs_x = math.abs(diff_x)
@@ -1001,6 +1029,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
 
     -- Gesture swipe during gameplay
     if sw and not sw.fired and is_gameplay then
+        local nav_margin = getBottomNavMargin(w, h)
+        if sw.start_y >= h - nav_margin then
+            return
+        end
         local diff_x = x - sw.start_x
         local diff_y = y - sw.start_y
         local abs_x = math.abs(diff_x)

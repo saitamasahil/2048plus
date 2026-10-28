@@ -262,10 +262,14 @@ function love.touchpressed(id, x, y, dx, dy, pressure)
     if _G.appState == "DINO" then return end
     -- Only track the first finger to avoid multi-touch confusion
     if not active_touch_id then
-        active_touch_id = id
-        touch_start_x = x
-        touch_start_y = y
-        touch_start_time = love.timer.getTime()
+        local w, h = love.graphics.getDimensions()
+        local nav_margin = math.max(math.floor(h * 0.075), 50)
+        if y < h - nav_margin then
+            active_touch_id = id
+            touch_start_x = x
+            touch_start_y = y
+            touch_start_time = love.timer.getTime()
+        end
     end
 end
 
