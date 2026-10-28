@@ -527,16 +527,28 @@ function Game:move(direction)
                         if not self.milestonesReached[m_str] then
                             self.milestonesReached[m_str] = true
 
+                            local morph_text = nil
                             if merged.value == 256 then
                                 self.powerups.undo = self.powerups.undo + 1
+                                morph_text = "+1 UNDO"
                             elseif merged.value == 512 then
                                 self.powerups.swap = self.powerups.swap + 1
+                                morph_text = "+1 SWAP"
                             elseif merged.value == 1024 then
                                 self.powerups.bomb = self.powerups.bomb + 1
+                                morph_text = "+1 BOMB"
                             elseif merged.value >= 2048 then
                                 self.powerups.undo = self.powerups.undo + 1
                                 self.powerups.bomb = self.powerups.bomb + 1
                                 self.powerups.swap = self.powerups.swap + 1
+                                morph_text = "+1 ALL"
+                            end
+
+                            if morph_text then
+                                local renderer = require("renderer")
+                                if renderer and renderer.triggerHeaderLogoMorph then
+                                    renderer.triggerHeaderLogoMorph(morph_text)
+                                end
                             end
                         end
                     end

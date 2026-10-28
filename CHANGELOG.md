@@ -5,6 +5,7 @@
 - Native Android & PC Versions: Added standalone release builds for Android, Linux, and Windows
 - Customization Hub: Preview and equip themes, board skins, and companion pets
 - Soundtrack: Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic) to background music, used with permission
+- Powerup Milestone Animation: Display earned powerups in header subtitle below 2048
 
 ### Changed
 - Ocean Theme: Redesigned with maritime blue tiles and animated underwater effects
