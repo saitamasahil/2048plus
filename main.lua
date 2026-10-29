@@ -58,7 +58,7 @@ local drawCurrentScreen
 
 local function captureOldScreen()
     local w, h = 640, 480
-    if not _G.android_console then
+    if not _G.is_console_active() then
         w, h = love.graphics.getDimensions()
     end
     if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
@@ -66,7 +66,7 @@ local function captureOldScreen()
     end
     love.graphics.setCanvas({old_screen_canvas, stencil = true})
     love.graphics.clear()
-    if _G.android_console then
+    if _G.is_console_active() then
         local real_getDims = love.graphics.getDimensions
         local real_getW = love.graphics.getWidth
         local real_getH = love.graphics.getHeight
@@ -535,7 +535,7 @@ function love.load(args)
     -- Initialize renderer layout and fonts
     renderer.init()
     local w, h = 640, 480
-    if not _G.android_console then
+    if not _G.is_console_active() then
         w, h = love.graphics.getDimensions()
     end
     screen_canvas = love.graphics.newCanvas(w, h)
@@ -1351,8 +1351,8 @@ function love.update(dt)
                     max_scroll = renderer.getAchievementsMaxScroll()
                 end
                 if not max_scroll then
-                    local h = (_G.android_console and not _G.android_fullscreen) and 480 or love.graphics.getHeight()
-                    local scale = (_G.android_console and not _G.android_fullscreen) and 1.0 or (_G.scale or 1.0)
+                    local h = _G.is_console_active() and 480 or love.graphics.getHeight()
+                    local scale = _G.is_console_active() and 1.0 or (_G.scale or 1.0)
                     local item_h = math.floor(85 * scale)
                     local header_h = math.floor(115 * scale)
                     local footer_h = math.floor(55 * scale)
@@ -2043,7 +2043,7 @@ local function draw_internal()
     end
 
     local sc_w, sc_h = 640, 480
-    if not _G.android_console then
+    if not _G.is_console_active() then
         sc_w, sc_h = love.graphics.getDimensions()
     end
     local w, h = sc_w, sc_h
@@ -2142,7 +2142,7 @@ local function draw_internal()
 end
 
 function love.draw()
-    if _G.android_console then
+    if _G.is_console_active() then
         _G.android_console.draw(draw_internal)
         return
     end
@@ -2248,6 +2248,22 @@ function love.mousereleased(x, y, button, istouch, presses)
                     _G.cycleStoreSortMode()
                 end
             end
+        end
+    end
+end
+
+-- Resize handler for orientation changes
+function love.resize(w, h)
+    if _G.android_console and _G.android_console.updateLayout then
+        _G.android_console.updateLayout()
+    end
+    if _G.update_ui_scale then
+        _G.update_ui_scale()
+    end
+    if renderer and renderer.init then
+        renderer.init()
+        if game and game.size then
+            renderer.updateLayout(game.size)
         end
     end
 end

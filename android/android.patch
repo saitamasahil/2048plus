@@ -1,6 +1,6 @@
---- a/conf.lua	2026-10-20 22:22:29.931185916 +0530
-+++ b/conf.lua	2026-10-20 22:22:29.932984482 +0530
-@@ -5,10 +5,12 @@
+--- a/conf.lua	2026-10-29 19:26:42.166425653 +0530
++++ b/conf.lua	2026-10-29 19:26:42.166742774 +0530
+@@ -5,10 +5,11 @@
  
      t.window.title = "2048 Plus"
      t.window.icon = nil
@@ -12,11 +12,10 @@
      t.window.borderless = false
 -    t.window.resizable = false
 +    t.window.resizable = true
-+    t.window.orientation = "portrait"
      t.window.vsync = 1
      t.window.display = 1
      t.window.highdpi = true
-@@ -17,7 +19,7 @@
+@@ -17,7 +18,7 @@
  
      t.modules.thread = false
      t.modules.audio = true
@@ -25,9 +24,9 @@
      t.modules.physics = false
      t.modules.sound = true
      t.modules.touch = true
---- a/main.lua	2026-10-20 22:22:29.934348592 +0530
-+++ b/main.lua	2026-10-20 22:22:29.935672651 +0530
-@@ -102,6 +102,12 @@
+--- a/main.lua	2026-10-29 19:26:42.166500121 +0530
++++ b/main.lua	2026-10-29 19:26:42.166820046 +0530
+@@ -101,6 +101,12 @@
  end
  
  function love.load(args)
@@ -39,36 +38,33 @@
 +    end
      love.math.setRandomSeed(os.time())
  
-     -- Handle resolution arguments (same pattern as Scrappy)
-@@ -2080,6 +2086,9 @@
+     -- Parse resolution arguments
+@@ -2201,6 +2207,9 @@
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
-+    if _G.android_console and not istouch and button == 1 then
++    if _G.is_console_active and _G.is_console_active() and not istouch and button == 1 then
 +        _G.android_console.mousereleased(x, y, button)
 +    end
      if button == 1 then
-         if _G.appState == "STORE" and _G.store_sort_btn_bounds then
-             local b = _G.store_sort_btn_bounds
-@@ -2130,3 +2139,21 @@
-         end
+         -- Customization tab click
+         if _G.appState == "THEME_SELECT" and _G.customization_tab_bounds then
+@@ -2252,6 +2261,18 @@
      end
  end
-+
+ 
 +function love.mousepressed(x, y, button, istouch, presses)
-+    if _G.android_console and not istouch and button == 1 then
++    if _G.is_console_active and _G.is_console_active() and not istouch and button == 1 then
 +        _G.android_console.mousepressed(x, y, button)
 +    end
 +end
 +
 +function love.mousemoved(x, y, dx, dy, istouch)
-+    if _G.android_console and not istouch then
++    if _G.is_console_active and _G.is_console_active() and not istouch then
 +        _G.android_console.mousemoved(x, y, dx, dy)
 +    end
 +end
 +
-+function love.resize(w, h)
-+    if _G.android_console then
-+        _G.android_console.updateLayout()
-+    end
-+end
+ -- Resize handler for orientation changes
+ function love.resize(w, h)
+     if _G.android_console and _G.android_console.updateLayout then

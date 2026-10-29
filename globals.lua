@@ -24,8 +24,20 @@ _G.sx = 1
 _G.sy = 1
 _G.scale = 1
 
+-- Check if portrait android console is actively rendered
+function _G.is_console_active()
+    if not _G.android_console then
+        return false
+    end
+    if _G.android_console.isConsoleActive then
+        return _G.android_console.isConsoleActive()
+    end
+    local w, h = love.graphics.getDimensions()
+    return h >= w
+end
+
 function _G.update_ui_scale()
-    if _G.android_console then
+    if _G.is_console_active() then
         _G.design_w = 640
         _G.design_h = 480
         _G.sx = 1.0
@@ -35,6 +47,8 @@ function _G.update_ui_scale()
     end
 
     local w, h = love.graphics.getDimensions()
+    _G.design_w = 640
+    _G.design_h = 480
     _G.sx = w / _G.design_w
     _G.sy = h / _G.design_h
     _G.scale = math.min(_G.sx, _G.sy)

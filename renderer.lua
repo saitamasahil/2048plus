@@ -5948,7 +5948,7 @@ local function drawStencilCircle()
     if _G.android_fullscreen then
         w = _G.android_fs_vw or love.graphics.getWidth()
         h = _G.android_fs_vh or love.graphics.getHeight()
-    elseif not _G.android_console then
+    elseif not (_G.is_console_active and _G.is_console_active()) then
         w, h = love.graphics.getDimensions()
     end
     local dx = math.max(transition_center_x, w - transition_center_x)
@@ -5966,7 +5966,7 @@ function renderer.startThemeTransition(drawTarget, direction)
     if _G.android_fullscreen then
         w = _G.android_fs_vw or 390
         h = _G.android_fs_vh or 693
-    elseif not _G.android_console then
+    elseif not (_G.is_console_active and _G.is_console_active()) then
         w, h = love.graphics.getDimensions()
     end
     if not transition_canvas or transition_canvas:getWidth() ~= w or transition_canvas:getHeight() ~= h then
@@ -5975,7 +5975,7 @@ function renderer.startThemeTransition(drawTarget, direction)
     love.graphics.setCanvas({transition_canvas, stencil = true})
     love.graphics.clear()
 
-    if _G.android_console and not _G.android_fullscreen then
+    if (_G.is_console_active and _G.is_console_active()) and not _G.android_fullscreen then
         local real_getDims = love.graphics.getDimensions
         local real_getW = love.graphics.getWidth
         local real_getH = love.graphics.getHeight
@@ -6027,7 +6027,7 @@ function renderer.startThemeTransition(drawTarget, direction)
     transition_timer = transition_duration
     local dir = direction or 1
     transition_direction = dir
-    local scale_factor = (_G.android_console and not _G.android_fullscreen) and 1.0 or (_G.scale or 1.0)
+    local scale_factor = (_G.is_console_active and _G.is_console_active()) and 1.0 or (_G.scale or 1.0)
     if _G.android_fullscreen then
         transition_center_x = _G.android_fs_theme_x or math.floor(w / 2)
         transition_center_y = _G.android_fs_theme_y or math.floor(h - 50)
@@ -8522,7 +8522,7 @@ local board_preview_canvas_size = nil
 
 
 local function getBoardPreviewMetrics()
-    local is_console = _G.android_console and not _G.android_fullscreen
+    local is_console = _G.is_console_active and _G.is_console_active()
     local w = is_console and 640 or love.graphics.getWidth()
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or _G.scale or 1
@@ -8672,7 +8672,7 @@ end
 
 -- Draw tab content inside the middle panel
 function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transition)
-    local is_console = _G.android_console and not _G.android_fullscreen
+    local is_console = _G.is_console_active and _G.is_console_active()
     local w = is_console and 640 or love.graphics.getWidth()
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or _G.scale or 1
@@ -9065,7 +9065,7 @@ end
 function renderer.drawThemeSelect(skip_transition, explicit_tab)
     renderer.clearBackground()
 
-    local is_console = _G.android_console and not _G.android_fullscreen
+    local is_console = _G.is_console_active and _G.is_console_active()
     local w = is_console and 640 or love.graphics.getWidth()
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or _G.scale or 1
@@ -9499,8 +9499,9 @@ function renderer.getAchievementsMaxScroll()
     if _G.achievements_max_scroll then
         return _G.achievements_max_scroll
     end
-    local h = (_G.android_console and not _G.android_fullscreen) and 480 or love.graphics.getHeight()
-    local scale = (_G.android_console and not _G.android_fullscreen) and 1.0 or (_G.scale or 1.0)
+    local is_console = _G.is_console_active and _G.is_console_active()
+    local h = is_console and 480 or love.graphics.getHeight()
+    local scale = is_console and 1.0 or (_G.scale or 1.0)
     local padding = math.floor(20 * scale)
     local title_h = font_title and font_title:getHeight() or math.floor(36 * scale)
     local tab_y = padding + title_h + math.floor(10 * scale)

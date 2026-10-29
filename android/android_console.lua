@@ -277,13 +277,27 @@ function android_console.init(input_ref)
     _G.android_toast_y = nil
     custom_icons = {}
 
-    -- Lock UI scale so game menus and tiles inside virtual screen are never zoomed
+    -- Lock UI scale in portrait console mode, dynamic in landscape
     _G.update_ui_scale = function()
+        if not android_console.isLandscape() then
+            _G.design_w = 640
+            _G.design_h = 480
+            _G.sx = 1.0
+            _G.sy = 1.0
+            _G.scale = 1.0
+            return
+        end
+        local rw, rh = love.graphics.getDimensions()
         _G.design_w = 640
         _G.design_h = 480
-        _G.sx = 1.0
-        _G.sy = 1.0
-        _G.scale = 1.0
+        _G.sx = rw / _G.design_w
+        _G.sy = rh / _G.design_h
+        _G.scale = math.min(_G.sx, _G.sy)
+        if math.abs(_G.scale - 1) < 0.01 then
+            _G.scale = 1
+            _G.sx = 1
+            _G.sy = 1
+        end
     end
 
     -- Safe image loader with format fallback
@@ -471,6 +485,16 @@ function android_console.setViewMode(mode)
 end
 
 
+function android_console.isLandscape()
+    local rw, rh = love.graphics.getDimensions()
+    return rw > rh
+end
+
+function android_console.isConsoleActive()
+    local rw, rh = love.graphics.getDimensions()
+    return rh >= rw
+end
+
 function android_console.getCanvas()
     if not game_canvas then
         game_canvas = love.graphics.newCanvas(640, 480)
@@ -481,16 +505,14 @@ end
 
 function android_console.updateLayout()
     local real_w, real_h = love.graphics.getDimensions()
+    if real_w > real_h then
+        -- In landscape orientation, console is inactive
+        return
+    end
+
     local origin_x = 0
     local w = real_w
     local h = real_h
-
-    -- Auto-rotate landscape fallback
-    -- Pillarbox portrait console in center
-    if real_w > real_h then
-        w = math.min(real_w, math.floor(real_h * (9 / 16)))
-        origin_x = math.floor((real_w - w) / 2)
-    end
 
     geo.origin_x = origin_x
     geo.console_w = w
@@ -2810,6 +2832,13 @@ end
 
 -- Primary draw dispatch
 function android_console.draw(game_draw_fn)
+    local rw, rh = love.graphics.getDimensions()
+    if rw > rh then
+        -- Landscape mode: render native handheld display without console chassis
+        game_draw_fn()
+        return
+    end
+
     local is_gameplay = (_G.appState == "GAME")
     local dt = love.timer.getDelta()
     if dt > 0.1 then dt = 0.1 end

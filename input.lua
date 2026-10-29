@@ -255,7 +255,7 @@ local touch_start_y = 0
 local touch_start_time = 0
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
-    if _G.android_console then
+    if _G.is_console_active and _G.is_console_active() then
         _G.android_console.touchpressed(id, x, y, dx, dy, pressure)
         return
     end
@@ -274,7 +274,7 @@ function love.touchpressed(id, x, y, dx, dy, pressure)
 end
 
 function love.touchreleased(id, x, y, dx, dy, pressure)
-    if _G.android_console then
+    if _G.is_console_active and _G.is_console_active() then
         _G.android_console.touchreleased(id, x, y, dx, dy, pressure)
         return
     end
@@ -348,7 +348,7 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
 end
 
 function love.touchmoved(id, x, y, dx, dy, pressure)
-    if _G.android_console then
+    if _G.is_console_active and _G.is_console_active() then
         _G.android_console.touchmoved(id, x, y, dx, dy, pressure)
         return
     end
