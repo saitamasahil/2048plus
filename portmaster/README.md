@@ -33,16 +33,16 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 
 - Original Concept By: [Gabriele Cirulli](https://github.com/gabrielecirulli/2048)
 - Android Port Reference: [tpcstld - 2048](https://github.com/tpcstld/2048)
-- Built using the [LÖVE Framework](https://love2d.org/)
+- Built using the [LÖVE Framework](https://love2d.org)
 - Easter Egg mini-game by: [SLAYKIN6_TTV](https://github.com/justaporter)
-- Adorable Animal Sprites by: [Elthen](https://elthen.itch.io/), [Pixelcave](https://pixelcave.itch.io/), and [Duckhive](https://itch.io/profile/duckhive)
-- Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io/)
+- Adorable Animal Sprites by: [Elthen](https://elthen.itch.io), [Pixelcave](https://pixelcave.itch.io), and [Duckhive](https://itch.io/profile/duckhive)
+- Animated Button Prompts by: [greenpixels_](https://greenpixels.itch.io)
 - Android Virtual Controller Buttons & D-Pad Sprites by: [Mr. Breakfast](https://itch.io/profile/mrbreakfastsdelight)
-- Icons provided by [Flaticon](https://www.flaticon.com/)
+- Icons provided by [Flaticon](https://www.flaticon.com)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!
 - Background Music:
   - "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic)
-  - More music by AudioCoffee, Ghostrifter Official, Luke Bergs, Purrple Cat, Roa, Sakura Girl, and Tokyo Music Walker via [Chosic](https://www.chosic.com/)
+  - More music by [AudioCoffee](https://www.audiocoffee.net), [Ghostrifter Official](https://soundcloud.com/ghostrifter-official), [Luke Bergs](https://soundcloud.com/bergscloud), [Purrple Cat](https://purrplecat.com), [Roa](https://roa-music.com), [Sakura Girl](https://soundcloud.com/sakuragirl_official), and [Tokyo Music Walker](https://soundcloud.com/user-356546060) via [Chosic](https://www.chosic.com)
 
 ---
 
