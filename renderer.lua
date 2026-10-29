@@ -8717,19 +8717,22 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local badge_txt
 
         if is_eq then
-            local lum = 0.299 * (theme_accent[1] or 1) + 0.587 * (theme_accent[2] or 1) + 0.114 * (theme_accent[3] or 1)
-            badge_bg_col = {theme_accent[1], theme_accent[2], theme_accent[3], 0.95 * cur_a}
-            badge_border_col = {1, 1, 1, 0.35 * cur_a}
-            if lum > 0.52 then
+            local accent = help_key_color or tile_colors[2048] or {0.93, 0.76, 0.18, 1.0}
+            local lum = 0.299 * (accent[1] or 1) + 0.587 * (accent[2] or 1) + 0.114 * (accent[3] or 1)
+            badge_bg_col = {accent[1], accent[2], accent[3], 0.95 * cur_a}
+            badge_border_col = lum > 0.52 and {0, 0, 0, 0.15 * cur_a} or {1, 1, 1, 0.30 * cur_a}
+            if help_key_text then
+                badge_txt_col = {help_key_text[1], help_key_text[2], help_key_text[3], cur_a}
+            elseif lum > 0.52 then
                 badge_txt_col = {0.12, 0.10, 0.08, cur_a}
             else
                 badge_txt_col = {0.98, 0.98, 0.98, cur_a}
             end
             badge_txt = custom_badge_txt or "ACTIVE"
         elseif is_ow then
-            badge_bg_col = {ui_text[1], ui_text[2], ui_text[3], 0.14 * cur_a}
-            badge_border_col = {ui_text[1], ui_text[2], ui_text[3], 0.25 * cur_a}
-            badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.95 * cur_a}
+            badge_bg_col = nil
+            badge_border_col = nil
+            badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.85 * cur_a}
             badge_txt = custom_unowned_txt or "PRESS A TO EQUIP"
         else
             badge_bg_col = nil
@@ -8740,12 +8743,16 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
         love.graphics.setFont(font_help_label)
         local txt_w = font_help_label:getWidth(badge_txt)
-        local badge_pad_x = math.floor(22 * scale)
+        local badge_pad_x = math.floor(20 * scale)
         local badge_w = txt_w + badge_pad_x * 2
         local badge_x = math.floor((w - badge_w) / 2) + off + cur_off
         local badge_cr = math.floor(badge_panel_h / 2)
 
         if badge_bg_col then
+            local sh = math.max(1, math.floor(1.5 * scale))
+            love.graphics.setColor(0, 0, 0, 0.22 * cur_a)
+            roundedRect("fill", badge_x, status_badge_y + sh, badge_w, badge_panel_h, badge_cr)
+
             love.graphics.setColor(badge_bg_col)
             roundedRect("fill", badge_x, status_badge_y, badge_w, badge_panel_h, badge_cr)
         end
@@ -8758,7 +8765,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
         love.graphics.setColor(badge_txt_col)
         local bth = font_help_label:getHeight()
-        local text_y = status_badge_y + math.floor((badge_panel_h - bth) / 2) - math.floor(2 * scale)
+        local text_y = status_badge_y + math.floor((badge_panel_h - bth) / 2) - (is_eq and (0.5 * scale) or 0)
         love.graphics.printf(badge_txt, badge_x, text_y, badge_w, "center")
     end
 
