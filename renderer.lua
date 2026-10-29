@@ -7682,24 +7682,15 @@ end
 
 local function drawModeCardIcon(icon_key, cx, cy, sz, scale, select_factor, r_acc, g_acc, b_acc)
     local img = mode_icons[icon_key]
-    if not img then return end
+    if not img and icon_key ~= "huge" then return end
 
     select_factor = select_factor or 0.0
-    local iw, ih = img:getDimensions()
-    local base_s = sz / math.max(iw, ih)
-    local s = base_s * (1.0 + 0.08 * select_factor)
-    local ox = iw / 2
-    local oy = ih / 2
 
     -- Soft shadow under icon
     love.graphics.setColor(0, 0, 0, 0.20 + 0.10 * select_factor)
     local shadow_w = (sz * 0.45) * (1.0 + 0.08 * select_factor)
     local shadow_h = shadow_w * 0.25
     love.graphics.ellipse("fill", cx, cy + sz * 0.45, shadow_w, shadow_h)
-
-    -- Icon tinting with icon shader
-    love.graphics.push("all")
-    if icon_shader then love.graphics.setShader(icon_shader) end
 
     local alpha = 0.65 + 0.35 * select_factor
     local r = (ui_text and ui_text[1]) or 1
@@ -7711,6 +7702,37 @@ local function drawModeCardIcon(icon_key, cx, cy, sz, scale, select_factor, r_ac
         g = g + (g_acc - g) * select_factor
         b = b + (b_acc - b) * select_factor
     end
+
+    if icon_key == "huge" then
+        love.graphics.push("all")
+        love.graphics.setColor(r, g, b, alpha)
+        local gap = math.max(1, math.floor(2 * scale))
+        local target_w = sz * (1.0 + 0.08 * select_factor)
+        local tile_sz = math.max(3, math.floor((target_w - 4 * gap) / 5))
+        local total_w = 5 * tile_sz + 4 * gap
+        local start_x = math.floor(cx - total_w / 2)
+        local start_y = math.floor(cy - total_w / 2)
+        local cr = math.max(1, math.floor(tile_sz * 0.22))
+        for row = 0, 4 do
+            local ty = start_y + row * (tile_sz + gap)
+            for col = 0, 4 do
+                local tx = start_x + col * (tile_sz + gap)
+                love.graphics.rectangle("fill", tx, ty, tile_sz, tile_sz, cr, cr)
+            end
+        end
+        love.graphics.pop()
+        return
+    end
+
+    local iw, ih = img:getDimensions()
+    local base_s = sz / math.max(iw, ih)
+    local s = base_s * (1.0 + 0.08 * select_factor)
+    local ox = iw / 2
+    local oy = ih / 2
+
+    -- Icon tinting with icon shader
+    love.graphics.push("all")
+    if icon_shader then love.graphics.setShader(icon_shader) end
 
     love.graphics.setColor(r, g, b, alpha)
     love.graphics.draw(img, cx, cy, 0, s, s, ox, oy)
