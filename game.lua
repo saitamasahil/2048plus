@@ -37,6 +37,7 @@ local vectors = {
 function Game.new(mode)
     local self = setmetatable({}, Game)
     self.mode = mode or "classic"
+    _G.game = self
     save.saveLastMode(self.mode)
     self.rng = love.math.newRandomGenerator(math.floor(love.timer.getTime() * 1000) + love.math.random(1, 100000))
     self.size = 4
@@ -212,9 +213,9 @@ function Game.new(mode)
         renderer.clearHeaderLogoMorph()
     end
 
-    -- Trigger "First Steps" achievement
+    -- Trigger First Steps achievement
     if _G.unlockAchievement and self.mode ~= "huge" then
-        _G.unlockAchievement("ach_first_game")
+        _G.unlockAchievement("ach_first_game", self)
     end
 
     -- Time Attack: initialize timer after everything is set up if not loaded from save

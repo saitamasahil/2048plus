@@ -2246,7 +2246,7 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
 
     local dish_r = math.max(16, math.floor(20 * (w / 390)))
 
-    -- Theme transition acoustic wave animation
+    -- Theme transition acoustic glint animation
     local inner_glint = 0.0
     local outer_glint = 0.0
     if speaker_theme_anim_timer > 0 then
@@ -2257,11 +2257,6 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         if wave_p >= 0.45 and wave_p <= 0.90 then
             outer_glint = math.sin((wave_p - 0.45) / 0.45 * 3.14159265) * 0.40
         end
-        local wave_r = dish_r * (0.15 + 1.25 * math.sin(wave_p * 1.5707963))
-        local wave_a = math.sin(wave_p * 3.14159265) * 0.38
-        love.graphics.setColor(target_chassis[1], target_chassis[2], target_chassis[3], wave_a)
-        love.graphics.setLineWidth(math.max(1.5, 2.8 * (1.0 - wave_p)))
-        love.graphics.circle("line", spk_x, spk_y, wave_r)
     end
 
     -- Lower highlight rim on dish

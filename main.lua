@@ -230,8 +230,9 @@ function love.load(args)
         end
     end
 
-    function _G.unlockAchievement(id)
-        if _G.game and _G.game.mode == "huge" and id ~= "ach_huge_2048" then
+    function _G.unlockAchievement(id, game_ref)
+        local cur_game = game_ref or _G.game or game
+        if _G.appState == "GAME" and cur_game and cur_game.mode == "huge" and id ~= "ach_huge_2048" then
             return
         end
         if not _G.achievements[id] then
@@ -348,7 +349,8 @@ function love.load(args)
     end
 
     function _G.recordDogBreedPlayed(breed_id)
-        if _G.game and _G.game.mode == "huge" then return end
+        local cur_game = _G.game or game
+        if _G.appState == "GAME" and cur_game and cur_game.mode == "huge" then return end
         breed_id = breed_id or _G.active_dog_breed or "roxy"
         _G.stats = _G.stats or {}
         _G.stats.played_dog_breeds = _G.stats.played_dog_breeds or {}
@@ -777,6 +779,7 @@ function love.update(dt)
                         if mode then
                             _G.appState = "GAME"
                             game = Game.new(mode)
+                            _G.game = game
                             if renderer.triggerGameStartTransition then
                                 renderer.triggerGameStartTransition(mode, true)
                             end
@@ -1183,12 +1186,14 @@ function love.update(dt)
                     if _G.play_select_selection == 1 then
                         _G.appState = "GAME"
                         game = Game.new("classic")
+                        _G.game = game
                         if renderer.triggerGameStartTransition then
                             renderer.triggerGameStartTransition("classic", false)
                         end
                     elseif _G.play_select_selection == 2 then
                         _G.appState = "GAME"
                         game = Game.new("plus")
+                        _G.game = game
                         if renderer.triggerGameStartTransition then
                             renderer.triggerGameStartTransition("plus", false)
                         end
@@ -1233,6 +1238,7 @@ function love.update(dt)
                         mode = "goose"
                     end
                     game = Game.new(mode)
+                    _G.game = game
                     if renderer.triggerGameStartTransition then
                         renderer.triggerGameStartTransition(mode, false)
                     end
@@ -1831,6 +1837,7 @@ function love.update(dt)
                         renderer.setArcadeMenuOpen(true)
                     end
                     game = nil
+                    _G.game = nil
                 end)
             end
         elseif game.state == Game.STATE_WON then
@@ -1877,6 +1884,7 @@ function love.update(dt)
                         renderer.setArcadeMenuOpen(true)
                     end
                     game = nil
+                    _G.game = nil
                 end)
             end
         elseif game.state == Game.STATE_LOST then
@@ -1949,6 +1957,7 @@ function love.update(dt)
                         renderer.setArcadeMenuOpen(true)
                     end
                     game = nil
+                    _G.game = nil
                 end)
             end
         end
