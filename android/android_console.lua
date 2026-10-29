@@ -219,6 +219,9 @@ end
 -- Color state for theme transitions
 local anim_chassis = {0.733, 0.678, 0.627}
 local anim_bezel   = {0.467, 0.431, 0.396}
+local last_theme_name = nil
+local speaker_theme_anim_timer = 0.0
+local speaker_theme_anim_dur = 0.45
 local dpad_anim_alpha = 1.0
 local swipe_box_anim = 0.0
 local swipe_text_alpha = 1.0
@@ -262,6 +265,8 @@ function android_console.init(input_ref)
     local init_chassis, init_bezel = getThemeConsoleColors(_G.theme or "light")
     anim_chassis = {init_chassis[1], init_chassis[2], init_chassis[3]}
     anim_bezel   = {init_bezel[1], init_bezel[2], init_bezel[3]}
+    last_theme_name = _G.theme or "light"
+    speaker_theme_anim_timer = 0.0
 
 
     _G.design_w = 640
@@ -2149,7 +2154,17 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     -- Lerp towards target theme console colors
     dt = dt or love.timer.getDelta()
     if dt > 0.1 then dt = 0.1 end
-    local target_chassis, target_bezel = getThemeConsoleColors(_G.theme or "light")
+    local cur_theme = _G.theme or "light"
+    if last_theme_name and cur_theme ~= last_theme_name then
+        speaker_theme_anim_timer = speaker_theme_anim_dur
+    end
+    last_theme_name = cur_theme
+
+    if speaker_theme_anim_timer > 0 then
+        speaker_theme_anim_timer = math.max(0, speaker_theme_anim_timer - dt)
+    end
+
+    local target_chassis, target_bezel = getThemeConsoleColors(cur_theme)
     local lerp_rate = 1.0 - math.exp(-dt * 3.2)
     for i = 1, 3 do
         anim_chassis[i] = anim_chassis[i] + (target_chassis[i] - anim_chassis[i]) * lerp_rate
@@ -2182,13 +2197,72 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     local spk_x = origin_x + math.floor(w * 0.885)
     local spk_y = btn_st and math.floor(btn_st.y + btn_st.h / 2) or (h - math.floor(h * 0.058))
     local lum = cr * 0.299 + cg * 0.587 + cb * 0.114
-    local is_dark = lum < 0.45
-    local hl_col = is_dark and {1, 1, 1, 0.22} or {math.min(1, cr * 1.35 + 0.15), math.min(1, cg * 1.35 + 0.15), math.min(1, cb * 1.35 + 0.15), 0.60}
-    local hole_col = is_dark and {0, 0, 0, 0.95} or {cr * 0.20, cg * 0.20, cb * 0.20, 0.95}
-    local dish_col = is_dark and {0, 0, 0, 0.25} or {cr * 0.88, cg * 0.88, cb * 0.88, 0.70}
-    local shadow_col = is_dark and {0, 0, 0, 0.45} or {cr * 0.68, cg * 0.68, cb * 0.68, 0.45}
+
+    -- Smooth continuous luminance blending without threshold pop
+    local dark_factor = 0.0
+    if lum <= 0.32 then
+        dark_factor = 1.0
+    elseif lum >= 0.52 then
+        dark_factor = 0.0
+    else
+        local u = (lum - 0.32) / 0.20
+        dark_factor = 1.0 - u * u * (3.0 - 2.0 * u)
+    end
+
+    local l_hl = {math.min(1, cr * 1.35 + 0.15), math.min(1, cg * 1.35 + 0.15), math.min(1, cb * 1.35 + 0.15), 0.60}
+    local l_hole = {cr * 0.20, cg * 0.20, cb * 0.20, 0.95}
+    local l_dish = {cr * 0.88, cg * 0.88, cb * 0.88, 0.70}
+    local l_sh = {cr * 0.68, cg * 0.68, cb * 0.68, 0.45}
+
+    local d_hl = {1, 1, 1, 0.22}
+    local d_hole = {0, 0, 0, 0.95}
+    local d_dish = {0, 0, 0, 0.25}
+    local d_sh = {0, 0, 0, 0.45}
+
+    local hl_col = {
+        l_hl[1] + (d_hl[1] - l_hl[1]) * dark_factor,
+        l_hl[2] + (d_hl[2] - l_hl[2]) * dark_factor,
+        l_hl[3] + (d_hl[3] - l_hl[3]) * dark_factor,
+        l_hl[4] + (d_hl[4] - l_hl[4]) * dark_factor,
+    }
+    local hole_col = {
+        l_hole[1] + (d_hole[1] - l_hole[1]) * dark_factor,
+        l_hole[2] + (d_hole[2] - l_hole[2]) * dark_factor,
+        l_hole[3] + (d_hole[3] - l_hole[3]) * dark_factor,
+        l_hole[4] + (d_hole[4] - l_hole[4]) * dark_factor,
+    }
+    local dish_col = {
+        l_dish[1] + (d_dish[1] - l_dish[1]) * dark_factor,
+        l_dish[2] + (d_dish[2] - l_dish[2]) * dark_factor,
+        l_dish[3] + (d_dish[3] - l_dish[3]) * dark_factor,
+        l_dish[4] + (d_dish[4] - l_dish[4]) * dark_factor,
+    }
+    local shadow_col = {
+        l_sh[1] + (d_sh[1] - l_sh[1]) * dark_factor,
+        l_sh[2] + (d_sh[2] - l_sh[2]) * dark_factor,
+        l_sh[3] + (d_sh[3] - l_sh[3]) * dark_factor,
+        l_sh[4] + (d_sh[4] - l_sh[4]) * dark_factor,
+    }
 
     local dish_r = math.max(16, math.floor(20 * (w / 390)))
+
+    -- Theme transition acoustic wave animation
+    local inner_glint = 0.0
+    local outer_glint = 0.0
+    if speaker_theme_anim_timer > 0 then
+        local wave_p = 1.0 - (speaker_theme_anim_timer / speaker_theme_anim_dur)
+        if wave_p >= 0.20 and wave_p <= 0.60 then
+            inner_glint = math.sin((wave_p - 0.20) / 0.40 * 3.14159265) * 0.40
+        end
+        if wave_p >= 0.45 and wave_p <= 0.90 then
+            outer_glint = math.sin((wave_p - 0.45) / 0.45 * 3.14159265) * 0.40
+        end
+        local wave_r = dish_r * (0.15 + 1.25 * math.sin(wave_p * 1.5707963))
+        local wave_a = math.sin(wave_p * 3.14159265) * 0.38
+        love.graphics.setColor(target_chassis[1], target_chassis[2], target_chassis[3], wave_a)
+        love.graphics.setLineWidth(math.max(1.5, 2.8 * (1.0 - wave_p)))
+        love.graphics.circle("line", spk_x, spk_y, wave_r)
+    end
 
     -- Lower highlight rim on dish
     love.graphics.setColor(hl_col)
@@ -2222,10 +2296,17 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         local a_rad = k * 1.04719755 -- pi divided by 3
         local hx = spk_x + r_inner * math.cos(a_rad)
         local hy = spk_y + r_inner * math.sin(a_rad)
-        love.graphics.setColor(hl_col)
-        love.graphics.circle("fill", hx, hy + 0.9, inner_r)
-        love.graphics.setColor(hole_col)
-        love.graphics.circle("fill", hx, hy, inner_r)
+        if inner_glint > 0 then
+            love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], math.min(1.0, hl_col[4] + inner_glint))
+            love.graphics.circle("fill", hx, hy + 0.9, inner_r)
+            love.graphics.setColor(hole_col[1] + inner_glint * 0.5, hole_col[2] + inner_glint * 0.5, hole_col[3] + inner_glint * 0.5, hole_col[4])
+            love.graphics.circle("fill", hx, hy, inner_r)
+        else
+            love.graphics.setColor(hl_col)
+            love.graphics.circle("fill", hx, hy + 0.9, inner_r)
+            love.graphics.setColor(hole_col)
+            love.graphics.circle("fill", hx, hy, inner_r)
+        end
     end
 
     -- Outer ring ports
@@ -2233,10 +2314,17 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         local a_rad = (k + 0.5) * 0.52359877 -- pi divided by 6
         local hx = spk_x + r_outer * math.cos(a_rad)
         local hy = spk_y + r_outer * math.sin(a_rad)
-        love.graphics.setColor(hl_col)
-        love.graphics.circle("fill", hx, hy + 0.9, outer_r)
-        love.graphics.setColor(hole_col)
-        love.graphics.circle("fill", hx, hy, outer_r)
+        if outer_glint > 0 then
+            love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], math.min(1.0, hl_col[4] + outer_glint))
+            love.graphics.circle("fill", hx, hy + 0.9, outer_r)
+            love.graphics.setColor(hole_col[1] + outer_glint * 0.5, hole_col[2] + outer_glint * 0.5, hole_col[3] + outer_glint * 0.5, hole_col[4])
+            love.graphics.circle("fill", hx, hy, outer_r)
+        else
+            love.graphics.setColor(hl_col)
+            love.graphics.circle("fill", hx, hy + 0.9, outer_r)
+            love.graphics.setColor(hole_col)
+            love.graphics.circle("fill", hx, hy, outer_r)
+        end
     end
 
     -- Screen bezel

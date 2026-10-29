@@ -147,7 +147,7 @@ with open(manifest_path, "r", encoding="utf-8") as f:
     manifest = f.read()
 
 manifest = manifest.replace('android:label="LÖVE for Android"', 'android:label="2048 Plus"')
-manifest = manifest.replace('android:screenOrientation="landscape"', 'android:screenOrientation="user"')
+manifest = manifest.replace('android:screenOrientation="landscape"', 'android:screenOrientation="portrait"')
 manifest = manifest.replace('package="org.love2d.android"', f'package="{PACKAGE_NAME}"')
 manifest = manifest.replace('org.love2d.android.DYNAMIC_RECEIVER', f'{PACKAGE_NAME}.DYNAMIC_RECEIVER')
 manifest = manifest.replace('org.love2d.android.androidx-startup', f'{PACKAGE_NAME}.androidx-startup')

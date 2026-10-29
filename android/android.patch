@@ -1,6 +1,6 @@
 --- a/conf.lua	2026-10-29 19:26:42.166425653 +0530
 +++ b/conf.lua	2026-10-29 19:26:42.166742774 +0530
-@@ -5,10 +5,11 @@
+@@ -5,10 +5,12 @@
  
      t.window.title = "2048 Plus"
      t.window.icon = nil
@@ -12,10 +12,11 @@
      t.window.borderless = false
 -    t.window.resizable = false
 +    t.window.resizable = true
++    t.window.orientation = "portrait"
      t.window.vsync = 1
      t.window.display = 1
      t.window.highdpi = true
-@@ -17,7 +18,7 @@
+@@ -17,7 +19,7 @@
  
      t.modules.thread = false
      t.modules.audio = true
