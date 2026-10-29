@@ -1,4 +1,4 @@
-This project is inspired by and references the popular open-source [2048 Android](https://github.com/tpcstld/2048) game by tpcstld, which itself is based on the original web game by Gabriele Cirulli. While taking visual and design references from the Android version, this codebase was written from the ground up in Lua for the LÖVE engine. In addition to the classic gameplay, I have introduced numerous new features, including multiple game modes, store, an achievement system, and a wide variety of themes to enhance the overall experience.
+This project is inspired by and references the popular open-source [2048](https://github.com/tpcstld/2048) by tpcstld, which itself is based on the original web game by Gabriele Cirulli. While drawing visual and design inspiration from tpcstld's implementation, this codebase was written from the ground up in Lua for the LÖVE engine. In addition to the classic gameplay, it introduces numerous new features, including multiple game modes, a store, an achievement system, and a wide variety of themes to enhance the overall experience.
 
 Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 
@@ -32,7 +32,7 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 ## Credits & Acknowledgements
 
 - Original Concept By: [Gabriele Cirulli](https://github.com/gabrielecirulli/2048)
-- Android Port Reference: [tpcstld - 2048](https://github.com/tpcstld/2048)
+- Inspired by: [2048 by tpcstld](https://github.com/tpcstld/2048)
 - Built using the [LÖVE Framework](https://love2d.org)
 - Easter Egg mini-game by: [SLAYKIN6_TTV](https://github.com/justaporter)
 - Adorable Animal Sprites by: [Elthen](https://elthen.itch.io), [Pixelcave](https://pixelcave.itch.io), and [Duckhive](https://itch.io/profile/duckhive)

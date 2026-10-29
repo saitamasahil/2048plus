@@ -10172,7 +10172,7 @@ function renderer.drawAbout(skip_transition)
     cur_y = cur_y + #sub_lines * fh + section_gap
 
     -- Section 2: Framework
-    local s2 = "Original concept by Gabriele Cirulli\nAndroid Port reference by tpcstld\nBuilt using the LÖVE Framework"
+    local s2 = "Original concept by Gabriele Cirulli\nInspired by 2048 by tpcstld\nBuilt using the LÖVE Framework"
     love.graphics.printf(s2, 0, cur_y, w, "center")
     local _, lines2 = font_help_label:getWrap(s2, w)
     cur_y = cur_y + #lines2 * font_help_label:getHeight() + section_gap
