@@ -99,6 +99,7 @@ function splash.rebuildGrid(w, h)
 
     local new_data = {}
     local idx = 1
+    local anim_started = anim.logo_scale and anim.logo_scale > 0.01
     for col = 1, cols do
         for row = 1, rows do
             local tx = start_x + (col - 1) * (cell_size + gap)
@@ -113,17 +114,24 @@ function splash.rebuildGrid(w, h)
             else
                 local color_idx = math.random(#cascade_tile_colors)
                 local delay = (col + row) * 0.04 + math.random() * 0.06
-                table.insert(new_data, {
+                local init_scale = anim_started and 1 or 0
+                local tile = {
                     x = tx, y = ty,
                     size = cell_size,
                     color = cascade_tile_colors[color_idx],
                     delay = delay,
-                    scale = 0,
+                    scale = init_scale,
                     target_scale = 1,
                     rotation = 0,
                     corner_r = math.floor(cell_size * 0.08),
                     alpha = 1,
-                })
+                }
+                if init_scale == 0 then
+                    timer.after(delay, function()
+                        timer.tween(0.4, tile, {scale = 1}, 'out-back')
+                    end)
+                end
+                table.insert(new_data, tile)
             end
             idx = idx + 1
         end
@@ -131,9 +139,15 @@ function splash.rebuildGrid(w, h)
     anim.tile_data = new_data
 end
 
-function splash.resize(w, h)
+function splash.resize(override_w, override_h)
     if splash.finished then return end
-    splash.rebuildGrid(w, h)
+    local w, h = getSplashDimensions()
+    if override_w and override_h and not (_G.is_console_active and _G.is_console_active()) then
+        w, h = override_w, override_h
+    end
+    if splash.cur_w ~= w or splash.cur_h ~= h then
+        splash.rebuildGrid(w, h)
+    end
 end
 
 function splash.load()
