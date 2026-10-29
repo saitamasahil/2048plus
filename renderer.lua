@@ -3960,9 +3960,15 @@ function renderer.drawBoard(game, override_skin, override_layout)
         roundedRect("line", bx, by, bs, bs, cr * 2)
 
     elseif skin == "bamboo" then
-        -- Natural Asymmetric Japanese Bamboo Board
+        -- Natural Japanese Bamboo Board
         love.graphics.setColor(0.34, 0.46, 0.24, 1.0)
         roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        -- Stencil clip bamboo slats to rounded board bounds
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
 
         -- Organic bamboo stalk slats with varying widths and staggered node joints
         local scale = _G.scale or 1
@@ -4007,6 +4013,8 @@ function renderer.drawBoard(game, override_skin, override_layout)
             love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
             love.graphics.line(sx + sw, by + 4 * scale, sx + sw, by + bs - 4 * scale)
         end
+
+        love.graphics.setStencilTest()
 
         -- Dark organic mossy bamboo frame
         love.graphics.setColor(0.14, 0.22, 0.08, 0.95)
@@ -8514,8 +8522,10 @@ local board_preview_canvas_size = nil
 
 
 local function getBoardPreviewMetrics()
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale or 1
+    local is_console = _G.android_console and not _G.android_fullscreen
+    local w = is_console and 640 or love.graphics.getWidth()
+    local h = is_console and 480 or love.graphics.getHeight()
+    local scale = is_console and 1.0 or _G.scale or 1
     local title_y = h * 0.032
     local tab_y = title_y + (font_cheats_title and font_cheats_title:getHeight() or 30) + math.floor(6 * scale)
     local tab_bottom = tab_y + (font_score and font_score:getHeight() or 24) + math.floor(8 * scale)
@@ -8543,11 +8553,19 @@ local function getBoardPreviewSize()
 end
 
 local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
-    local exact_bs, p_cs, p_gap = getBoardPreviewMetrics()
+    local canvas_w, canvas_h = target_canvas:getDimensions()
+    local exact_bs = bs or canvas_w
+    if exact_bs > canvas_w then exact_bs = canvas_w end
+
+    local p_gap = math.max(3, math.floor(exact_bs * 0.035))
+    local p_cs = math.floor((exact_bs - p_gap * 5) / 4)
+    local drawn_bs = 4 * p_cs + 5 * p_gap
+    local off_board = math.floor((canvas_w - drawn_bs) / 2)
+
     local p_layout = {
-        board_x = 0,
-        board_y = 0,
-        board_size = exact_bs,
+        board_x = off_board,
+        board_y = off_board,
+        board_size = drawn_bs,
         cell_size = p_cs,
         cell_gap = p_gap,
         corner_radius = math.floor(p_cs * 0.08)
@@ -8575,8 +8593,8 @@ local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
         {col = 3, row = 2, val = 16},
     }
     for _, smp in ipairs(preview_samples) do
-        local tx = p_layout.cell_gap + (smp.col - 1) * (p_layout.cell_size + p_layout.cell_gap)
-        local ty = p_layout.cell_gap + (smp.row - 1) * (p_layout.cell_size + p_layout.cell_gap)
+        local tx = p_layout.board_x + p_layout.cell_gap + (smp.col - 1) * (p_layout.cell_size + p_layout.cell_gap)
+        local ty = p_layout.board_y + p_layout.cell_gap + (smp.row - 1) * (p_layout.cell_size + p_layout.cell_gap)
         local color = tile_colors[smp.val] or tile_colors[2]
         love.graphics.setColor(color)
         roundedRect("fill", tx, ty, p_layout.cell_size, p_layout.cell_size, p_layout.corner_radius)
@@ -8593,7 +8611,7 @@ end
 
 function renderer.prepareBoardTransition(prev_idx, cur_idx, bs)
     local target_bs = bs or getBoardPreviewSize()
-    if not board_preview_canvas_curr or board_preview_canvas_size ~= target_bs then
+    if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= target_bs then
         board_preview_canvas_curr = love.graphics.newCanvas(target_bs, target_bs)
         board_preview_canvas_prev = love.graphics.newCanvas(target_bs, target_bs)
         board_preview_canvas_size = target_bs
@@ -8617,7 +8635,8 @@ function renderer.cycleBoardSkin(dir)
     if _G.screen_transitions then
         _G.custom_board_anim_timer = 0.24
         _G.custom_board_anim_dir = dir
-        renderer.prepareBoardTransition(prev, cur, board_preview_canvas_size)
+        local bs = board_preview_canvas_size or getBoardPreviewSize()
+        renderer.prepareBoardTransition(prev, cur, bs)
     else
         _G.custom_board_anim_timer = 0
     end
@@ -8653,14 +8672,16 @@ end
 
 -- Draw tab content inside the middle panel
 function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transition)
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
+    local is_console = _G.android_console and not _G.android_fullscreen
+    local w = is_console and 640 or love.graphics.getWidth()
+    local h = is_console and 480 or love.graphics.getHeight()
+    local scale = is_console and 1.0 or _G.scale or 1
     local off = off_x or 0
     local a = alpha_val or 1.0
 
     local title_y = h * 0.032
-    local tab_y = title_y + font_cheats_title:getHeight() + math.floor(6 * scale)
-    local tab_bottom = tab_y + font_score:getHeight() + math.floor(8 * scale)
+    local tab_y = title_y + (font_cheats_title and font_cheats_title:getHeight() or 30) + math.floor(6 * scale)
+    local tab_bottom = tab_y + (font_score and font_score:getHeight() or 24) + math.floor(8 * scale)
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
 
@@ -8669,13 +8690,12 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
     local pad_y = math.floor(5 * scale)
     local panel_h = strip_h + pad_y * 2
     local avail_for_block = badge_y - math.floor(12 * scale) - tab_bottom
-    local subtitle_h = font_help_label:getHeight()
+    local subtitle_h = font_help_label and font_help_label:getHeight() or 16
     local badge_panel_h = math.floor(28 * scale)
     local gap_sub_board = math.floor(10 * scale)
     local gap_board_badge = math.floor(14 * scale)
 
     local board_size = getBoardPreviewSize()
-    board_preview_canvas_size = board_size
 
     local board_x = math.floor((w - board_size) / 2) + off
 
@@ -8712,21 +8732,23 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.95 * cur_a}
             badge_txt = custom_unowned_txt or "PRESS A TO EQUIP"
         else
-            badge_bg_col = {0, 0, 0, 0.24 * cur_a}
-            badge_border_col = {ui_text[1], ui_text[2], ui_text[3], 0.12 * cur_a}
-            badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.45 * cur_a}
+            badge_bg_col = nil
+            badge_border_col = nil
+            badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.85 * cur_a}
             badge_txt = "LOCKED IN STORE"
         end
 
         love.graphics.setFont(font_help_label)
         local txt_w = font_help_label:getWidth(badge_txt)
         local badge_pad_x = math.floor(22 * scale)
-        local badge_w = math.min(board_size, txt_w + badge_pad_x * 2)
+        local badge_w = txt_w + badge_pad_x * 2
         local badge_x = math.floor((w - badge_w) / 2) + off + cur_off
         local badge_cr = math.floor(badge_panel_h / 2)
 
-        love.graphics.setColor(badge_bg_col)
-        roundedRect("fill", badge_x, status_badge_y, badge_w, badge_panel_h, badge_cr)
+        if badge_bg_col then
+            love.graphics.setColor(badge_bg_col)
+            roundedRect("fill", badge_x, status_badge_y, badge_w, badge_panel_h, badge_cr)
+        end
 
         if badge_border_col then
             love.graphics.setColor(badge_border_col)
@@ -8846,7 +8868,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local is_animating = not skip_transition and _G.screen_transitions and _G.custom_board_anim_timer and _G.custom_board_anim_timer > 0
 
         if is_animating then
-            if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_size ~= board_size then
+            if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= board_size then
                 renderer.prepareBoardTransition(prev_idx, cur_idx, board_size)
             end
 
@@ -8897,7 +8919,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * a)
             love.graphics.print(cur_subtitle, (w - cur_sw) / 2 + off, subtitle_y)
 
-            if not board_preview_canvas_curr or board_preview_canvas_size ~= board_size then
+            if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= board_size then
                 board_preview_canvas_curr = love.graphics.newCanvas(board_size, board_size)
                 board_preview_canvas_prev = love.graphics.newCanvas(board_size, board_size)
                 board_preview_canvas_size = board_size
@@ -9036,8 +9058,10 @@ end
 function renderer.drawThemeSelect(skip_transition, explicit_tab)
     renderer.clearBackground()
 
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
+    local is_console = _G.android_console and not _G.android_fullscreen
+    local w = is_console and 640 or love.graphics.getWidth()
+    local h = is_console and 480 or love.graphics.getHeight()
+    local scale = is_console and 1.0 or _G.scale or 1
     local tab = explicit_tab or _G.customization_tab or 1
 
     -- Header Title
