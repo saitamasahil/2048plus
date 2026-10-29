@@ -10,8 +10,8 @@
 ### Changed
 - Ocean Theme: Redesigned with maritime blue tiles and animated underwater effects
 - Forest Theme: Redesigned tiles with a forest green progression
-- Replaced Huge Mode icon with animated campfire sprite by Devs In Exile Studio
-- Improved animation speed of Classic Mode preview sprite
+- New static icons for game modes
+- Improved Now Playing footer equalizer animation
 - Rebalance plus mode powerup milestone rewards
 
 ### Fixed
