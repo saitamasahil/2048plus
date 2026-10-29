@@ -511,7 +511,7 @@ function android_console.updateLayout()
     local bezel_margin = math.max(6, math.floor(w * 0.022))
     local bezel_w = w - bezel_margin * 2
     local pad_x = math.max(6, math.floor(w * 0.02))
-    local pad_top = math.max(8, math.floor(w * 0.025))
+    local pad_top = math.max(18, math.floor(w * 0.048))
     local pad_bottom = math.max(30, math.floor(w * 0.082)) -- Generous chin for centered branding
 
     local screen_w = bezel_w - pad_x * 2
@@ -2146,39 +2146,83 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     if real_w > real_h then
         love.graphics.setColor(0.04, 0.04, 0.06, 1)
         love.graphics.rectangle("fill", 0, 0, real_w, real_h)
+        if origin_x > 0 then
+            love.graphics.setColor(0, 0, 0, 0.35)
+            love.graphics.rectangle("fill", origin_x - 6, 0, w + 12, h)
+        end
     end
 
     love.graphics.setColor(cr, cg, cb, 1)
     love.graphics.rectangle("fill", origin_x, 0, w, h)
 
-    -- Side grip textures
-    local grip_w = math.max(6, math.floor(w * 0.018))
-    local grip_y_start = geo.bezel_y + 40
-    local grip_y_end = h - 60
-    for gy = grip_y_start, grip_y_end, 10 do
-        love.graphics.setColor(cr * 0.80, cg * 0.80, cb * 0.80, 0.70)
-        love.graphics.rectangle("fill", origin_x + 2, gy, grip_w, 4, 2, 2)
-        love.graphics.rectangle("fill", origin_x + w - grip_w - 2, gy, grip_w, 4, 2, 2)
-        love.graphics.setColor(math.min(1, cr * 1.25 + 0.08), math.min(1, cg * 1.25 + 0.08), math.min(1, cb * 1.25 + 0.08), 0.45)
-        love.graphics.rectangle("fill", origin_x + 2, gy + 1, grip_w, 1.5, 1, 1)
-        love.graphics.rectangle("fill", origin_x + w - grip_w - 2, gy + 1, grip_w, 1.5, 1, 1)
+    -- Speaker grille at bottom right with precision acoustic rosette
+    local btn_st = geo.buttons and geo.buttons["start"]
+    local spk_x = origin_x + math.floor(w * 0.885)
+    local spk_y = btn_st and math.floor(btn_st.y + btn_st.h / 2) or (h - math.floor(h * 0.058))
+    local lum = cr * 0.299 + cg * 0.587 + cb * 0.114
+    local is_dark = lum < 0.45
+    local hl_col = is_dark and {1, 1, 1, 0.22} or {math.min(1, cr * 1.35 + 0.15), math.min(1, cg * 1.35 + 0.15), math.min(1, cb * 1.35 + 0.15), 0.60}
+    local hole_col = is_dark and {0, 0, 0, 0.95} or {cr * 0.20, cg * 0.20, cb * 0.20, 0.95}
+    local dish_col = is_dark and {0, 0, 0, 0.25} or {cr * 0.88, cg * 0.88, cb * 0.88, 0.70}
+    local shadow_col = is_dark and {0, 0, 0, 0.45} or {cr * 0.68, cg * 0.68, cb * 0.68, 0.45}
+
+    local dish_r = math.max(16, math.floor(20 * (w / 390)))
+
+    -- Lower highlight rim on dish
+    love.graphics.setColor(hl_col)
+    love.graphics.circle("fill", spk_x, spk_y + 1, dish_r)
+
+    -- Dish recessed bed
+    love.graphics.setColor(dish_col)
+    love.graphics.circle("fill", spk_x, spk_y, dish_r)
+
+    -- Inset top inner shadow
+    love.graphics.setColor(shadow_col)
+    love.graphics.setLineWidth(1)
+    love.graphics.circle("line", spk_x, spk_y, dish_r)
+
+    -- Precision acoustic perforations in concentric rings
+    local center_r = math.max(2.0, math.floor(2.6 * (w / 390)))
+    local inner_r = math.max(1.7, math.floor(2.1 * (w / 390)))
+    local outer_r = math.max(1.4, math.floor(1.7 * (w / 390)))
+
+    local r_inner = dish_r * 0.44
+    local r_outer = dish_r * 0.78
+
+    -- Center port
+    love.graphics.setColor(hl_col)
+    love.graphics.circle("fill", spk_x, spk_y + 0.9, center_r)
+    love.graphics.setColor(hole_col)
+    love.graphics.circle("fill", spk_x, spk_y, center_r)
+
+    -- Inner ring ports
+    for k = 0, 5 do
+        local a_rad = k * 1.04719755 -- pi divided by 3
+        local hx = spk_x + r_inner * math.cos(a_rad)
+        local hy = spk_y + r_inner * math.sin(a_rad)
+        love.graphics.setColor(hl_col)
+        love.graphics.circle("fill", hx, hy + 0.9, inner_r)
+        love.graphics.setColor(hole_col)
+        love.graphics.circle("fill", hx, hy, inner_r)
     end
 
-    -- Speaker grilles at bottom corners
-    love.graphics.setColor(cr * 0.70, cg * 0.70, cb * 0.70, 0.75)
-    local spk_r = math.max(1.5, math.floor(w * 0.005))
-    local spk_left_x = origin_x + math.floor(w * 0.10)
-    local spk_right_x = origin_x + math.floor(w * 0.90)
-    local spk_y = h - math.floor(h * 0.04)
-    for row = -1, 1 do
-        for col = -1, 1 do
-            love.graphics.circle("fill", spk_left_x + col * 7, spk_y + row * 7, spk_r)
-            love.graphics.circle("fill", spk_right_x + col * 7, spk_y + row * 7, spk_r)
-        end
+    -- Outer ring ports
+    for k = 0, 11 do
+        local a_rad = (k + 0.5) * 0.52359877 -- pi divided by 6
+        local hx = spk_x + r_outer * math.cos(a_rad)
+        local hy = spk_y + r_outer * math.sin(a_rad)
+        love.graphics.setColor(hl_col)
+        love.graphics.circle("fill", hx, hy + 0.9, outer_r)
+        love.graphics.setColor(hole_col)
+        love.graphics.circle("fill", hx, hy, outer_r)
     end
 
     -- Screen bezel
     local bx, by, bw, bh = geo.bezel_x, geo.bezel_y, geo.bezel_w, geo.bezel_h
+
+    -- Soft shadow under bezel
+    love.graphics.setColor(0, 0, 0, 0.12)
+    love.graphics.rectangle("fill", bx, by + 2, bw, bh, 16, 16)
 
     love.graphics.setColor(bzr, bzg, bzb, 1)
     love.graphics.rectangle("fill", bx, by, bw, bh, 16, 16)
@@ -2186,32 +2230,6 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     love.graphics.setColor(0, 0, 0, 0.35)
     love.graphics.setLineWidth(1.5)
     love.graphics.rectangle("line", bx, by, bw, bh, 16, 16)
-
-    -- Battery LED indicator top-right of bezel
-    local led_x = bx + bw - math.floor(18 * (w / 390))
-    local led_y = by + math.floor(12 * (w / 390))
-    local led_r = math.floor(3.5 * (w / 390))
-
-    love.graphics.setColor(bzr * 0.65, bzg * 0.65, bzb * 0.65, 0.9)
-    love.graphics.circle("fill", led_x, led_y, led_r + 1.5)
-
-    local percent = 100
-    pcall(function()
-        if love.system.getPowerInfo then
-            local _, p = love.system.getPowerInfo()
-            if p then percent = p end
-        end
-    end)
-
-    if percent > 30 then
-        love.graphics.setColor(0.12, 0.85, 0.35, 0.95)
-    elseif percent > 15 then
-        love.graphics.setColor(0.95, 0.70, 0.15, 0.95)
-    else
-        local blink = (math.sin(love.timer.getTime() * 8) > 0)
-        love.graphics.setColor(0.95, 0.20, 0.20, blink and 0.95 or 0.25)
-    end
-    love.graphics.circle("fill", led_x, led_y, led_r)
 
     if not skip_screen_draw then
         -- Render virtual screen with rounded corners
@@ -2240,6 +2258,62 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         love.graphics.setColor(bzr * 0.75, bzg * 0.75, bzb * 0.75, 0.85)
         love.graphics.setLineWidth(2)
         love.graphics.rectangle("line", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
+    end
+
+    -- Battery LED indicator on top right bezel above screen
+    local pad_top = geo.screen_y - by
+    local pad_x = geo.screen_x - bx
+    local led_x = bx + bw - pad_x - math.floor(14 * (w / 390))
+    local led_y = by + math.floor(pad_top / 2)
+    local led_r = math.max(2.5, math.floor(3.5 * (w / 390)))
+
+    local state, percent = nil, 100
+    pcall(function()
+        if love.system and love.system.getPowerInfo then
+            local s, p = love.system.getPowerInfo()
+            if s then state = s end
+            if p then percent = p end
+        end
+    end)
+
+    local is_charging = (state == "charging" or state == "charged")
+    local led_col
+    if percent <= 10 then
+        -- Critical battery: 10 percent and below blinks red
+        local blink = (math.sin(love.timer.getTime() * 8) > 0)
+        led_col = {0.95, 0.20, 0.20, blink and 0.95 or 0.25}
+    elseif percent <= 20 then
+        -- Low battery: solid red
+        led_col = {0.95, 0.22, 0.22, 0.95}
+    elseif percent <= 35 then
+        -- Medium battery: amber orange
+        led_col = {0.95, 0.70, 0.15, 0.95}
+    elseif is_charging then
+        local pulse = 0.75 + 0.25 * math.sin(love.timer.getTime() * 4)
+        led_col = {0.12 * pulse, 0.88 * pulse, 0.38 * pulse, 0.95}
+    else
+        -- Healthy battery: solid green
+        led_col = {0.12, 0.88, 0.35, 0.95}
+    end
+
+    -- Recessed socket ring
+    love.graphics.setColor(bzr * 0.45, bzg * 0.45, bzb * 0.45, 0.95)
+    love.graphics.circle("fill", led_x, led_y, led_r + 1.5)
+
+    -- Ambient glow halo
+    if led_col[4] > 0.40 then
+        love.graphics.setColor(led_col[1], led_col[2], led_col[3], 0.20)
+        love.graphics.circle("fill", led_x, led_y, led_r * 2.2)
+    end
+
+    -- LED bulb core
+    love.graphics.setColor(led_col)
+    love.graphics.circle("fill", led_x, led_y, led_r)
+
+    -- Specular lens reflection dot
+    if led_col[4] > 0.40 then
+        love.graphics.setColor(1, 1, 1, 0.65)
+        love.graphics.circle("fill", led_x - led_r * 0.32, led_y - led_r * 0.32, math.max(0.8, led_r * 0.30))
     end
 
     -- Chin branding
