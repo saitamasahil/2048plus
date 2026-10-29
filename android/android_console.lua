@@ -1260,6 +1260,44 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                 end
             end
 
+            -- Customization chevron button tap
+            if _G.appState == "THEME_SELECT" then
+                local pb = _G.customization_prev_btn_bounds
+                if pb and gx >= pb.x and gx <= pb.x + pb.w and gy >= pb.y and gy <= pb.y + pb.h then
+                    local sound = require("sound")
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    local tab = _G.customization_tab or 1
+                    local renderer = require("renderer")
+                    if tab == 1 then
+                        if _G.cycleTheme then _G.cycleTheme(-1) end
+                    elseif tab == 2 then
+                        if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
+                    elseif tab == 3 then
+                        if renderer.cyclePet then renderer.cyclePet(-1) end
+                    end
+                    triggerHaptic(0.015)
+                    swipe_track[id] = nil
+                    return
+                end
+                local nb = _G.customization_next_btn_bounds
+                if nb and gx >= nb.x and gx <= nb.x + nb.w and gy >= nb.y and gy <= nb.y + nb.h then
+                    local sound = require("sound")
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    local tab = _G.customization_tab or 1
+                    local renderer = require("renderer")
+                    if tab == 1 then
+                        if _G.cycleTheme then _G.cycleTheme(1) end
+                    elseif tab == 2 then
+                        if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
+                    elseif tab == 3 then
+                        if renderer.cyclePet then renderer.cyclePet(1) end
+                    end
+                    triggerHaptic(0.015)
+                    swipe_track[id] = nil
+                    return
+                end
+            end
+
             -- Achievements tab button tap
             if _G.appState == "ACHIEVEMENTS" and _G.achievements_tab_bounds then
                 for idx, b in ipairs(_G.achievements_tab_bounds) do

@@ -18,6 +18,8 @@ renderer.theme_button_x = nil
 renderer.theme_button_y = nil
 renderer.theme_prev_button_x = nil
 renderer.theme_prev_button_y = nil
+renderer.theme_dpad_x = nil
+renderer.theme_dpad_y = nil
 
 -- Menu selection animation state
 local menu_anim_y = nil
@@ -5126,6 +5128,9 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
     elseif original_text == "X" or text == "X" then
         renderer.theme_prev_button_x = x + w / 2
         renderer.theme_prev_button_y = y + h / 2
+    elseif original_text == "DPAD" or text == "DPAD" then
+        renderer.theme_dpad_x = x + w / 2
+        renderer.theme_dpad_y = y + h / 2
     end
 
     -- Determine if this button is currently pressed for visual feedback
@@ -6036,6 +6041,10 @@ function renderer.startThemeTransition(drawTarget, direction)
     if _G.android_fullscreen then
         transition_center_x = _G.android_fs_theme_x or math.floor(w / 2)
         transition_center_y = _G.android_fs_theme_y or math.floor(h - 50)
+    elseif _G.appState == "THEME_SELECT" and (_G.customization_tab or 1) == 1 then
+        transition_center_x = renderer.theme_dpad_x or math.floor(32 * scale_factor)
+        transition_center_y = renderer.theme_dpad_y or (h - math.floor(21 * scale_factor))
+        transition_direction = (dir < 0) and -1 or 1
     elseif dir < 0 then
         transition_center_x = renderer.theme_prev_button_x or (w - math.floor(180 * scale_factor))
         transition_center_y = renderer.theme_prev_button_y or (h - math.floor(30 * scale_factor))
@@ -8714,13 +8723,14 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
     local cr = math.floor(board_size * 0.02)
     local theme_accent = tile_colors[2048] or help_key_color or {0.93, 0.76, 0.18, 1.0}
 
-    local function drawStatusBadge(is_eq, is_ow, b_off_x, b_alpha, custom_badge_txt, custom_unowned_txt)
+    local function drawStatusBadge(is_eq, is_ow, b_off_x, b_alpha, custom_badge_txt, custom_unowned_txt, custom_y)
         local cur_off = b_off_x or 0
         local cur_a = (b_alpha or 1.0) * a
         local badge_bg_col
         local badge_txt_col
         local badge_border_col
         local badge_txt
+        local badge_y_pos = custom_y or status_badge_y
 
         if is_eq then
             local accent = help_key_color or tile_colors[2048] or {0.93, 0.76, 0.18, 1.0}
@@ -8757,21 +8767,21 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         if badge_bg_col then
             local sh = math.max(1, math.floor(1.5 * scale))
             love.graphics.setColor(0, 0, 0, 0.22 * cur_a)
-            roundedRect("fill", badge_x, status_badge_y + sh, badge_w, badge_panel_h, badge_cr)
+            roundedRect("fill", badge_x, badge_y_pos + sh, badge_w, badge_panel_h, badge_cr)
 
             love.graphics.setColor(badge_bg_col)
-            roundedRect("fill", badge_x, status_badge_y, badge_w, badge_panel_h, badge_cr)
+            roundedRect("fill", badge_x, badge_y_pos, badge_w, badge_panel_h, badge_cr)
         end
 
         if badge_border_col then
             love.graphics.setColor(badge_border_col)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
-            roundedRect("line", badge_x, status_badge_y, badge_w, badge_panel_h, badge_cr)
+            roundedRect("line", badge_x, badge_y_pos, badge_w, badge_panel_h, badge_cr)
         end
 
         love.graphics.setColor(badge_txt_col)
         local bth = font_help_label:getHeight()
-        local text_y = status_badge_y + math.floor((badge_panel_h - bth) / 2) - (is_eq and (0.5 * scale) or 0)
+        local text_y = badge_y_pos + math.floor((badge_panel_h - bth) / 2) - (is_eq and (0.5 * scale) or 0)
         love.graphics.printf(badge_txt, badge_x, text_y, badge_w, "center")
     end
 
@@ -8786,12 +8796,16 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 break
             end
         end
-        local subtitle = theme_disp .. " (" .. current_idx .. "/" .. #_G.unlocked_themes .. ")"
+        local subtitle = "◄  " .. theme_disp .. " (" .. current_idx .. "/" .. #_G.unlocked_themes .. ")  ►"
 
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * a)
         local sw = font_help_label:getWidth(subtitle)
-        love.graphics.print(subtitle, (w - sw) / 2 + off, subtitle_y)
+        local sub_x = (w - sw) / 2 + off
+        love.graphics.print(subtitle, sub_x, subtitle_y)
+
+        _G.customization_prev_btn_bounds = { x = sub_x - math.floor(8 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
+        _G.customization_next_btn_bounds = { x = sub_x + sw - math.floor(28 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
 
         -- Board background preview
         love.graphics.setColor(board_color[1], board_color[2], board_color[3], (board_color[4] or 1.0) * a)
@@ -8843,12 +8857,17 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             love.graphics.printf(sw.label, sx, sy + (swatch_size - th) / 2, swatch_size, "center")
         end
 
+        local initial_theme = _G.themeSelectInitialTheme or "light"
+        local is_theme_equipped = (_G.theme == initial_theme)
+        local theme_badge_y = board_y + board_size + math.floor(4 * scale)
+        drawStatusBadge(is_theme_equipped, true, 0, 1.0, "ACTIVE", "PRESS A TO EQUIP", theme_badge_y)
+
         -- Horizontal palette strip
         local strip_h = math.floor(14 * scale)
         local pad_x = math.floor(6 * scale)
         local pad_y = math.floor(4 * scale)
         local panel_h = strip_h + pad_y * 2
-        local strip_y = status_badge_y
+        local strip_y = theme_badge_y + badge_panel_h + math.floor(5 * scale)
 
         love.graphics.setColor(0, 0, 0, 0.4 * a)
         roundedRect("fill", board_x, strip_y, board_size, panel_h, math.floor(panel_h * 0.25))
@@ -8926,11 +8945,15 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local cur_is_equipped = ((_G.board_skin or "default") == skin.id)
             drawStatusBadge(cur_is_equipped, cur_is_owned, b_dir * text_slide * (1 - bp), bp, "ACTIVE")
         else
-            local cur_subtitle = skin.name .. " (" .. cur_idx .. "/" .. #board_skins_catalog .. ")"
+            local cur_subtitle = "◄  " .. skin.name .. " (" .. cur_idx .. "/" .. #board_skins_catalog .. ")  ►"
             local cur_sw = font_help_label:getWidth(cur_subtitle)
+            local sub_x = (w - cur_sw) / 2 + off
             love.graphics.setFont(font_help_label)
             love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * a)
-            love.graphics.print(cur_subtitle, (w - cur_sw) / 2 + off, subtitle_y)
+            love.graphics.print(cur_subtitle, sub_x, subtitle_y)
+
+            _G.customization_prev_btn_bounds = { x = sub_x - math.floor(8 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
+            _G.customization_next_btn_bounds = { x = sub_x + cur_sw - math.floor(28 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
 
             if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= board_size then
                 board_preview_canvas_curr = love.graphics.newCanvas(board_size, board_size)
@@ -9048,11 +9071,15 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id)
             drawStatusBadge(cur_is_equipped, cur_is_owned, p_dir * text_slide * (1 - pp), pp)
         else
-            local cur_subtitle = pet.name .. " (" .. cur_idx .. "/" .. #pets_catalog .. ")"
+            local cur_subtitle = "◄  " .. pet.name .. " (" .. cur_idx .. "/" .. #pets_catalog .. ")  ►"
             local cur_sw = font_help_label:getWidth(cur_subtitle)
+            local sub_x = (w - cur_sw) / 2 + off
             love.graphics.setFont(font_help_label)
             love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * a)
-            love.graphics.print(cur_subtitle, (w - cur_sw) / 2 + off, subtitle_y)
+            love.graphics.print(cur_subtitle, sub_x, subtitle_y)
+
+            _G.customization_prev_btn_bounds = { x = sub_x - math.floor(8 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
+            _G.customization_next_btn_bounds = { x = sub_x + cur_sw - math.floor(28 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
 
             drawPetSprite(pet, 0, a)
 
@@ -9182,7 +9209,8 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
     local label_gap = math.floor(4 * scale)
     local right_x = w - math.floor(20 * scale)
 
-    local action_a_label = "Select"
+    local is_theme_eq = (_G.theme == (_G.themeSelectInitialTheme or "light"))
+    local action_a_label = is_theme_eq and "Active" or "Equip"
     if tab == 2 then
         local skin = board_skins_catalog[_G.custom_board_idx or 1]
         local is_owned = skin and ((skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id]))
@@ -9201,12 +9229,23 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
         action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
     end
 
+    if love.system.getOS() ~= "Web" then
+        local dpad_x = math.floor(20 * scale)
+        local dpad_size = math.floor(24 * scale)
+        drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
+        dpad_x = dpad_x + dpad_size + math.floor(6 * scale)
+        love.graphics.setFont(font_help_label)
+        love.graphics.setColor(ui_text)
+        love.graphics.print("Browse", dpad_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+    end
+
     local actions = {
         {key = "B", label = "Back"},
-        {key = "A", label = action_a_label},
-        {key = "Y", label = "Next"},
-        {key = "X", label = "Prev"}
+        {key = "A", label = action_a_label}
     }
+    if tab == 2 or tab == 3 then
+        table.insert(actions, {key = "Y", label = "Switch Theme"})
+    end
 
     for _, action in ipairs(actions) do
         love.graphics.setFont(font_help_label)

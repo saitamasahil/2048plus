@@ -1475,13 +1475,16 @@ function love.update(dt)
                 end)
             elseif event == input.events.CONFIRM then
                 if tab == 1 then
-                    -- Theme tab: save theme and return to previous state
+                    -- Theme tab: save theme and stay on screen
                     sound.playMenuSelect()
-                    queueTransitionAction(event, 0.08, function()
+                    local initial_theme = _G.themeSelectInitialTheme or "light"
+                    if _G.theme ~= initial_theme then
+                        _G.themeSelectInitialTheme = _G.theme
                         save.saveTheme(_G.theme)
                         if game then game:saveGameState() end
-                        _G.appState = _G.themeSelectPrevState or "MENU"
-                    end)
+                        local theme_disp = renderer.getThemeDisplayName(_G.theme, false)
+                        renderer.showToast("Equipped " .. theme_disp .. " Theme!")
+                    end
                 elseif tab == 2 then
                     -- Board tab: equip or unequip selected skin
                     local skin = renderer.getSelectedBoardSkin and renderer.getSelectedBoardSkin()
@@ -1540,7 +1543,15 @@ function love.update(dt)
                         end
                     end
                 end
-            elseif event == input.events.LEFT or event == input.events.X or event == input.events.UP then
+            elseif event == input.events.Y then
+                if tab == 2 or tab == 3 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if _G.cycleTheme then _G.cycleTheme(1) end
+                    _G.themeSelectInitialTheme = _G.theme
+                    save.saveTheme(_G.theme)
+                    if game then game:saveGameState() end
+                end
+            elseif event == input.events.LEFT or event == input.events.UP then
                 if tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if _G.cycleTheme then _G.cycleTheme(-1) end
@@ -1551,7 +1562,7 @@ function love.update(dt)
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if renderer.cyclePet then renderer.cyclePet(-1) end
                 end
-            elseif event == input.events.RIGHT or event == input.events.Y or event == input.events.DOWN then
+            elseif event == input.events.RIGHT or event == input.events.DOWN then
                 if tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if _G.cycleTheme then _G.cycleTheme(1) end
@@ -2212,22 +2223,52 @@ end
 function love.mousereleased(x, y, button, istouch, presses)
     if button == 1 then
         -- Customization tab click
-        if _G.appState == "THEME_SELECT" and _G.customization_tab_bounds then
-            for idx, b in ipairs(_G.customization_tab_bounds) do
-                if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
-                    local cur_tab = _G.customization_tab or 1
-                    if idx ~= cur_tab then
-                        local sound = require("sound")
-                        if sound and sound.playMenuMove then sound.playMenuMove() end
-                        local dir = (idx > cur_tab) and 1 or -1
-                        if _G.screen_transitions and renderer.startCustomizationTabTransition then
-                            renderer.startCustomizationTabTransition(cur_tab, idx, dir)
-                        else
-                            _G.customization_tab = idx
+        if _G.appState == "THEME_SELECT" then
+            if _G.customization_tab_bounds then
+                for idx, b in ipairs(_G.customization_tab_bounds) do
+                    if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
+                        local cur_tab = _G.customization_tab or 1
+                        if idx ~= cur_tab then
+                            local sound = require("sound")
+                            if sound and sound.playMenuMove then sound.playMenuMove() end
+                            local dir = (idx > cur_tab) and 1 or -1
+                            if _G.screen_transitions and renderer.startCustomizationTabTransition then
+                                renderer.startCustomizationTabTransition(cur_tab, idx, dir)
+                            else
+                                _G.customization_tab = idx
+                            end
                         end
+                        return
                     end
-                    return
                 end
+            end
+            local pb = _G.customization_prev_btn_bounds
+            if pb and x >= pb.x and x <= (pb.x + pb.w) and y >= pb.y and y <= (pb.y + pb.h) then
+                local sound = require("sound")
+                if sound and sound.playMenuMove then sound.playMenuMove() end
+                local tab = _G.customization_tab or 1
+                if tab == 1 then
+                    if _G.cycleTheme then _G.cycleTheme(-1) end
+                elseif tab == 2 then
+                    if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
+                elseif tab == 3 then
+                    if renderer.cyclePet then renderer.cyclePet(-1) end
+                end
+                return
+            end
+            local nb = _G.customization_next_btn_bounds
+            if nb and x >= nb.x and x <= (nb.x + nb.w) and y >= nb.y and y <= (nb.y + nb.h) then
+                local sound = require("sound")
+                if sound and sound.playMenuMove then sound.playMenuMove() end
+                local tab = _G.customization_tab or 1
+                if tab == 1 then
+                    if _G.cycleTheme then _G.cycleTheme(1) end
+                elseif tab == 2 then
+                    if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
+                elseif tab == 3 then
+                    if renderer.cyclePet then renderer.cyclePet(1) end
+                end
+                return
             end
         end
         -- Achievements tab click
