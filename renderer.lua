@@ -5644,30 +5644,56 @@ function renderer.drawHelp(game)
         love.graphics.setFont(font_help_label)
         local display_text = now_playing_track.title .. " - " .. now_playing_track.artist
         local text_w = font_help_label:getWidth(display_text)
-        
-        local viz_w = math.floor(14 * scale)
+        local font_h = font_help_label:getHeight()
+        local text_y = badge_y + math.floor((badge_h - font_h) / 2)
+
+        local bar_w = math.max(2, math.floor(2.5 * scale))
+        local bar_gap = math.max(1, math.floor(2 * scale))
+        local bar_cr = math.max(1, math.floor(1.2 * scale))
+        local viz_w = 4 * bar_w + 3 * bar_gap
         local total_w = text_w + viz_w + math.floor(8 * scale)
         local start_x = bgm_right_x - total_w
-        
-        -- Draw animated visualizer
+
+        local min_left = bar_x + math.floor(96 * scale)
+        if start_x < min_left then
+            local max_txt_w = bgm_right_x - min_left - viz_w - math.floor(8 * scale)
+            while #display_text > 4 and font_help_label:getWidth(display_text .. "...") > max_txt_w do
+                display_text = display_text:sub(1, #display_text - 1)
+            end
+            display_text = display_text .. "..."
+            text_w = font_help_label:getWidth(display_text)
+            total_w = text_w + viz_w + math.floor(8 * scale)
+            start_x = bgm_right_x - total_w
+        end
+
+        -- Equalizer bars anchored to font baseline
+        local base_y = text_y + math.floor(font_h * 0.77)
+        local max_h = math.floor(font_h * 0.50)
+        local min_h = math.max(2, math.floor(2.5 * scale))
+
         if type(help_key_color) == "table" then
             love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * bgm_alpha)
         else
             love.graphics.setColor(1.0, 1.0, 1.0, bgm_alpha)
         end
-        
+
         local t = love.timer.getTime()
-        local bar1_h = math.floor((6 + math.sin(t * 15) * 4) * scale)
-        local bar2_h = math.floor((10 + math.sin(t * 22 + 1) * 6) * scale)
-        local bar3_h = math.floor((5 + math.sin(t * 18 + 2) * 3) * scale)
-        local bar_w = math.floor(3 * scale)
-        local bar_gap = math.floor(2 * scale)
-        local base_y = badge_y + badge_h - (badge_h - 12 * scale) / 2
-        
-        love.graphics.rectangle("fill", start_x, base_y - bar1_h, bar_w, bar1_h, 1 * scale, 1 * scale)
-        love.graphics.rectangle("fill", start_x + bar_w + bar_gap, base_y - bar2_h, bar_w, bar2_h, 1 * scale, 1 * scale)
-        love.graphics.rectangle("fill", start_x + (bar_w + bar_gap) * 2, base_y - bar3_h, bar_w, bar3_h, 1 * scale, 1 * scale)
-        
+        local s1 = math.sin(t * 7.5)^2 * 0.65 + math.sin(t * 13.0 + 0.4)^2 * 0.35
+        local s2 = math.sin(t * 11.0 + 1.2)^2 * 0.60 + math.sin(t * 19.0 + 2.1)^2 * 0.40
+        local s3 = math.sin(t * 14.0 + 2.5)^2 * 0.50 + math.sin(t * 8.5 + 1.0)^2 * 0.50
+        local s4 = math.sin(t * 17.5 + 3.8)^2 * 0.65 + math.sin(t * 10.0 + 0.7)^2 * 0.35
+
+        local h1 = math.floor(min_h + (max_h - min_h) * (0.25 + 0.75 * s1))
+        local h2 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s2))
+        local h3 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s3))
+        local h4 = math.floor(min_h + (max_h - min_h) * (0.30 + 0.70 * s4))
+
+        local bars = { h1, h2, h3, h4 }
+        for idx = 1, 4 do
+            local bx = start_x + (idx - 1) * (bar_w + bar_gap)
+            love.graphics.rectangle("fill", bx, base_y - bars[idx], bar_w, bars[idx], bar_cr, bar_cr)
+        end
+
         -- Draw text label
         if type(ui_text) == "table" then
             love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * bgm_alpha)
@@ -5675,7 +5701,7 @@ function renderer.drawHelp(game)
             love.graphics.setColor(1.0, 1.0, 1.0, bgm_alpha)
         end
         local text_x = start_x + viz_w + math.floor(8 * scale)
-        love.graphics.print(display_text, text_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        love.graphics.print(display_text, text_x, text_y)
     end
 end
 
@@ -9197,7 +9223,10 @@ local function drawBgmNowPlaying()
     love.graphics.rectangle("line", x, y, card_w, card_h, math.floor(6 * scale), math.floor(6 * scale))
 
     -- Equalizer visualizer
-    local viz_w = math.floor(14 * scale)
+    local bar_w = math.max(2, math.floor(2.5 * scale))
+    local bar_gap = math.max(1, math.floor(2 * scale))
+    local bar_cr = math.max(1, math.floor(1.2 * scale))
+    local viz_w = 4 * bar_w + 3 * bar_gap
     local viz_x = x + padding
 
     -- Visualizer color
@@ -9205,18 +9234,24 @@ local function drawBgmNowPlaying()
     love.graphics.setColor(val[1], val[2], val[3], 0.85 * alpha)
 
     local t = love.timer.getTime()
-    local bar1_h = math.floor((8 + math.sin(t * 15) * 5) * scale)
-    local bar2_h = math.floor((12 + math.sin(t * 22 + 1) * 7) * scale)
-    local bar3_h = math.floor((7 + math.sin(t * 18 + 2) * 4) * scale)
+    local s1 = math.sin(t * 7.5)^2 * 0.65 + math.sin(t * 13.0 + 0.4)^2 * 0.35
+    local s2 = math.sin(t * 11.0 + 1.2)^2 * 0.60 + math.sin(t * 19.0 + 2.1)^2 * 0.40
+    local s3 = math.sin(t * 14.0 + 2.5)^2 * 0.50 + math.sin(t * 8.5 + 1.0)^2 * 0.50
+    local s4 = math.sin(t * 17.5 + 3.8)^2 * 0.65 + math.sin(t * 10.0 + 0.7)^2 * 0.35
 
-    local bar_w = math.floor(3 * scale)
-    local bar_gap = math.floor(2 * scale)
+    local min_h = math.max(2, math.floor(3 * scale))
+    local max_h = math.floor(16 * scale)
+    local h1 = math.floor(min_h + (max_h - min_h) * (0.25 + 0.75 * s1))
+    local h2 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s2))
+    local h3 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s3))
+    local h4 = math.floor(min_h + (max_h - min_h) * (0.30 + 0.70 * s4))
+
     local base_y = y + card_h - padding - math.floor(4 * scale)
-
-    -- Draw rounded visualizer bars
-    love.graphics.rectangle("fill", viz_x, base_y - bar1_h, bar_w, bar1_h, 1.5 * scale, 1.5 * scale)
-    love.graphics.rectangle("fill", viz_x + bar_w + bar_gap, base_y - bar2_h, bar_w, bar2_h, 1.5 * scale, 1.5 * scale)
-    love.graphics.rectangle("fill", viz_x + (bar_w + bar_gap) * 2, base_y - bar3_h, bar_w, bar3_h, 1.5 * scale, 1.5 * scale)
+    local bars = { h1, h2, h3, h4 }
+    for idx = 1, 4 do
+        local bx = viz_x + (idx - 1) * (bar_w + bar_gap)
+        love.graphics.rectangle("fill", bx, base_y - bars[idx], bar_w, bars[idx], bar_cr, bar_cr)
+    end
 
     -- Track title and artist labels
     local text_x = viz_x + viz_w + math.floor(8 * scale)
