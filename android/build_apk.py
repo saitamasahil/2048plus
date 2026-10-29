@@ -115,7 +115,7 @@ shutil.rmtree(WORK_DIR, ignore_errors=True)
 os.makedirs(WORK_DIR, exist_ok=True)
 decomp_dir = os.path.join(WORK_DIR, "decompiled")
 print("Decompiling Love Android template...")
-subprocess.run(["apktool", "d", "-s", BASE_APK, "-o", decomp_dir], check=True, stdout=subprocess.DEVNULL)
+subprocess.run(["apktool", "d", BASE_APK, "-o", decomp_dir], check=True, stdout=subprocess.DEVNULL)
 
 # 4. Replace launcher icons with official 2048 Plus icon
 src_im = Image.open(ICON_SRC).convert("RGBA")
@@ -147,13 +147,40 @@ with open(manifest_path, "r", encoding="utf-8") as f:
     manifest = f.read()
 
 manifest = manifest.replace('android:label="LÖVE for Android"', 'android:label="2048 Plus"')
-manifest = manifest.replace('android:screenOrientation="landscape"', 'android:screenOrientation="portrait"')
+manifest = manifest.replace('android:screenOrientation="landscape"', 'android:screenOrientation="user"')
 manifest = manifest.replace('package="org.love2d.android"', f'package="{PACKAGE_NAME}"')
 manifest = manifest.replace('org.love2d.android.DYNAMIC_RECEIVER', f'{PACKAGE_NAME}.DYNAMIC_RECEIVER')
 manifest = manifest.replace('org.love2d.android.androidx-startup', f'{PACKAGE_NAME}.androidx-startup')
 
 with open(manifest_path, "w", encoding="utf-8") as f:
     f.write(manifest)
+
+# Neutralize setOrientation in SDLActivity so runtime calls do not override manifest user orientation
+sdl_smali = os.path.join(decomp_dir, "smali/org/libsdl/app/SDLActivity.smali")
+if os.path.isfile(sdl_smali):
+    with open(sdl_smali, "r", encoding="utf-8") as f:
+        smali_src = f.read()
+    old_target = """.method public static setOrientation(IIZLjava/lang/String;)V
+    .locals 1
+
+    sget-object v0, Lorg/libsdl/app/SDLActivity;->mSingleton:Lorg/libsdl/app/SDLActivity;
+
+    if-eqz v0, :cond_0
+
+    invoke-virtual {v0, p0, p1, p2, p3}, Lorg/libsdl/app/SDLActivity;->setOrientationBis(IIZLjava/lang/String;)V
+
+    :cond_0
+    return-void
+.end method"""
+    new_replacement = """.method public static setOrientation(IIZLjava/lang/String;)V
+    .locals 0
+
+    return-void
+.end method"""
+    if old_target in smali_src:
+        smali_src = smali_src.replace(old_target, new_replacement)
+        with open(sdl_smali, "w", encoding="utf-8") as f:
+            f.write(smali_src)
 
 # 6. Copy game.love into assets
 assets_dir = os.path.join(decomp_dir, "assets")
