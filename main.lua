@@ -2263,6 +2263,9 @@ end
 
 -- Resize handler for orientation changes
 function love.resize(w, h)
+    if splash and not splash.finished and splash.resize then
+        splash.resize(w, h)
+    end
     if _G.android_console and _G.android_console.updateLayout then
         _G.android_console.updateLayout()
     end

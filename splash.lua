@@ -71,14 +71,73 @@ local cascade_tile_colors = {
     colors.gold, colors.super
 }
 
+local function getSplashDimensions()
+    local is_console = _G.is_console_active and _G.is_console_active()
+    if is_console then
+        return 640, 480, 1.0
+    end
+    local rw, rh = love.graphics.getDimensions()
+    local s = _G.scale or 1.0
+    return rw, rh, s
+end
+
 -- ============================================================================
 -- Initialization
 -- ============================================================================
-function splash.load()
-    local w, h = 640, 480
-    if not _G.android_console then
-        w, h = love.graphics.getDimensions()
+function splash.rebuildGrid(w, h)
+    splash.cur_w = w
+    splash.cur_h = h
+    local cell_size = math.floor(math.max(w, h) * 0.12)
+    local gap = math.floor(cell_size * 0.08)
+    local cols = math.ceil(w / (cell_size + gap)) + 1
+    local rows = math.ceil(h / (cell_size + gap)) + 1
+
+    local grid_w = cols * cell_size + (cols - 1) * gap
+    local grid_h = rows * cell_size + (rows - 1) * gap
+    local start_x = (w - grid_w) / 2
+    local start_y = (h - grid_h) / 2
+
+    local new_data = {}
+    local idx = 1
+    for col = 1, cols do
+        for row = 1, rows do
+            local tx = start_x + (col - 1) * (cell_size + gap)
+            local ty = start_y + (row - 1) * (cell_size + gap)
+            local existing = anim.tile_data and anim.tile_data[idx]
+            if existing then
+                existing.x = tx
+                existing.y = ty
+                existing.size = cell_size
+                existing.corner_r = math.floor(cell_size * 0.08)
+                table.insert(new_data, existing)
+            else
+                local color_idx = math.random(#cascade_tile_colors)
+                local delay = (col + row) * 0.04 + math.random() * 0.06
+                table.insert(new_data, {
+                    x = tx, y = ty,
+                    size = cell_size,
+                    color = cascade_tile_colors[color_idx],
+                    delay = delay,
+                    scale = 0,
+                    target_scale = 1,
+                    rotation = 0,
+                    corner_r = math.floor(cell_size * 0.08),
+                    alpha = 1,
+                })
+            end
+            idx = idx + 1
+        end
     end
+    anim.tile_data = new_data
+end
+
+function splash.resize(w, h)
+    if splash.finished then return end
+    splash.rebuildGrid(w, h)
+end
+
+function splash.load()
+    local w, h, scale = getSplashDimensions()
 
     local renderer = require("renderer")
     local tile_colors_t, super_color = renderer.getThemeTileColors()
@@ -121,41 +180,9 @@ function splash.load()
     splash.is_revealing = false
 
     -- Generate background tile grid data
-    -- Create a larger-than-screen grid of tiles with random values
-    local cell_size = math.floor(math.max(w, h) * 0.12)
-    local gap = math.floor(cell_size * 0.08)
-    local cols = math.ceil(w / (cell_size + gap)) + 1
-    local rows = math.ceil(h / (cell_size + gap)) + 1
-
-    local grid_w = cols * cell_size + (cols - 1) * gap
-    local grid_h = rows * cell_size + (rows - 1) * gap
-    local start_x = (w - grid_w) / 2
-    local start_y = (h - grid_h) / 2
-
     anim.tile_data = {}
+    splash.rebuildGrid(w, h)
 
-    for col = 1, cols do
-        for row = 1, rows do
-            local tx = start_x + (col - 1) * (cell_size + gap)
-            local ty = start_y + (row - 1) * (cell_size + gap)
-            local color_idx = math.random(#cascade_tile_colors)
-            local delay = (col + row) * 0.04 + math.random() * 0.06  -- diagonal cascade
-
-            table.insert(anim.tile_data, {
-                x = tx, y = ty,
-                size = cell_size,
-                color = cascade_tile_colors[color_idx],
-                delay = delay,
-                scale = 0,           -- current animated scale
-                target_scale = 1,
-                rotation = 0,
-                corner_r = math.floor(cell_size * 0.08),
-                alpha = 1,
-            })
-        end
-    end
-
-    -- =============================================
     -- Animate background tiles cascade
     -- =============================================
     for _, tile in ipairs(anim.tile_data) do
@@ -181,7 +208,8 @@ function splash.load()
     -- =============================================
     timer.after(2.3, function()
         splash.is_revealing = true
-        local cx, cy = w / 2, h / 2
+        local cur_w, cur_h = getSplashDimensions()
+        local cx, cy = cur_w / 2, cur_h / 2
 
         -- Tiles shrink to 0 in a ripple radiating from the center
         local max_delay = 0
@@ -224,11 +252,10 @@ end
 function splash.draw()
     if splash.finished then return end
 
-    local w, h = 640, 480
-    if not _G.android_console then
-        w, h = love.graphics.getDimensions()
+    local w, h, scale = getSplashDimensions()
+    if splash.cur_w ~= w or splash.cur_h ~= h then
+        splash.rebuildGrid(w, h)
     end
-    local scale = _G.android_console and 1.0 or _G.scale
 
     love.graphics.push()
     love.graphics.translate(anim.shake_x, anim.shake_y)

@@ -1,5 +1,5 @@
---- a/conf.lua	2026-10-29 19:59:43.862230362 +0530
-+++ b/conf.lua	2026-10-29 19:59:43.862520180 +0530
+--- a/conf.lua	2026-10-29 20:09:21.980815298 +0530
++++ b/conf.lua	2026-10-29 20:09:21.981205406 +0530
 @@ -5,10 +5,12 @@
  
      t.window.title = "2048 Plus"
@@ -10,8 +10,7 @@
 +    t.window.height = 0
 +    t.window.fullscreen = true
      t.window.borderless = false
--    t.window.resizable = false
-+    t.window.resizable = true
+     t.window.resizable = false
 +    t.window.orientation = "portrait"
      t.window.vsync = 1
      t.window.display = 1
@@ -25,8 +24,8 @@
      t.modules.physics = false
      t.modules.sound = true
      t.modules.touch = true
---- a/main.lua	2026-10-29 19:59:43.862281071 +0530
-+++ b/main.lua	2026-10-29 19:59:43.862597604 +0530
+--- a/main.lua	2026-10-29 20:09:21.980886201 +0530
++++ b/main.lua	2026-10-29 20:09:21.981339964 +0530
 @@ -101,6 +101,12 @@
  end
  
@@ -68,4 +67,4 @@
 +
  -- Resize handler for orientation changes
  function love.resize(w, h)
-     if _G.android_console and _G.android_console.updateLayout then
+     if splash and not splash.finished and splash.resize then
