@@ -1495,7 +1495,7 @@ function love.update(dt)
                             if _G.board_skin == skin.id and skin.id ~= "default" then
                                 _G.board_skin = "default"
                                 save.saveBoardSkin("default")
-                                renderer.showToast("Equipped Classic Board")
+                                renderer.showToast("Equipped Dynamic Board")
                             else
                                 _G.board_skin = skin.id
                                 save.saveBoardSkin(skin.id)

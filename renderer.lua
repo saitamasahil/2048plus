@@ -8496,7 +8496,7 @@ end
 -- Customization Screen Catalogs and Functions
 -- ============================================================================
 local board_skins_catalog = {
-    { id = "default", name = "Classic Board" },
+    { id = "default", name = "Dynamic Board" },
     { id = "wood",    name = "Wood Board" },
     { id = "bamboo",  name = "Bamboo Board" },
     { id = "glass",   name = "Glassmorphism Board" },
@@ -8533,6 +8533,7 @@ end
 local board_preview_canvas_curr = nil
 local board_preview_canvas_prev = nil
 local board_preview_rendered_skin_id = nil
+local board_preview_rendered_theme = nil
 local board_preview_canvas_size = nil
 
 
@@ -8638,6 +8639,7 @@ function renderer.prepareBoardTransition(prev_idx, cur_idx, bs)
     renderBoardPreviewToCanvas(board_preview_canvas_prev, prev_skin.id, target_bs)
     renderBoardPreviewToCanvas(board_preview_canvas_curr, cur_skin.id, target_bs)
     board_preview_rendered_skin_id = cur_skin.id
+    board_preview_rendered_theme = _G.theme
 end
 
 function renderer.cycleBoardSkin(dir)
@@ -8955,15 +8957,18 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             _G.customization_prev_btn_bounds = { x = sub_x - math.floor(8 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
             _G.customization_next_btn_bounds = { x = sub_x + cur_sw - math.floor(28 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
 
+            local theme_changed = (board_preview_rendered_theme ~= _G.theme)
             if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= board_size then
                 board_preview_canvas_curr = love.graphics.newCanvas(board_size, board_size)
                 board_preview_canvas_prev = love.graphics.newCanvas(board_size, board_size)
                 board_preview_canvas_size = board_size
                 renderBoardPreviewToCanvas(board_preview_canvas_curr, skin.id, board_size)
                 board_preview_rendered_skin_id = skin.id
-            elseif board_preview_rendered_skin_id ~= skin.id or skin.id == "matrix" then
+                board_preview_rendered_theme = _G.theme
+            elseif board_preview_rendered_skin_id ~= skin.id or skin.id == "matrix" or theme_changed then
                 renderBoardPreviewToCanvas(board_preview_canvas_curr, skin.id, board_size)
                 board_preview_rendered_skin_id = skin.id
+                board_preview_rendered_theme = _G.theme
             end
 
             love.graphics.setColor(1, 1, 1, a)
