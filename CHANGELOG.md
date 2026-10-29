@@ -1,23 +1,24 @@
 # Changelog
 
-## [7.0.2]
+## [8.0.0]
 ### Added
-- Native Android & PC Versions: Added standalone release builds for Android, Linux, and Windows
-- Customization Hub: Preview and equip themes, board skins, and companion pets
-- Soundtrack: Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic), used with permission, plus new background music tracks by Luke Bergs, Purrple Cat, Ghostrifter Official, Sakura Girl, and Roa
-- Powerup Milestone Animation: Display earned powerups in header subtitle below 2048
+- Added standalone release builds for Android, Linux, and Windows
+- Added Customization Hub to preview and equip themes, board skins, and companion pets
+- Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic), used with permission, plus new background music tracks by Luke Bergs, Purrple Cat, Ghostrifter Official, Sakura Girl, and Roa
+- Display earned powerups in header subtitle below 2048
 
 ### Changed
-- Ocean Theme: Redesigned with maritime blue tiles and animated underwater effects
-- Forest Theme: Redesigned tiles with a forest green progression
+- Redesigned Ocean theme with maritime blue tiles and animated underwater effects
+- Redesigned Forest theme tiles with a forest green progression
 - New static icons for game modes
 - Improved Now Playing footer equalizer animation
 - Rebalance plus mode powerup milestone rewards
 
 ### Fixed
-- Cosmic Theme: Fixed number visibility on 2048 and higher number tiles
-- Non-Mali Devices: Added support for non-Mali chipsets by removing hardcoded libmali loading and prioritizing system EGL drivers
-- File Permissions: Added execute permissions for launch script for muOS
+- Fixed achievements not unlocking after playing Huge mode
+- Fixed number visibility on 2048 and higher number tiles in Cosmic theme
+- Added support for non-Mali chipsets by removing hardcoded libmali loading and prioritizing system EGL drivers
+- Added execute permissions for launch script for muOS
 
 ## [7.0.1]
 ### Added
