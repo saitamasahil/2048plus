@@ -2271,49 +2271,107 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     pcall(function()
         if love.system and love.system.getPowerInfo then
             local s, p = love.system.getPowerInfo()
-            if s then state = s end
-            if p then percent = p end
+            if s then state = tostring(s):lower() end
+            if p and type(p) == "number" and p >= 0 then percent = p end
         end
     end)
 
-    local is_charging = (state == "charging" or state == "charged")
-    local led_col
-    if percent <= 10 then
-        -- Critical battery: 10 percent and below blinks red
-        local blink = (math.sin(love.timer.getTime() * 8) > 0)
-        led_col = {0.95, 0.20, 0.20, blink and 0.95 or 0.25}
-    elseif percent <= 20 then
-        -- Low battery: solid red
-        led_col = {0.95, 0.22, 0.22, 0.95}
-    elseif percent <= 35 then
-        -- Medium battery: amber orange
-        led_col = {0.95, 0.70, 0.15, 0.95}
-    elseif is_charging then
-        local pulse = 0.75 + 0.25 * math.sin(love.timer.getTime() * 4)
-        led_col = {0.12 * pulse, 0.88 * pulse, 0.38 * pulse, 0.95}
+    local is_charging = (state and (state:find("charg") ~= nil or (state == "nobattery" and percent and percent > 0)))
+    if _G.battery_charging_override ~= nil then
+        is_charging = _G.battery_charging_override
+    end
+
+    if is_charging then
+        local t = love.timer.getTime() * 2.8
+        local breath = 0.5 + 0.5 * math.sin(t)
+        local ease = breath * breath * (3.0 - 2.0 * breath)
+
+        -- Smooth ambient glow aura behind socket
+        local glow_r1 = led_r * (1.8 + 1.6 * ease)
+        local glow_r2 = led_r * (1.3 + 0.9 * ease)
+        local glow_a1 = (0.05 + 0.18 * ease)
+        local glow_a2 = (0.10 + 0.28 * ease)
+
+        love.graphics.setColor(0.12, 0.92, 0.38, glow_a1)
+        love.graphics.circle("fill", led_x, led_y, glow_r1, 36)
+        love.graphics.setColor(0.15, 0.96, 0.42, glow_a2)
+        love.graphics.circle("fill", led_x, led_y, glow_r2, 36)
+
+        -- Recessed socket housing
+        love.graphics.setColor(bzr * 0.30, bzg * 0.30, bzb * 0.30, 0.95)
+        love.graphics.circle("fill", led_x, led_y, led_r + 1.8, 36)
+        love.graphics.setColor(1, 1, 1, 0.16)
+        love.graphics.circle("line", led_x, led_y + 0.6, led_r + 1.8, 36)
+        love.graphics.setColor(bzr * 0.15, bzg * 0.15, bzb * 0.15, 0.95)
+        love.graphics.circle("fill", led_x, led_y, led_r + 0.8, 36)
+
+        -- Breathing bulb core
+        local core_g = 0.52 + 0.46 * ease
+        local core_b = 0.18 + 0.22 * ease
+        local core_a = 0.55 + 0.43 * ease
+        love.graphics.setColor(0.08, core_g, core_b, core_a)
+        love.graphics.circle("fill", led_x, led_y, led_r, 36)
+
+        -- Inner hot spot
+        love.graphics.setColor(0.35 + 0.45 * ease, 0.98, 0.55 + 0.35 * ease, 0.30 + 0.65 * ease)
+        love.graphics.circle("fill", led_x, led_y, led_r * 0.58, 36)
+
+        -- Specular glint
+        love.graphics.setColor(1, 1, 1, 0.20 + 0.65 * ease)
+        love.graphics.circle("fill", led_x - led_r * 0.30, led_y - led_r * 0.30, math.max(1.0, led_r * 0.28), 24)
     else
-        -- Healthy battery: solid green
-        led_col = {0.12, 0.88, 0.35, 0.95}
-    end
+        local led_col
+        if percent <= 10 then
+            -- Critical battery: 10 percent and below blinks red
+            local blink = (math.sin(love.timer.getTime() * 8) > 0)
+            led_col = {0.96, 0.18, 0.18, blink and 0.95 or 0.20}
+        elseif percent <= 20 then
+            -- Low battery: solid red
+            led_col = {0.96, 0.22, 0.22, 0.95}
+        elseif percent <= 35 then
+            -- Medium battery: amber orange
+            led_col = {0.96, 0.68, 0.14, 0.95}
+        else
+            -- Healthy battery: solid green
+            led_col = {0.12, 0.88, 0.35, 0.95}
+        end
 
-    -- Recessed socket ring
-    love.graphics.setColor(bzr * 0.45, bzg * 0.45, bzb * 0.45, 0.95)
-    love.graphics.circle("fill", led_x, led_y, led_r + 1.5)
+        local col_a = led_col[4] or 1.0
 
-    -- Ambient glow halo
-    if led_col[4] > 0.40 then
-        love.graphics.setColor(led_col[1], led_col[2], led_col[3], 0.20)
-        love.graphics.circle("fill", led_x, led_y, led_r * 2.2)
-    end
+        -- Ambient soft halo glow
+        if col_a > 0.35 then
+            love.graphics.setColor(led_col[1], led_col[2], led_col[3], 0.10 * col_a)
+            love.graphics.circle("fill", led_x, led_y, led_r * 2.6, 36)
+            love.graphics.setColor(led_col[1], led_col[2], led_col[3], 0.22 * col_a)
+            love.graphics.circle("fill", led_x, led_y, led_r * 1.6, 36)
+        end
 
-    -- LED bulb core
-    love.graphics.setColor(led_col)
-    love.graphics.circle("fill", led_x, led_y, led_r)
+        -- Recessed socket housing
+        love.graphics.setColor(bzr * 0.30, bzg * 0.30, bzb * 0.30, 0.95)
+        love.graphics.circle("fill", led_x, led_y, led_r + 1.8, 36)
+        love.graphics.setColor(1, 1, 1, 0.16)
+        love.graphics.circle("line", led_x, led_y + 0.6, led_r + 1.8, 36)
+        love.graphics.setColor(bzr * 0.15, bzg * 0.15, bzb * 0.15, 0.95)
+        love.graphics.circle("fill", led_x, led_y, led_r + 0.8, 36)
 
-    -- Specular lens reflection dot
-    if led_col[4] > 0.40 then
-        love.graphics.setColor(1, 1, 1, 0.65)
-        love.graphics.circle("fill", led_x - led_r * 0.32, led_y - led_r * 0.32, math.max(0.8, led_r * 0.30))
+        -- LED bulb core
+        love.graphics.setColor(led_col)
+        love.graphics.circle("fill", led_x, led_y, led_r, 36)
+
+        -- Inner hot spot
+        if col_a > 0.35 then
+            local hr = math.min(1, led_col[1] * 1.25)
+            local hg = math.min(1, led_col[2] * 1.25)
+            local hb = math.min(1, led_col[3] * 1.25)
+            love.graphics.setColor(hr, hg, hb, 0.50 * col_a)
+            love.graphics.circle("fill", led_x, led_y, led_r * 0.55, 36)
+        end
+
+        -- Specular glint
+        if col_a > 0.35 then
+            love.graphics.setColor(1, 1, 1, 0.65)
+            love.graphics.circle("fill", led_x - led_r * 0.30, led_y - led_r * 0.30, math.max(1.0, led_r * 0.28), 24)
+        end
     end
 
     -- Chin branding
