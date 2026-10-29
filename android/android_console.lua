@@ -511,7 +511,12 @@ end
 function android_console.updateLayout()
     local real_w, real_h = love.graphics.getDimensions()
     if real_w > real_h then
-        -- In landscape orientation, console is inactive
+        -- In landscape orientation, console is inactive and fullscreen resets
+        _G.android_fullscreen = false
+        _G.hide_game_footer = false
+        _G.android_header_y = nil
+        _G.android_board_y = nil
+        _G.android_toast_y = nil
         return
     end
 
@@ -2918,6 +2923,11 @@ function android_console.draw(game_draw_fn)
     local rw, rh = love.graphics.getDimensions()
     if rw > rh then
         -- Landscape mode: render native handheld display without console chassis
+        _G.android_fullscreen = false
+        _G.hide_game_footer = false
+        _G.android_header_y = nil
+        _G.android_board_y = nil
+        _G.android_toast_y = nil
         game_draw_fn()
         return
     end

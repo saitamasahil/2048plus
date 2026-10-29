@@ -189,7 +189,8 @@ local function spawnToastParticles()
     end
     
     local target_y = 10 * _G.scale
-    if _G.android_fullscreen then
+    local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
+    if is_portrait_fs then
         target_y = (_G.android_toast_y or 46) * _G.scale
     end
     local cx = w / 2
@@ -3381,7 +3382,8 @@ function renderer.updateLayout(size)
     local cell_gap = 0
     local board_size = 0
 
-    if _G.android_fullscreen then
+    local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
+    if is_portrait_fs then
         board_size = 358
         cell_gap = math.floor(board_size * 0.022)
         cell_size = math.floor((board_size - cell_gap * (size + 1)) / size)
@@ -4766,9 +4768,10 @@ function renderer.drawScores(game)
 
     -- Vertical placement above board
     local box_y = math.floor((layout.board_y - box_h) / 2)
-    if _G.android_fullscreen and _G.android_header_y then
+    local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
+    if is_portrait_fs and _G.android_header_y then
         box_y = _G.android_header_y + math.floor(8 * scale)
-    elseif _G.android_fullscreen then
+    elseif is_portrait_fs then
         box_y = layout.board_y - box_h - 12
     end
 
@@ -4989,9 +4992,10 @@ function renderer.drawHeader(game)
 
     -- Normal gameplay position without subtitle
     local normal_title_y = math.floor((layout.board_y - title_h) / 2)
-    if _G.android_fullscreen and _G.android_header_y then
+    local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
+    if is_portrait_fs and _G.android_header_y then
         normal_title_y = _G.android_header_y
-    elseif _G.android_fullscreen then
+    elseif is_portrait_fs then
         local box_h_std = math.floor((_G.text_size == "large" and 56 or 48) * scale)
         normal_title_y = layout.board_y - box_h_std - 12
     end
@@ -5001,7 +5005,7 @@ function renderer.drawHeader(game)
     local eh = font_header_plus:getHeight()
     local total_h = title_h + eh - math.floor(2 * scale)
     local endless_title_y = math.floor((layout.board_y - total_h) / 2)
-    if _G.android_fullscreen then
+    if is_portrait_fs then
         endless_title_y = normal_title_y - math.floor(10 * scale)
     end
     local endless_y_2048 = endless_title_y
@@ -5423,7 +5427,8 @@ renderer.drawKeyBadge = drawKeyBadge
 -- Draw controls help section
 -- ============================================================================
 function renderer.drawHelp(game)
-    if love.system.getOS() == "Web" or _G.hide_game_footer then return end
+    local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
+    if love.system.getOS() == "Web" or (is_portrait_fs and _G.hide_game_footer) then return end
 
     local sound = require("sound")
     local w, h = love.graphics.getDimensions()
@@ -6416,10 +6421,11 @@ local function drawToast()
 
     -- Slide down from banner position
     local target_y = math.floor(10 * scale)
-    if _G.android_fullscreen then
+    local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
+    if is_portrait_fs then
         target_y = math.floor((_G.android_toast_y or 46) * scale)
     end
-    local slide_dist = (_G.android_fullscreen and 10 or 20) * scale
+    local slide_dist = (is_portrait_fs and 10 or 20) * scale
     local y = target_y - (1.0 - alpha) * slide_dist
     local box_x = (w - boxW) / 2
 

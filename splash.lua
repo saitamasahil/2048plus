@@ -65,15 +65,15 @@ local cascade_tile_colors = {
     colors.gold, colors.super
 }
 
+local GRID_COLS = 13
+local GRID_ROWS = 11
+local CENTER_COL = 7
+local CENTER_ROW = 6
+
 -- ============================================================================
 -- Initialization
 -- ============================================================================
 function splash.load()
-    local w, h = 640, 480
-    if not (_G.is_console_active and _G.is_console_active()) then
-        w, h = love.graphics.getDimensions()
-    end
-
     local renderer = require("renderer")
     local tile_colors_t, super_color = renderer.getThemeTileColors()
     local theme_gold, theme_super = renderer.getThemeHighlightColors()
@@ -110,34 +110,21 @@ function splash.load()
     splash.finished = false
     splash.is_revealing = false
 
-    local cell_size = math.floor(math.max(w, h) * 0.12)
-    local gap = math.floor(cell_size * 0.08)
-    local cols = math.ceil(w / (cell_size + gap)) + 1
-    local rows = math.ceil(h / (cell_size + gap)) + 1
-
-    local grid_w = cols * cell_size + (cols - 1) * gap
-    local grid_h = rows * cell_size + (rows - 1) * gap
-    local start_x = (w - grid_w) / 2
-    local start_y = (h - grid_h) / 2
-
     anim.tile_data = {}
 
-    for col = 1, cols do
-        for row = 1, rows do
-            local tx = start_x + (col - 1) * (cell_size + gap)
-            local ty = start_y + (row - 1) * (cell_size + gap)
+    for col = 1, GRID_COLS do
+        for row = 1, GRID_ROWS do
             local color_idx = math.random(#cascade_tile_colors)
             local delay = (col + row) * 0.04 + math.random() * 0.06
 
             table.insert(anim.tile_data, {
-                x = tx, y = ty,
-                size = cell_size,
+                col = col,
+                row = row,
                 color = cascade_tile_colors[color_idx],
                 delay = delay,
                 scale = 0,
                 target_scale = 1,
                 rotation = 0,
-                corner_r = math.floor(cell_size * 0.08),
                 alpha = 1,
             })
         end
@@ -158,16 +145,11 @@ function splash.load()
 
     timer.after(2.3, function()
         splash.is_revealing = true
-        local cx, cy = w / 2, h / 2
-
         local max_delay = 0
         for _, tile in ipairs(anim.tile_data) do
-            local tcx, tcy = tile.x + tile.size / 2, tile.y + tile.size / 2
-            local dist = math.sqrt((tcx - cx)^2 + (tcy - cy)^2)
-            local delay = dist * 0.0012
-
+            local grid_dist = math.sqrt((tile.col - CENTER_COL)^2 + (tile.row - CENTER_ROW)^2)
+            local delay = grid_dist * 0.045
             if delay > max_delay then max_delay = delay end
-
             timer.after(delay, function()
                 timer.tween(0.3, tile, { scale = 0 }, 'in-back')
             end)
@@ -210,19 +192,28 @@ function splash.draw()
     end
     love.graphics.rectangle("fill", -10, -10, w + 20, h + 20)
 
+    local cell_size = math.floor(math.max(w, h) * 0.12)
+    local gap = math.floor(cell_size * 0.08)
+    local step = cell_size + gap
+    local corner_r = math.floor(cell_size * 0.08)
+
     for _, tile in ipairs(anim.tile_data) do
         if tile.scale > 0.01 then
-            love.graphics.push()
-            local cx = tile.x + tile.size / 2
-            local cy = tile.y + tile.size / 2
-            love.graphics.translate(cx, cy)
-            love.graphics.rotate(tile.rotation)
-            love.graphics.scale(tile.scale, tile.scale)
+            local cx = w / 2 + (tile.col - CENTER_COL) * step
+            local cy = h / 2 + (tile.row - CENTER_ROW) * step
 
-            love.graphics.setColor(tile.color[1], tile.color[2], tile.color[3], 0.6 * (tile.alpha or 1))
-            roundedRect("fill", -tile.size / 2, -tile.size / 2, tile.size, tile.size, tile.corner_r)
+            if cx + cell_size / 2 >= -10 and cx - cell_size / 2 <= w + 10 and
+               cy + cell_size / 2 >= -10 and cy - cell_size / 2 <= h + 10 then
+                love.graphics.push()
+                love.graphics.translate(cx, cy)
+                love.graphics.rotate(tile.rotation)
+                love.graphics.scale(tile.scale, tile.scale)
 
-            love.graphics.pop()
+                love.graphics.setColor(tile.color[1], tile.color[2], tile.color[3], 0.6 * (tile.alpha or 1))
+                roundedRect("fill", -cell_size / 2, -cell_size / 2, cell_size, cell_size, corner_r)
+
+                love.graphics.pop()
+            end
         end
     end
 
