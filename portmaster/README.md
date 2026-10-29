@@ -42,7 +42,7 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 - Special Thanks: [Egggdoggo](https://github.com/Egggdoggo) & **d98jay** for early feedback, playtesting & incredible support!
 - Background Music:
   - "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic)
-  - More music by AudioCoffee, Ghostrifter Official, Purrple Cat, Roa, Sakura Girl, and Tokyo Music Walker via [Chosic](https://www.chosic.com/)
+  - More music by AudioCoffee, Ghostrifter Official, Luke Bergs, Purrple Cat, Roa, Sakura Girl, and Tokyo Music Walker via [Chosic](https://www.chosic.com/)
 
 ---
 

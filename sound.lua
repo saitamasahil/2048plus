@@ -247,6 +247,7 @@ end
 local BUILTIN_TRACKS = {
     ["all night - roa .mp3"] = true,
     ["beloved - roa.mp3"] = true,
+    ["carefree - luke bergs.mp3"] = true,
     ["chillout - audiocoffee.mp3"] = true,
     ["crescent moon - purrple cat.mp3"] = true,
     ["day off - tokyo music walker .mp3"] = true,
@@ -254,13 +255,19 @@ local BUILTIN_TRACKS = {
     ["embrace - roa.mp3"] = true,
     ["golden hour - purrple cat.mp3"] = true,
     ["green tea - purrple cat.mp3"] = true,
+    ["heart of the ocean - purrple cat.mp3"] = true,
+    ["hope - ghostrifter official.mp3"] = true,
     ["journey - roa.mp3"] = true,
+    ["kokua - luke bergs.mp3"] = true,
     ["late at night - sakura girl.mp3"] = true,
+    ["lights - sakura girl.mp3"] = true,
     ["missing you - purrple cat.mp3"] = true,
+    ["pearl - kirara magic.mp3"] = true,
     ["purple dream - ghostrifter official.mp3"] = true,
     ["summer madness - roa.mp3"] = true,
     ["sunset drive - tokyo music walker.mp3"] = true,
     ["when i was a boy - tokyo music walker.mp3"] = true,
+    ["winter magic - roa.mp3"] = true,
 }
 
 function sound.initPlaylist(keepSource)
