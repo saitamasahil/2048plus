@@ -806,6 +806,20 @@ local function getBottomNavMargin(w, h)
     return math.max(safe_bottom, min_gesture_margin)
 end
 
+local function getTopStatusBarMargin(w, h)
+    local safe_top = 0
+    pcall(function()
+        if love.window and love.window.getSafeArea then
+            local _, sy = love.window.getSafeArea()
+            if sy and sy > 0 then
+                safe_top = sy
+            end
+        end
+    end)
+    local min_status_margin = math.max(math.floor(h * 0.05), math.floor(36 * (w / 390)), 32)
+    return math.max(safe_top, min_status_margin)
+end
+
 function android_console.touchpressed(id, x, y, dx, dy, pressure)
     if transition_active then
         return
@@ -864,6 +878,12 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
             end
         end
 
+        -- Ignore swipes starting in top status bar area to prevent accidental move
+        local status_margin = getTopStatusBarMargin(w, h)
+        if y <= status_margin then
+            return
+        end
+
         -- Ignore swipes starting in bottom navigation bar gesture zone
         local nav_margin = getBottomNavMargin(w, h)
         if y >= h - nav_margin then
@@ -879,6 +899,12 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
             vx = vx,
             vy = vy,
         }
+        return
+    end
+
+    -- Ignore touches in top status bar area to prevent accidental move
+    local status_margin = getTopStatusBarMargin(w, h)
+    if y <= status_margin then
         return
     end
 
@@ -936,7 +962,7 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
     -- Gameplay swipe gesture area outside buttons
     if is_gameplay then
         local nav_margin = getBottomNavMargin(w, h)
-        if y < h - nav_margin then
+        if y > status_margin and y < h - nav_margin then
             swipe_track[id] = {
                 start_x = x,
                 start_y = y,
@@ -964,6 +990,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
     if is_gameplay and android_view_mode == "fullscreen" then
         local sw = fs_swipe_track[id]
         if sw and not sw.fired then
+            local status_margin = getTopStatusBarMargin(w, h)
+            if sw.start_y <= status_margin or y <= status_margin then
+                return
+            end
             local nav_margin = getBottomNavMargin(w, h)
             if sw.start_y >= h - nav_margin then
                 return
@@ -1064,6 +1094,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
 
     -- Gesture swipe during gameplay
     if sw and not sw.fired and is_gameplay then
+        local status_margin = getTopStatusBarMargin(w, h)
+        if sw.start_y <= status_margin or y <= status_margin then
+            return
+        end
         local nav_margin = getBottomNavMargin(w, h)
         if sw.start_y >= h - nav_margin then
             return

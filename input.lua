@@ -264,7 +264,15 @@ function love.touchpressed(id, x, y, dx, dy, pressure)
     if not active_touch_id then
         local w, h = love.graphics.getDimensions()
         local nav_margin = math.max(math.floor(h * 0.075), 50)
-        if y < h - nav_margin then
+        local status_margin = 0
+        pcall(function()
+            if love.window and love.window.getSafeArea then
+                local _, sy = love.window.getSafeArea()
+                if sy and sy > 0 then status_margin = sy end
+            end
+        end)
+        status_margin = math.max(status_margin, math.max(math.floor(h * 0.05), math.floor(32 * (w / 390)), 28))
+        if y > status_margin and y < h - nav_margin then
             active_touch_id = id
             touch_start_x = x
             touch_start_y = y
