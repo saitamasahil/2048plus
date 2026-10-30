@@ -5,6 +5,7 @@ require("globals")
 local Game     = require("game")
 local input    = require("input")
 local renderer = require("renderer")
+_G.renderer    = renderer
 local save     = require("save")
 local splash   = require("splash")
 local sound    = require("sound")

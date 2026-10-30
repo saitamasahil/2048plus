@@ -2,6 +2,7 @@
 local android_console = {}
 
 local Game = require("game")
+local renderer = require("renderer")
 local input = nil
 local active_touches = {}
 local swipe_track = {}
