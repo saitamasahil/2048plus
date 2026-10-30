@@ -1498,7 +1498,7 @@ function love.update(dt)
                         sound.playMenuBack()
                         local entry = renderer.getSelectedThemeEntry and renderer.getSelectedThemeEntry()
                         if entry and entry.unlock_type == "store" then
-                            renderer.showToast("Unlock in Store")
+                            renderer.showToast("Available from Store")
                         elseif entry and entry.ach_name then
                             renderer.showToast("Unlock " .. entry.ach_name .. " to equip")
                         else
@@ -1533,7 +1533,7 @@ function love.update(dt)
                             end
                         else
                             sound.playMenuBack()
-                            renderer.showToast("Unlock in Store")
+                            renderer.showToast("Available from Store")
                         end
                     end
                 elseif tab == 3 then
@@ -1569,7 +1569,7 @@ function love.update(dt)
                             end
                         else
                             sound.playMenuBack()
-                            renderer.showToast("Unlock in Store")
+                            renderer.showToast("Available from Store")
                         end
                     end
                 end

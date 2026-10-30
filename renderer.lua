@@ -8860,7 +8860,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             badge_bg_col = nil
             badge_border_col = nil
             badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.85 * cur_a}
-            badge_txt = custom_unowned_txt or "LOCKED IN STORE"
+            badge_txt = custom_unowned_txt or "AVAILABLE FROM STORE"
         end
 
         love.graphics.setFont(font_help_label)
@@ -8964,7 +8964,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local unowned_text = "PRESS A TO EQUIP"
         if not is_theme_unlocked then
             if entry.unlock_type == "store" then
-                unowned_text = "LOCKED IN STORE"
+                unowned_text = "AVAILABLE FROM STORE"
             elseif entry.unlock_type == "achievement" then
                 unowned_text = "UNLOCK: " .. (entry.ach_name and entry.ach_name:upper() or "ACHIEVEMENT")
             else
