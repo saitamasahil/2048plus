@@ -28,6 +28,8 @@ local menu_anim_x = nil
 local menu_anim_target_x = nil
 local menu_anim_w = nil
 local menu_anim_target_w = nil
+local menu_anim_h = nil
+local menu_anim_target_h = nil
 local tutorial_old_canvas = nil
 local tutorial_new_canvas = nil
 local achievements_old_canvas = nil
@@ -79,9 +81,21 @@ local win_timer = 0
 -- Endless Mode header animation state: 0 normal header, 1 endless header
 local endless_anim_progress = 0
 
--- Text size flash animation state on toggle
-local text_size_flash_timer = 0
-local TEXT_SIZE_FLASH_DURATION = 0.4
+-- Text size transition state
+local text_size_transition_timer = 0
+local text_size_old_canvas = nil
+local text_size_new_canvas = nil
+local text_size_new_canvas_ready = false
+local text_size_transition_selection = 2
+local text_size_pill_from_x = 0
+local text_size_pill_from_y = 0
+local text_size_pill_from_w = 0
+local text_size_pill_from_h = 0
+local text_size_pill_to_x = 0
+local text_size_pill_to_y = 0
+local text_size_pill_to_w = 0
+local text_size_pill_to_h = 0
+local TEXT_SIZE_TRANSITION_DURATION = 0.22
 
 -- Arcade Menu animation state
 local arcade_panel_y_offset = 9999  -- starts fully hidden off screen below
@@ -119,8 +133,89 @@ function renderer.setArcadeMenuOpen(open)
     end
 end
 
+function renderer.startTextSizeTransition(old_size, new_size)
+    if not _G.screen_transitions then
+        text_size_transition_timer = 0
+        return
+    end
+
+    if not renderer.calculateSettingsLayout or not renderer.drawSettingsElements then
+        text_size_transition_timer = 0
+        return
+    end
+
+    local w, h = love.graphics.getDimensions()
+    local scale = _G.scale or 1
+
+    if not text_size_old_canvas or text_size_old_canvas:getWidth() ~= w or text_size_old_canvas:getHeight() ~= h then
+        text_size_old_canvas = love.graphics.newCanvas(w, h)
+    end
+
+    local sel = _G.settings_selection or 2
+    local old_layout = renderer.calculateSettingsLayout(sel, w, h, scale)
+
+    -- Capture current pill position
+    text_size_pill_from_x = menu_anim_x or old_layout.target_ox
+    text_size_pill_from_y = menu_anim_y or old_layout.target_oy
+    text_size_pill_from_w = menu_anim_w or old_layout.target_ow
+    text_size_pill_from_h = menu_anim_h or old_layout.target_oh
+
+    -- Capture old settings text without pill into transparent canvas
+    love.graphics.setCanvas(text_size_old_canvas)
+    love.graphics.clear(0, 0, 0, 0)
+    renderer.drawSettingsElements(sel, w, h, scale, old_layout)
+    love.graphics.setCanvas()
+
+    text_size_transition_timer = TEXT_SIZE_TRANSITION_DURATION
+    text_size_new_canvas_ready = false
+    text_size_transition_selection = sel
+end
+
+function renderer.finishTextSizeTransition()
+    if not _G.screen_transitions or text_size_transition_timer <= 0 then
+        return
+    end
+
+    if not renderer.calculateSettingsLayout or not renderer.drawSettingsElements then
+        text_size_transition_timer = 0
+        return
+    end
+
+    local w, h = love.graphics.getDimensions()
+    local scale = _G.scale or 1
+
+    if not text_size_new_canvas or text_size_new_canvas:getWidth() ~= w or text_size_new_canvas:getHeight() ~= h then
+        text_size_new_canvas = love.graphics.newCanvas(w, h)
+    end
+
+    local sel = _G.settings_selection or 2
+    local new_layout = renderer.calculateSettingsLayout(sel, w, h, scale)
+
+    text_size_pill_to_x = new_layout.target_ox
+    text_size_pill_to_y = new_layout.target_oy
+    text_size_pill_to_w = new_layout.target_ow
+    text_size_pill_to_h = new_layout.target_oh
+
+    love.graphics.setCanvas(text_size_new_canvas)
+    love.graphics.clear(0, 0, 0, 0)
+    renderer.drawSettingsElements(sel, w, h, scale, new_layout)
+    love.graphics.setCanvas()
+
+    text_size_new_canvas_ready = true
+
+    -- Initialize menu animation values to source bounds
+    menu_anim_x = text_size_pill_from_x
+    menu_anim_y = text_size_pill_from_y
+    menu_anim_w = text_size_pill_from_w
+    menu_anim_h = text_size_pill_from_h
+    menu_anim_target_x = text_size_pill_to_x
+    menu_anim_target_y = text_size_pill_to_y
+    menu_anim_target_w = text_size_pill_to_w
+    menu_anim_target_h = text_size_pill_to_h
+end
+
 function renderer.flashTextSize()
-    text_size_flash_timer = TEXT_SIZE_FLASH_DURATION
+    -- Kept for backward compatibility
 end
 
 function renderer.resetMenuAnimation()
@@ -130,11 +225,17 @@ function renderer.resetMenuAnimation()
     menu_anim_target_x = nil
     menu_anim_w = nil
     menu_anim_target_w = nil
+    menu_anim_h = nil
+    menu_anim_target_h = nil
     tutorial_old_canvas = nil
     tutorial_new_canvas = nil
     achievements_old_canvas = nil
     achievements_new_canvas = nil
     _G.achievements_slide_timer = 0
+    text_size_transition_timer = 0
+    text_size_new_canvas_ready = false
+    text_size_old_canvas = nil
+    text_size_new_canvas = nil
 end
 
 function renderer.captureOldTutorialSlide(page)
@@ -6121,47 +6222,83 @@ function renderer.updateTransition(dt)
         end
     end
 
-    if menu_anim_target_y then
-        if not _G.screen_transitions then
-            menu_anim_y = menu_anim_target_y
-        else
-            if not menu_anim_y then
+    if text_size_transition_timer > 0 then
+        text_size_transition_timer = math.max(0, text_size_transition_timer - dt)
+        local t_progress = math.max(0, math.min(1, 1 - (text_size_transition_timer / TEXT_SIZE_TRANSITION_DURATION)))
+        local p = 1 - (1 - t_progress) ^ 3
+        menu_anim_x = text_size_pill_from_x + (text_size_pill_to_x - text_size_pill_from_x) * p
+        menu_anim_y = text_size_pill_from_y + (text_size_pill_to_y - text_size_pill_from_y) * p
+        menu_anim_w = text_size_pill_from_w + (text_size_pill_to_w - text_size_pill_from_w) * p
+        menu_anim_h = text_size_pill_from_h + (text_size_pill_to_h - text_size_pill_from_h) * p
+        if text_size_transition_timer == 0 then
+            text_size_new_canvas_ready = false
+            menu_anim_x = text_size_pill_to_x
+            menu_anim_y = text_size_pill_to_y
+            menu_anim_w = text_size_pill_to_w
+            menu_anim_h = text_size_pill_to_h
+            menu_anim_target_x = text_size_pill_to_x
+            menu_anim_target_y = text_size_pill_to_y
+            menu_anim_target_w = text_size_pill_to_w
+            menu_anim_target_h = text_size_pill_to_h
+        end
+    else
+        if menu_anim_target_y then
+            if not _G.screen_transitions then
                 menu_anim_y = menu_anim_target_y
-            end
-            local lerp_factor = 1 - math.exp(-25 * dt)
-            menu_anim_y = menu_anim_y + (menu_anim_target_y - menu_anim_y) * lerp_factor
-            if math.abs(menu_anim_y - menu_anim_target_y) < 0.5 then
-                menu_anim_y = menu_anim_target_y
+            else
+                if not menu_anim_y then
+                    menu_anim_y = menu_anim_target_y
+                end
+                local lerp_factor = 1 - math.exp(-25 * dt)
+                menu_anim_y = menu_anim_y + (menu_anim_target_y - menu_anim_y) * lerp_factor
+                if math.abs(menu_anim_y - menu_anim_target_y) < 0.5 then
+                    menu_anim_y = menu_anim_target_y
+                end
             end
         end
-    end
 
-    if menu_anim_target_x then
-        if not _G.screen_transitions then
-            menu_anim_x = menu_anim_target_x
-        else
-            if not menu_anim_x then
+        if menu_anim_target_x then
+            if not _G.screen_transitions then
                 menu_anim_x = menu_anim_target_x
-            end
-            local lerp_factor = 1 - math.exp(-25 * dt)
-            menu_anim_x = menu_anim_x + (menu_anim_target_x - menu_anim_x) * lerp_factor
-            if math.abs(menu_anim_x - menu_anim_target_x) < 0.5 then
-                menu_anim_x = menu_anim_target_x
+            else
+                if not menu_anim_x then
+                    menu_anim_x = menu_anim_target_x
+                end
+                local lerp_factor = 1 - math.exp(-25 * dt)
+                menu_anim_x = menu_anim_x + (menu_anim_target_x - menu_anim_x) * lerp_factor
+                if math.abs(menu_anim_x - menu_anim_target_x) < 0.5 then
+                    menu_anim_x = menu_anim_target_x
+                end
             end
         end
-    end
 
-    if menu_anim_target_w then
-        if not _G.screen_transitions then
-            menu_anim_w = menu_anim_target_w
-        else
-            if not menu_anim_w then
+        if menu_anim_target_w then
+            if not _G.screen_transitions then
                 menu_anim_w = menu_anim_target_w
+            else
+                if not menu_anim_w then
+                    menu_anim_w = menu_anim_target_w
+                end
+                local lerp_factor = 1 - math.exp(-25 * dt)
+                menu_anim_w = menu_anim_w + (menu_anim_target_w - menu_anim_w) * lerp_factor
+                if math.abs(menu_anim_w - menu_anim_target_w) < 0.5 then
+                    menu_anim_w = menu_anim_target_w
+                end
             end
-            local lerp_factor = 1 - math.exp(-25 * dt)
-            menu_anim_w = menu_anim_w + (menu_anim_target_w - menu_anim_w) * lerp_factor
-            if math.abs(menu_anim_w - menu_anim_target_w) < 0.5 then
-                menu_anim_w = menu_anim_target_w
+        end
+
+        if menu_anim_target_h then
+            if not _G.screen_transitions then
+                menu_anim_h = menu_anim_target_h
+            else
+                if not menu_anim_h then
+                    menu_anim_h = menu_anim_target_h
+                end
+                local lerp_factor = 1 - math.exp(-25 * dt)
+                menu_anim_h = menu_anim_h + (menu_anim_target_h - menu_anim_h) * lerp_factor
+                if math.abs(menu_anim_h - menu_anim_target_h) < 0.5 then
+                    menu_anim_h = menu_anim_target_h
+                end
             end
         end
     end
@@ -6217,10 +6354,6 @@ function renderer.updateTransition(dt)
         end
     end
 
-    -- Text size flash timer
-    if text_size_flash_timer > 0 then
-        text_size_flash_timer = math.max(0, text_size_flash_timer - dt)
-    end
 
     -- Update toast particles
     for i = #toast_particles, 1, -1 do
@@ -7249,42 +7382,23 @@ function renderer.getSettingsOptions()
     }
 end
 
-function renderer.drawSettings(selection, skip_transition)
-    renderer.clearBackground()
-
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
-
+-- Settings layout calculation
+function renderer.calculateSettingsLayout(selection, w, h, scale)
     local options = renderer.getSettingsOptions()
     selection = math.max(1, math.min(#options, selection or 1))
     love.graphics.setFont(font_message)
-    -- Restore original main menu line spacing
     local gap = (_G.text_size == "large" and 37 or 34) * scale
     local menu_h = (#options - 1) * gap + font_message:getHeight()
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
 
-    -- Settings header style
     local header_h = math.floor((_G.text_size == "large" and 70 or 85) * scale)
     local total_h = header_h + math.floor(12 * scale) + menu_h
     local available_h = badge_y - math.floor(10 * scale)
     local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
 
-    local f_title = font_main_menu_title or font_tile_large
-    local title_text = _G.settings_page == "audio" and "AUDIO & HAPTICS" or "SETTINGS"
-    local tw = f_title:getWidth(title_text)
-    local th = f_title:getHeight()
-    local tx = (w - tw) / 2
-    local ty = start_y + (header_h - th) / 2
-
-    love.graphics.setColor(getTileColor(2048))
-    love.graphics.setFont(f_title)
-    love.graphics.print(title_text, tx, ty)
-
-    -- Menu options start position
     local menu_start_y = start_y + header_h + math.floor(12 * scale)
 
-    -- Calculate maximum option width using the longest possible states of each option to prevent shifting/jittering
     local max_options
     if _G.settings_page == "audio" then
         max_options = {
@@ -7320,44 +7434,65 @@ function renderer.drawSettings(selection, skip_transition)
 
     local target_ox = block_x - 12 * scale
     local target_ow = sel_ow + 24 * scale
+    local target_oh = font_message:getHeight() + 2 * scale
 
-    menu_anim_target_y = target_oy
-    menu_anim_target_x = target_ox
-    menu_anim_target_w = target_ow
+    return {
+        options = options,
+        selection = selection,
+        gap = gap,
+        badge_h = badge_h,
+        badge_y = badge_y,
+        header_h = header_h,
+        start_y = start_y,
+        menu_start_y = menu_start_y,
+        block_x = block_x,
+        target_ox = target_ox,
+        target_oy = target_oy,
+        target_ow = target_ow,
+        target_oh = target_oh
+    }
+end
 
-    if not menu_anim_y then menu_anim_y = target_oy end
-    if not menu_anim_x then menu_anim_x = target_ox end
-    if not menu_anim_w then menu_anim_w = target_ow end
+-- Render settings text, header and badges without pill or background
+function renderer.drawSettingsElements(selection, w, h, scale, layout)
+    layout = layout or renderer.calculateSettingsLayout(selection, w, h, scale)
+    local options = layout.options
+    selection = layout.selection
 
-    love.graphics.setColor(help_key_color)
-    drawSelectionPill(menu_anim_x, menu_anim_y - 1 * scale, menu_anim_w, font_message:getHeight() + 2 * scale, 6 * scale)
+    local f_title = font_main_menu_title or font_tile_large
+    local title_text = _G.settings_page == "audio" and "AUDIO & HAPTICS" or "SETTINGS"
+    local tw = f_title:getWidth(title_text)
+    local th = f_title:getHeight()
+    local tx = (w - tw) / 2
+    local ty = layout.start_y + (layout.header_h - th) / 2
+
+    love.graphics.setColor(getTileColor(2048))
+    love.graphics.setFont(f_title)
+    love.graphics.print(title_text, tx, ty)
 
     for i, opt in ipairs(options) do
-        local oy = menu_start_y + (i - 1) * gap
+        local oy = layout.menu_start_y + (i - 1) * layout.gap
         if i == selection then
             love.graphics.setColor(help_key_text)
         else
             love.graphics.setColor(ui_text)
         end
         love.graphics.setFont(font_message)
-        love.graphics.print(opt, block_x, oy)
+        love.graphics.print(opt, layout.block_x, oy)
     end
 
-    -- Draw footer bar for Settings Menu
     local item_gap = math.floor(10 * scale)
     local label_gap = math.floor(4 * scale)
 
     if love.system.getOS() ~= "Web" then
-        -- DPAD Navigate on the left
         local dpad_x = math.floor(20 * scale)
         local dpad_size = math.floor(24 * scale)
-        drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
+        drawKeyBadge("DPAD", dpad_x, layout.badge_y + (layout.badge_h - dpad_size) / 2, dpad_size, dpad_size)
         dpad_x = dpad_x + dpad_size + math.floor(6 * scale)
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(ui_text)
-        love.graphics.print("Navigate", dpad_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        love.graphics.print("Navigate", dpad_x, layout.badge_y + (layout.badge_h - font_help_label:getHeight()) / 2)
 
-        -- Action buttons: A Select, B Back, Y Theme
         local right_x = w - math.floor(20 * scale)
         local actions = {
             {key = "A", label = "Select"},
@@ -7365,21 +7500,109 @@ function renderer.drawSettings(selection, skip_transition)
             {key = "Y", label = "Switch Theme"}
         }
         for _, action in ipairs(actions) do
-            -- Label
             love.graphics.setFont(font_help_label)
             local lbl_w = font_help_label:getWidth(action.label)
             right_x = right_x - lbl_w
             love.graphics.setColor(ui_text)
-            love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+            love.graphics.print(action.label, right_x, layout.badge_y + (layout.badge_h - font_help_label:getHeight()) / 2)
 
-            -- Badge
             right_x = right_x - label_gap
             local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
             right_x = right_x - key_w
-            drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+            drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
 
             right_x = right_x - item_gap
         end
+    end
+end
+
+function renderer.drawSettings(selection, skip_transition)
+    renderer.clearBackground()
+
+    local w, h = love.graphics.getDimensions()
+    local scale = _G.scale or 1
+
+    local layout = renderer.calculateSettingsLayout(selection, w, h, scale)
+    selection = layout.selection
+
+    local in_text_size_transition = false
+    if not skip_transition and _G.screen_transitions and text_size_transition_timer > 0 and text_size_old_canvas and (selection == text_size_transition_selection) then
+        if text_size_old_canvas:getWidth() ~= w or text_size_old_canvas:getHeight() ~= h then
+            text_size_transition_timer = 0
+        else
+            if not text_size_new_canvas_ready or not text_size_new_canvas or text_size_new_canvas:getWidth() ~= w or text_size_new_canvas:getHeight() ~= h then
+                if not text_size_new_canvas or text_size_new_canvas:getWidth() ~= w or text_size_new_canvas:getHeight() ~= h then
+                    text_size_new_canvas = love.graphics.newCanvas(w, h)
+                end
+                text_size_pill_to_x = layout.target_ox
+                text_size_pill_to_y = layout.target_oy
+                text_size_pill_to_w = layout.target_ow
+                text_size_pill_to_h = layout.target_oh
+
+                love.graphics.setCanvas(text_size_new_canvas)
+                love.graphics.clear(0, 0, 0, 0)
+                renderer.drawSettingsElements(selection, w, h, scale, layout)
+                love.graphics.setCanvas()
+                text_size_new_canvas_ready = true
+            end
+            in_text_size_transition = true
+        end
+    end
+
+    if in_text_size_transition then
+        local t_progress = math.max(0, math.min(1, 1 - (text_size_transition_timer / TEXT_SIZE_TRANSITION_DURATION)))
+        local p = 1 - (1 - t_progress) ^ 3
+
+        local px = text_size_pill_from_x + (text_size_pill_to_x - text_size_pill_from_x) * p
+        local py = text_size_pill_from_y + (text_size_pill_to_y - text_size_pill_from_y) * p
+        local pw = text_size_pill_from_w + (text_size_pill_to_w - text_size_pill_from_w) * p
+        local ph = text_size_pill_from_h + (text_size_pill_to_h - text_size_pill_from_h) * p
+
+        menu_anim_x = px
+        menu_anim_y = py
+        menu_anim_w = pw
+        menu_anim_h = ph
+        menu_anim_target_x = text_size_pill_to_x
+        menu_anim_target_y = text_size_pill_to_y
+        menu_anim_target_w = text_size_pill_to_w
+        menu_anim_target_h = text_size_pill_to_h
+
+        love.graphics.setColor(help_key_color)
+        drawSelectionPill(px, py - 1 * scale, pw, ph, 6 * scale)
+
+        local a_old = 1 - p
+        love.graphics.setBlendMode("alpha", "premultiplied")
+        love.graphics.setColor(a_old, a_old, a_old, a_old)
+        love.graphics.draw(text_size_old_canvas, 0, 0)
+
+        local a_new = p
+        love.graphics.setColor(a_new, a_new, a_new, a_new)
+        love.graphics.draw(text_size_new_canvas, 0, 0)
+
+        love.graphics.setBlendMode("alpha", "alphamultiply")
+        love.graphics.setColor(1, 1, 1, 1)
+    else
+        menu_anim_target_x = layout.target_ox
+        menu_anim_target_y = layout.target_oy
+        menu_anim_target_w = layout.target_ow
+        menu_anim_target_h = layout.target_oh
+
+        if not _G.screen_transitions then
+            menu_anim_x = layout.target_ox
+            menu_anim_y = layout.target_oy
+            menu_anim_w = layout.target_ow
+            menu_anim_h = layout.target_oh
+        else
+            if not menu_anim_x then menu_anim_x = layout.target_ox end
+            if not menu_anim_y then menu_anim_y = layout.target_oy end
+            if not menu_anim_w then menu_anim_w = layout.target_ow end
+            if not menu_anim_h then menu_anim_h = layout.target_oh end
+        end
+
+        love.graphics.setColor(help_key_color)
+        drawSelectionPill(menu_anim_x, menu_anim_y - 1 * scale, menu_anim_w, menu_anim_h, 6 * scale)
+
+        renderer.drawSettingsElements(selection, w, h, scale, layout)
     end
 
     -- Theme transition overlay
@@ -7583,14 +7806,6 @@ function renderer.drawMainMenu(selection, skip_transition)
         end
     end
 
-    -- Text size toggle flash: brief full-screen white flash, fades out cleanly
-    if text_size_flash_timer > 0 then
-        local p = text_size_flash_timer / TEXT_SIZE_FLASH_DURATION  -- 1→0
-        local alpha = p * p * 0.45  -- ease-out, max ~45% white overlay
-        love.graphics.setColor(1, 1, 1, alpha)
-        love.graphics.rectangle("fill", 0, 0, w, h)
-        love.graphics.setColor(1, 1, 1, 1)
-    end
 
     if not skip_transition and transition_timer > 0 and transition_canvas then
         love.graphics.stencil(drawStencilCircle, "replace", 1)

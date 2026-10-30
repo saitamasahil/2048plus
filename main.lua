@@ -1662,10 +1662,17 @@ function love.update(dt)
                         end)
                     elseif sel:match("^Text Size") then
                         sound.playMenuSelect()
-                        _G.text_size = (_G.text_size == "large") and "normal" or "large"
+                        local old_size = _G.text_size
+                        local new_size = (old_size == "large") and "normal" or "large"
+                        if _G.screen_transitions and renderer.startTextSizeTransition then
+                            renderer.startTextSizeTransition(old_size, new_size)
+                        end
+                        _G.text_size = new_size
                         save.saveTextSize(_G.text_size)
                         renderer.init()
-                        renderer.flashTextSize()
+                        if _G.screen_transitions and renderer.finishTextSizeTransition then
+                            renderer.finishTextSizeTransition()
+                        end
                     elseif sel:match("Animation Speed") then
                         sound.playMenuSelect()
                         if _G.animation_speed == "normal" then
