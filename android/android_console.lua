@@ -600,19 +600,22 @@ function android_console.updateLayout()
 
     -- D-Pad on left side
     local dpad_size = math.min(math.floor(w * 0.40), math.floor((ctrl_bottom - ctrl_top) * 0.62))
-    local dpad_x = origin_x + math.floor(w * 0.24)
     local dpad_y = ctrl_mid_y
-
-    geo.dpad_x = dpad_x
-    geo.dpad_y = dpad_y
-    geo.dpad_size = dpad_size
-    geo.dpad_r = dpad_size / 2
 
     -- Action buttons diamond cluster in menu mode, row during gameplay
     local btn_size = math.floor(dpad_size * 0.43)
     local center_act_x = origin_x + math.floor(w * 0.76)
     local center_act_y = ctrl_mid_y
     local offset_r = math.floor(btn_size * 0.82)
+
+    -- Match D-pad left gap with button A right gap
+    local a_right_gap = (origin_x + w) - (center_act_x + offset_r + math.floor(btn_size / 2))
+    local dpad_x = origin_x + a_right_gap + math.floor(dpad_size / 2)
+
+    geo.dpad_x = dpad_x
+    geo.dpad_y = dpad_y
+    geo.dpad_size = dpad_size
+    geo.dpad_r = dpad_size / 2
 
     geo.center_act_x = center_act_x
     geo.center_act_y = center_act_y
@@ -2741,17 +2744,6 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         end
         love.graphics.rectangle("fill", bx, by, bw, bh, br, br)
 
-        -- Inset top shadow bevel
-        if is_dark then
-            love.graphics.setColor(0, 0, 0, 0.40 * box_alpha)
-        else
-            love.graphics.setColor(cr * 0.70, cg * 0.70, cb * 0.70, 0.45 * box_alpha)
-        end
-        love.graphics.rectangle("fill", bx + br, by + 1, bw - 2 * br, 2)
-
-        -- Inset bottom highlight rim
-        love.graphics.setColor(1, 1, 1, (is_dark and 0.08 or 0.30) * box_alpha)
-        love.graphics.line(bx + br, by + bh - 1, bx + bw - br, by + bh - 1)
 
         -- Micropattern stipple texture
         local dot_alpha = (is_dark and 0.07 or 0.11) * box_alpha
