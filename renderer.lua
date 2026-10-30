@@ -8495,6 +8495,55 @@ end
 -- ============================================================================
 -- Customization Screen Catalogs and Functions
 -- ============================================================================
+local themes_catalog = {
+    -- Default starter themes
+    { id = "light", name = "Light", unlock_type = "default" },
+    { id = "dark",  name = "Dark",  unlock_type = "default" },
+
+    -- Store themes
+    { id = "cosmic",     name = "Cosmic",          unlock_type = "store", store_id = "theme_cosmic" },
+    { id = "cherry",     name = "Cherry",          unlock_type = "store", store_id = "theme_cherry" },
+    { id = "gold_luxe",  name = "Gold Luxe",       unlock_type = "store", store_id = "theme_gold_luxe" },
+    { id = "cyber_grid", name = "Cyber Grid",      unlock_type = "store", store_id = "theme_cyber_grid" },
+    { id = "synthwave",  name = "Synthwave",       unlock_type = "store", store_id = "theme_synthwave" },
+
+    -- Achievement themes
+    { id = "ocean",      name = "Ocean",       unlock_type = "achievement", ach_id = "ach_first_game",       ach_name = "First Steps" },
+    { id = "forest",     name = "Forest",      unlock_type = "achievement", ach_id = "ach_score_1k",         ach_name = "Getting Started" },
+    { id = "volcano",    name = "Volcano",     unlock_type = "achievement", ach_id = "ach_score_2k",         ach_name = "Gaining Momentum" },
+    { id = "sunset",     name = "Sunset",      unlock_type = "achievement", ach_id = "ach_score_5k",         ach_name = "Rising Star" },
+    { id = "abyss",      name = "Abyss",       unlock_type = "achievement", ach_id = "ach_score_7k",         ach_name = "High Scorer" },
+    { id = "neon",       name = "Neon",        unlock_type = "achievement", ach_id = "ach_score_10k",        ach_name = "High Roller" },
+    { id = "vaporwave",  name = "Vaporwave",   unlock_type = "achievement", ach_id = "ach_score_25k",        ach_name = "Aesthetic" },
+    { id = "dracula",    name = "Dracula",     unlock_type = "achievement", ach_id = "ach_score_50k",        ach_name = "Vampire Lord" },
+    { id = "gold",       name = "Gold",        unlock_type = "achievement", ach_id = "ach_score_100k",       ach_name = "Midas Touch" },
+    { id = "hyperdrive", name = "Hyperdrive",  unlock_type = "achievement", ach_id = "ach_score_250k",       ach_name = "Infinity Legend" },
+    { id = "candy",      name = "Candy",       unlock_type = "achievement", ach_id = "ach_merge_512",        ach_name = "Half Way There" },
+    { id = "midnight",   name = "Midnight",    unlock_type = "achievement", ach_id = "ach_merge_1024",       ach_name = "Almost There" },
+    { id = "oled",       name = "OLED",        unlock_type = "achievement", ach_id = "ach_2048",             ach_name = "2048 Master" },
+    { id = "glitch",     name = "Glitch",      unlock_type = "achievement", ach_id = "ach_4096",             ach_name = "The One" },
+    { id = "quantum",    name = "Quantum",     unlock_type = "achievement", ach_id = "ach_merge_8192",       ach_name = "The Chosen One" },
+    { id = "eclipse",    name = "Eclipse",     unlock_type = "achievement", ach_id = "ach_first_bomb",       ach_name = "Boom!" },
+    { id = "retro",      name = "Retro",       unlock_type = "achievement", ach_id = "ach_demolition",       ach_name = "Demolition Expert" },
+    { id = "steel",      name = "Steel",       unlock_type = "achievement", ach_id = "ach_tactician",        ach_name = "Tactician" },
+    { id = "cyberpunk",  name = "Cyberpunk",   unlock_type = "achievement", ach_id = "ach_2048_plus",        ach_name = "Plus Mode Master" },
+    { id = "aurora",     name = "Aurora",      unlock_type = "achievement", ach_id = "ach_timeattack_2048",  ach_name = "Aurora" },
+    { id = "nebula",     name = "Nebula",      unlock_type = "achievement", ach_id = "ach_huge_2048",        ach_name = "Spacious Giant" },
+    { id = "inferno",    name = "Inferno",     unlock_type = "achievement", ach_id = "ach_nomercy_512",      ach_name = "No Escape" },
+    { id = "honk",       name = "Honk",        unlock_type = "achievement", ach_id = "ach_goose_2048",       ach_name = "Honk Honk!" },
+    { id = "peach",      name = "Peach",       unlock_type = "achievement", ach_id = "ach_untouchable",      ach_name = "Untouchable" },
+    { id = "matcha",     name = "Matcha",      unlock_type = "achievement", ach_id = "ach_untouchable_2048", ach_name = "Zen Master" },
+    { id = "retrogold",  name = "Retro Gold",  unlock_type = "achievement", ach_id = "ach_speedrun_2048",    ach_name = "Speed Demon" },
+    { id = "spectrum",   name = "Spectrum",    unlock_type = "achievement", ach_id = "ach_hardcore_2048",    ach_name = "Hardcore Gamer" },
+    { id = "matrix",     name = "Matrix",      unlock_type = "achievement", ach_id = "ach_secret_menu",      ach_name = "Secret Discovery" },
+    { id = "lofi",       name = "Lo-Fi",       unlock_type = "achievement", ach_id = "ach_melody_maker",     ach_name = "Melody Maker" },
+    { id = "platinum",   name = "Luxe",        unlock_type = "achievement", ach_id = "ach_big_spender",      ach_name = "Big Spender" },
+    { id = "guardian",   name = "Sapphire",    unlock_type = "achievement", ach_id = "ach_first_shield",     ach_name = "Second Chance" },
+    { id = "pastel",     name = "Pastel",      unlock_type = "achievement", ach_id = "ach_coin_hoarder",     ach_name = "Coin Hoarder" },
+    { id = "pawprint",   name = "Pawprint",    unlock_type = "achievement", ach_id = "ach_best_friend",      ach_name = "Best Friend" },
+    { id = "neko_night", name = "Neko Night",  unlock_type = "achievement", ach_id = "ach_purrfect_run",     ach_name = "Purrfect Run" },
+}
+
 local board_skins_catalog = {
     { id = "default", name = "Dynamic Board" },
     { id = "wood",    name = "Wood Board" },
@@ -8511,6 +8560,61 @@ local pets_catalog = {
     { id = "bruno", type = "dog",  breed_id = "bruno", name = "Bruno" },
     { id = "coco",  type = "dog",  breed_id = "coco",  name = "Coco" },
 }
+
+function renderer.getThemesCatalog()
+    return themes_catalog
+end
+
+function renderer.getSelectedThemeEntry()
+    local idx = _G.custom_theme_idx or 1
+    return themes_catalog[idx] or themes_catalog[1]
+end
+
+function renderer.isThemeUnlocked(theme_id)
+    if not theme_id then return false end
+    if _G.cheat_unlock_all_themes then return true end
+    if theme_id == "light" or theme_id == "dark" then return true end
+    local raw_t = theme_id == "cherry_blossom" and "cherry" or theme_id
+    if _G.unlocked_themes then
+        for _, t in ipairs(_G.unlocked_themes) do
+            local un_raw = t == "cherry_blossom" and "cherry" or t
+            if un_raw == raw_t then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function renderer.cycleCustomTheme(dir)
+    local count = #themes_catalog
+    local prev = _G.custom_theme_idx or 1
+    local cur = prev + dir
+    if cur > count then cur = 1 elseif cur < 1 then cur = count end
+    _G.custom_theme_prev_idx = prev
+    _G.custom_theme_idx = cur
+
+    if _G.screen_transitions and renderer.startThemeTransition then
+        renderer.startThemeTransition(function()
+            renderer.drawThemeSelect(true)
+        end, dir)
+    end
+
+    local entry = themes_catalog[cur] or themes_catalog[1]
+    _G.theme = entry.id
+    if renderer.applyTheme then renderer.applyTheme(true) end
+end
+
+function renderer.syncCustomThemeIndex()
+    local cur_t = _G.theme or "light"
+    _G.custom_theme_idx = 1
+    for i, t in ipairs(themes_catalog) do
+        if t.id == cur_t or (t.id == "cherry" and cur_t == "cherry_blossom") or (t.id == "cherry_blossom" and cur_t == "cherry") then
+            _G.custom_theme_idx = i
+            break
+        end
+    end
+end
 
 function renderer.getBoardSkinsCatalog()
     return board_skins_catalog
@@ -8756,7 +8860,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             badge_bg_col = nil
             badge_border_col = nil
             badge_txt_col = {ui_text[1], ui_text[2], ui_text[3], 0.85 * cur_a}
-            badge_txt = "LOCKED IN STORE"
+            badge_txt = custom_unowned_txt or "LOCKED IN STORE"
         end
 
         love.graphics.setFont(font_help_label)
@@ -8789,16 +8893,11 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
     if tab == 1 then
         -- Theme Tab
-        local cur_t = type(_G.theme) == "string" and _G.theme or "light"
-        local theme_disp = renderer.getThemeDisplayName(cur_t, false)
-        local current_idx = 1
-        for i, t in ipairs(_G.unlocked_themes) do
-            if t == _G.theme or (t == "cherry" and _G.theme == "cherry_blossom") or (t == "cherry_blossom" and _G.theme == "cherry") then
-                current_idx = i
-                break
-            end
-        end
-        local subtitle = "◄  " .. theme_disp .. " (" .. current_idx .. "/" .. #_G.unlocked_themes .. ")  ►"
+        local current_idx = _G.custom_theme_idx or 1
+        local entry = themes_catalog[current_idx] or themes_catalog[1]
+        local cur_t = entry.id
+        local theme_disp = entry.name or renderer.getThemeDisplayName(cur_t, false)
+        local subtitle = "◄  " .. theme_disp .. " (" .. current_idx .. "/" .. #themes_catalog .. ")  ►"
 
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * a)
@@ -8860,9 +8959,20 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         end
 
         local initial_theme = _G.themeSelectInitialTheme or "light"
-        local is_theme_equipped = (_G.theme == initial_theme)
+        local is_theme_equipped = (cur_t == initial_theme)
+        local is_theme_unlocked = renderer.isThemeUnlocked(cur_t)
+        local unowned_text = "PRESS A TO EQUIP"
+        if not is_theme_unlocked then
+            if entry.unlock_type == "store" then
+                unowned_text = "LOCKED IN STORE"
+            elseif entry.unlock_type == "achievement" then
+                unowned_text = "UNLOCK: " .. (entry.ach_name and entry.ach_name:upper() or "ACHIEVEMENT")
+            else
+                unowned_text = "LOCKED"
+            end
+        end
         local theme_badge_y = board_y + board_size + math.floor(4 * scale)
-        drawStatusBadge(is_theme_equipped, true, 0, 1.0, "ACTIVE", "PRESS A TO EQUIP", theme_badge_y)
+        drawStatusBadge(is_theme_equipped, is_theme_unlocked, 0, 1.0, "ACTIVE", unowned_text, theme_badge_y)
 
         -- Horizontal palette strip
         local strip_h = math.floor(14 * scale)
@@ -9215,7 +9325,8 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
     local right_x = w - math.floor(20 * scale)
 
     local is_theme_eq = (_G.theme == (_G.themeSelectInitialTheme or "light"))
-    local action_a_label = is_theme_eq and "Active" or "Equip"
+    local is_theme_unlocked = renderer.isThemeUnlocked and renderer.isThemeUnlocked(_G.theme)
+    local action_a_label = not is_theme_unlocked and "Locked" or (is_theme_eq and "Active" or "Equip")
     if tab == 2 then
         local skin = board_skins_catalog[_G.custom_board_idx or 1]
         local is_owned = skin and ((skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id]))

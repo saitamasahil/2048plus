@@ -793,6 +793,9 @@ function love.update(dt)
                         _G.themeSelectPrevState = "MENU"
                         _G.themeSelectInitialTheme = _G.theme
                         _G.customization_tab = _G.customization_tab or 1
+                        if renderer.syncCustomThemeIndex then
+                            renderer.syncCustomThemeIndex()
+                        end
                         -- Sync indices to currently equipped items
                         if renderer.getBoardSkinsCatalog then
                             for i, s in ipairs(renderer.getBoardSkinsCatalog()) do
@@ -1450,6 +1453,13 @@ function love.update(dt)
                 local next_tab = (tab > 1) and (tab - 1) or 3
                 if next_tab ~= tab then
                     sound.playMenuMove()
+                    if tab == 1 then
+                        _G.theme = _G.themeSelectInitialTheme or "light"
+                        if renderer.applyTheme then renderer.applyTheme(true) end
+                    end
+                    if next_tab == 1 and renderer.syncCustomThemeIndex then
+                        renderer.syncCustomThemeIndex()
+                    end
                     if _G.screen_transitions and renderer.startCustomizationTabTransition then
                         renderer.startCustomizationTabTransition(tab, next_tab, -1)
                     else
@@ -1460,6 +1470,13 @@ function love.update(dt)
                 local next_tab = (tab < 3) and (tab + 1) or 1
                 if next_tab ~= tab then
                     sound.playMenuMove()
+                    if tab == 1 then
+                        _G.theme = _G.themeSelectInitialTheme or "light"
+                        if renderer.applyTheme then renderer.applyTheme(true) end
+                    end
+                    if next_tab == 1 and renderer.syncCustomThemeIndex then
+                        renderer.syncCustomThemeIndex()
+                    end
                     if _G.screen_transitions and renderer.startCustomizationTabTransition then
                         renderer.startCustomizationTabTransition(tab, next_tab, 1)
                     else
@@ -1476,14 +1493,27 @@ function love.update(dt)
             elseif event == input.events.CONFIRM then
                 if tab == 1 then
                     -- Theme tab: save theme and stay on screen
-                    sound.playMenuSelect()
-                    local initial_theme = _G.themeSelectInitialTheme or "light"
-                    if _G.theme ~= initial_theme then
-                        _G.themeSelectInitialTheme = _G.theme
-                        save.saveTheme(_G.theme)
-                        if game then game:saveGameState() end
-                        local theme_disp = renderer.getThemeDisplayName(_G.theme, false)
-                        renderer.showToast("Equipped " .. theme_disp .. " Theme!")
+                    local is_unlocked = renderer.isThemeUnlocked and renderer.isThemeUnlocked(_G.theme)
+                    if not is_unlocked then
+                        sound.playMenuBack()
+                        local entry = renderer.getSelectedThemeEntry and renderer.getSelectedThemeEntry()
+                        if entry and entry.unlock_type == "store" then
+                            renderer.showToast("Unlock in Store")
+                        elseif entry and entry.ach_name then
+                            renderer.showToast("Unlock " .. entry.ach_name .. " to equip")
+                        else
+                            renderer.showToast("Theme is locked")
+                        end
+                    else
+                        sound.playMenuSelect()
+                        local initial_theme = _G.themeSelectInitialTheme or "light"
+                        if _G.theme ~= initial_theme then
+                            _G.themeSelectInitialTheme = _G.theme
+                            save.saveTheme(_G.theme)
+                            if game then game:saveGameState() end
+                            local theme_disp = renderer.getThemeDisplayName(_G.theme, false)
+                            renderer.showToast("Equipped " .. theme_disp .. " Theme!")
+                        end
                     end
                 elseif tab == 2 then
                     -- Board tab: equip or unequip selected skin
@@ -1554,7 +1584,7 @@ function love.update(dt)
             elseif event == input.events.LEFT or event == input.events.UP then
                 if tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
-                    if _G.cycleTheme then _G.cycleTheme(-1) end
+                    if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
                 elseif tab == 2 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
@@ -1565,7 +1595,7 @@ function love.update(dt)
             elseif event == input.events.RIGHT or event == input.events.DOWN then
                 if tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
-                    if _G.cycleTheme then _G.cycleTheme(1) end
+                    if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
                 elseif tab == 2 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
@@ -2231,6 +2261,13 @@ function love.mousereleased(x, y, button, istouch, presses)
                         if idx ~= cur_tab then
                             local sound = require("sound")
                             if sound and sound.playMenuMove then sound.playMenuMove() end
+                            if cur_tab == 1 then
+                                _G.theme = _G.themeSelectInitialTheme or "light"
+                                if renderer.applyTheme then renderer.applyTheme(true) end
+                            end
+                            if idx == 1 and renderer.syncCustomThemeIndex then
+                                renderer.syncCustomThemeIndex()
+                            end
                             local dir = (idx > cur_tab) and 1 or -1
                             if _G.screen_transitions and renderer.startCustomizationTabTransition then
                                 renderer.startCustomizationTabTransition(cur_tab, idx, dir)
@@ -2248,7 +2285,7 @@ function love.mousereleased(x, y, button, istouch, presses)
                 if sound and sound.playMenuMove then sound.playMenuMove() end
                 local tab = _G.customization_tab or 1
                 if tab == 1 then
-                    if _G.cycleTheme then _G.cycleTheme(-1) end
+                    if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
                 elseif tab == 2 then
                     if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
                 elseif tab == 3 then
@@ -2262,7 +2299,7 @@ function love.mousereleased(x, y, button, istouch, presses)
                 if sound and sound.playMenuMove then sound.playMenuMove() end
                 local tab = _G.customization_tab or 1
                 if tab == 1 then
-                    if _G.cycleTheme then _G.cycleTheme(1) end
+                    if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
                 elseif tab == 2 then
                     if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
                 elseif tab == 3 then

@@ -1246,6 +1246,13 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                             local sound = require("sound")
                             if sound and sound.playMenuMove then sound.playMenuMove() end
                             local renderer = require("renderer")
+                            if cur_tab == 1 then
+                                _G.theme = _G.themeSelectInitialTheme or "light"
+                                if renderer.applyTheme then renderer.applyTheme(true) end
+                            end
+                            if idx == 1 and renderer.syncCustomThemeIndex then
+                                renderer.syncCustomThemeIndex()
+                            end
                             local dir = (idx > cur_tab) and 1 or -1
                             if _G.screen_transitions and renderer.startCustomizationTabTransition then
                                 renderer.startCustomizationTabTransition(cur_tab, idx, dir)
@@ -1269,7 +1276,7 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                     local tab = _G.customization_tab or 1
                     local renderer = require("renderer")
                     if tab == 1 then
-                        if _G.cycleTheme then _G.cycleTheme(-1) end
+                        if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
                     elseif tab == 2 then
                         if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
                     elseif tab == 3 then
@@ -1286,7 +1293,7 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                     local tab = _G.customization_tab or 1
                     local renderer = require("renderer")
                     if tab == 1 then
-                        if _G.cycleTheme then _G.cycleTheme(1) end
+                        if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
                     elseif tab == 2 then
                         if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
                     elseif tab == 3 then
