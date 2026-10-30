@@ -2159,16 +2159,23 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     end
 
     love.graphics.setColor(1, 1, 1, 1)
-    local crt = _G.crt_filter and getCrtShader()
-    if crt then
-        pcall(function()
-            crt:send("screen_size", {vw, vh})
-            love.graphics.setShader(crt)
-        end)
-    end
-    love.graphics.draw(fs_canvas, origin_x, 0, 0, scale_fs_x, scale_fs_y)
-    if crt then
-        love.graphics.setShader()
+    local in_crt_transition = renderer.isCrtTransitionActive and renderer.isCrtTransitionActive()
+    local apply_crt = _G.crt_filter or in_crt_transition
+    local crt = apply_crt and getCrtShader()
+    if crt and in_crt_transition and renderer.drawCrtScreenWithTransition then
+        pcall(function() crt:send("screen_size", {vw, vh}) end)
+        renderer.drawCrtScreenWithTransition(fs_canvas, crt, origin_x, 0, math.floor(vw * scale_fs_x), math.floor(vh * scale_fs_y), origin_x, 0, scale_fs_x, scale_fs_y)
+    else
+        if crt then
+            pcall(function()
+                crt:send("screen_size", {vw, vh})
+                love.graphics.setShader(crt)
+            end)
+        end
+        love.graphics.draw(fs_canvas, origin_x, 0, 0, scale_fs_x, scale_fs_y)
+        if crt then
+            love.graphics.setShader()
+        end
     end
 end
 
@@ -2431,18 +2438,23 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         end, "replace", 1)
         love.graphics.setStencilTest("greater", 0)
 
-        local crt = _G.crt_filter and getCrtShader()
-        if crt then
-            pcall(function()
-                crt:send("screen_size", {640, 480})
-                love.graphics.setShader(crt)
-            end)
-        end
-
-        love.graphics.draw(canvas, geo.screen_x, geo.screen_y, 0, geo.scale_x, geo.scale_y)
-
-        if crt then
-            love.graphics.setShader()
+        local in_crt_transition = renderer.isCrtTransitionActive and renderer.isCrtTransitionActive()
+        local apply_crt = _G.crt_filter or in_crt_transition
+        local crt = apply_crt and getCrtShader()
+        if crt and in_crt_transition and renderer.drawCrtScreenWithTransition then
+            pcall(function() crt:send("screen_size", {640, 480}) end)
+            renderer.drawCrtScreenWithTransition(canvas, crt, geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, geo.screen_x, geo.screen_y, geo.scale_x, geo.scale_y)
+        else
+            if crt then
+                pcall(function()
+                    crt:send("screen_size", {640, 480})
+                    love.graphics.setShader(crt)
+                end)
+            end
+            love.graphics.draw(canvas, geo.screen_x, geo.screen_y, 0, geo.scale_x, geo.scale_y)
+            if crt then
+                love.graphics.setShader()
+            end
         end
         love.graphics.setStencilTest()
 

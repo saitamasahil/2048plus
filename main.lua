@@ -1710,9 +1710,13 @@ function love.update(dt)
                         end
                         save.saveTimeAttackTime(_G.time_attack_time)
                     elseif sel:match("^CRT Shader") then
-                        _G.crt_filter = not _G.crt_filter
-                        save.saveCrtFilter(_G.crt_filter)
                         sound.playMenuSelect()
+                        local new_crt = not _G.crt_filter
+                        if _G.screen_transitions and renderer.startCrtTransition then
+                            renderer.startCrtTransition(new_crt)
+                        end
+                        _G.crt_filter = new_crt
+                        save.saveCrtFilter(_G.crt_filter)
 
                     elseif sel == "Back" then
                         sound.playMenuBack()
@@ -2207,7 +2211,8 @@ function love.draw()
     local w, h = love.graphics.getDimensions()
     local old_setCanvas = love.graphics.setCanvas
 
-    local apply_crt = _G.crt_filter
+    local in_crt_transition = renderer.isCrtTransitionActive and renderer.isCrtTransitionActive()
+    local apply_crt = _G.crt_filter or in_crt_transition
     if apply_crt then
         if not crt_shader then
             local success, err = pcall(function()
@@ -2250,10 +2255,15 @@ function love.draw()
     if apply_crt and crt_shader and crt_main_canvas then
         love.graphics.setCanvas = old_setCanvas
         love.graphics.setCanvas()
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.setShader(crt_shader)
-        love.graphics.draw(crt_main_canvas, 0, 0)
-        love.graphics.setShader()
+
+        if in_crt_transition and renderer.drawCrtScreenWithTransition then
+            renderer.drawCrtScreenWithTransition(crt_main_canvas, crt_shader, 0, 0, w, h, 0, 0, 1, 1)
+        else
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setShader(crt_shader)
+            love.graphics.draw(crt_main_canvas, 0, 0)
+            love.graphics.setShader()
+        end
     end
 end
 

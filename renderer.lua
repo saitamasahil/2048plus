@@ -97,6 +97,11 @@ local text_size_pill_to_w = 0
 local text_size_pill_to_h = 0
 local TEXT_SIZE_TRANSITION_DURATION = 0.22
 
+-- CRT filter transition state
+local crt_transition_timer = 0
+local crt_transition_duration = 0.38
+local crt_transition_turning_on = true
+
 -- Arcade Menu animation state
 local arcade_panel_y_offset = 9999  -- starts fully hidden off screen below
 local arcade_panel_target = 9999    -- target offset
@@ -214,6 +219,22 @@ function renderer.finishTextSizeTransition()
     menu_anim_target_h = text_size_pill_to_h
 end
 
+function renderer.startCrtTransition(turning_on)
+    if not _G.screen_transitions then
+        crt_transition_timer = 0
+        _G.crt_transition_timer = 0
+        return
+    end
+    crt_transition_timer = crt_transition_duration
+    crt_transition_turning_on = turning_on
+    _G.crt_transition_timer = crt_transition_duration
+    _G.crt_transition_turning_on = turning_on
+end
+
+function renderer.isCrtTransitionActive()
+    return _G.screen_transitions and crt_transition_timer > 0
+end
+
 function renderer.flashTextSize()
     -- Kept for backward compatibility
 end
@@ -236,6 +257,8 @@ function renderer.resetMenuAnimation()
     text_size_new_canvas_ready = false
     text_size_old_canvas = nil
     text_size_new_canvas = nil
+    crt_transition_timer = 0
+    _G.crt_transition_timer = 0
 end
 
 function renderer.captureOldTutorialSlide(page)
@@ -6164,6 +6187,110 @@ function renderer.startThemeTransition(drawTarget, direction)
     end
 end
 
+-- Draw canvas with CRT wipe transition and phosphor beam front
+function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy, vw, vh, draw_x, draw_y, sx, sy)
+    local p = math.max(0, math.min(1, 1 - (crt_transition_timer / crt_transition_duration)))
+    local ease_p = p * p * (3 - 2 * p)
+    local turning_on = crt_transition_turning_on
+
+    local cx, cy
+    if turning_on then
+        cx = vx
+        cy = vy + vh / 2
+    else
+        cx = vx + vw
+        cy = vy + vh / 2
+    end
+
+    local max_dist = math.sqrt(vw * vw + (vh / 2) * (vh / 2)) + 20
+    local radius = max_dist * ease_p
+
+    local scale = _G.scale or 1
+
+    love.graphics.setColor(1, 1, 1, 1)
+    if turning_on then
+        -- Clean non-CRT layer underneath
+        love.graphics.draw(source_canvas, draw_x, draw_y, 0, sx or 1, sy or 1)
+    else
+        -- CRT layer underneath
+        love.graphics.setShader(crt_shader)
+        love.graphics.draw(source_canvas, draw_x, draw_y, 0, sx or 1, sy or 1)
+        love.graphics.setShader()
+    end
+
+    -- Stencil mask for the expanding sweep
+    local prev_comp, prev_val = love.graphics.getStencilTest()
+    love.graphics.stencil(function()
+        love.graphics.circle("fill", cx, cy, radius)
+    end, "replace", 2)
+    love.graphics.setStencilTest("greater", 1)
+
+    love.graphics.setColor(1, 1, 1, 1)
+    if turning_on then
+        -- CRT layer taking over inside the sweep
+        love.graphics.setShader(crt_shader)
+        love.graphics.draw(source_canvas, draw_x, draw_y, 0, sx or 1, sy or 1)
+        love.graphics.setShader()
+    else
+        -- Clean non-CRT layer taking over inside the sweep
+        love.graphics.draw(source_canvas, draw_x, draw_y, 0, sx or 1, sy or 1)
+    end
+
+    if prev_comp then
+        love.graphics.setStencilTest(prev_comp, prev_val)
+    else
+        love.graphics.setStencilTest()
+    end
+
+    -- Glowing phosphor beam edge along the front
+    if radius > 4 and radius < max_dist then
+        love.graphics.push("all")
+        local scx, scy, scw, sch = love.graphics.getScissor()
+        if love.graphics.intersectScissor then
+            love.graphics.intersectScissor(vx, vy, vw, vh)
+        else
+            love.graphics.setScissor(vx, vy, vw, vh)
+        end
+
+        if turning_on then
+            -- Electric cyan and white beam front
+            love.graphics.setColor(0.3, 0.75, 1.0, 0.7 * (1 - p * 0.25))
+            love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+            love.graphics.circle("line", cx, cy, radius)
+
+            love.graphics.setColor(1, 1, 1, 0.95)
+            love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+            love.graphics.circle("line", cx, cy, radius)
+
+            love.graphics.setColor(0.1, 0.5, 1.0, 0.3 * (1 - p * 0.25))
+            love.graphics.setLineWidth(math.max(4, math.floor(7 * scale)))
+            love.graphics.circle("line", cx, cy, radius)
+        else
+            -- Reverse degaussing emerald and white cutoff beam front
+            love.graphics.setColor(0.3, 0.95, 0.75, 0.7 * (1 - p * 0.25))
+            love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+            love.graphics.circle("line", cx, cy, radius)
+
+            love.graphics.setColor(1, 1, 1, 0.95)
+            love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+            love.graphics.circle("line", cx, cy, radius)
+
+            love.graphics.setColor(0.1, 0.8, 0.6, 0.3 * (1 - p * 0.25))
+            love.graphics.setLineWidth(math.max(4, math.floor(7 * scale)))
+            love.graphics.circle("line", cx, cy, radius)
+        end
+
+        if scx then
+            love.graphics.setScissor(scx, scy, scw, sch)
+        else
+            love.graphics.setScissor()
+        end
+        love.graphics.pop()
+    end
+
+    love.graphics.setColor(1, 1, 1, 1)
+end
+
 function renderer.updateTransition(dt)
     -- Update now playing BGM notifications
     local sound = require("sound")
@@ -6201,6 +6328,13 @@ function renderer.updateTransition(dt)
     end
     if coin_toast_timer > 0 then
         coin_toast_timer = math.max(0, coin_toast_timer - dt)
+    end
+    -- Update CRT transition timer
+    if crt_transition_timer > 0 then
+        crt_transition_timer = math.max(0, crt_transition_timer - dt)
+        _G.crt_transition_timer = crt_transition_timer
+    else
+        _G.crt_transition_timer = 0
     end
     if toast_timer > 0 then
         toast_timer = math.max(0, toast_timer - dt)
