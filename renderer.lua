@@ -1692,6 +1692,7 @@ local font_label
 local font_message
 local font_toast
 local font_help_key
+local font_help_key_small
 local font_help_label
 local font_path = "assets/font/ClearSans-Bold.ttf"
 local font_cache = {}
@@ -3609,9 +3610,11 @@ function renderer.init()
     font_message    = love.graphics.newFont(font_path, math.floor(28 * scale * text_scale))
     font_toast      = love.graphics.newFont(font_path, math.floor(17 * scale * text_scale))
     font_help_key   = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
+    font_help_key_small = love.graphics.newFont(font_path, math.floor(12 * scale * text_scale))
     font_help_label = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
     font_bgm        = love.graphics.newFont(font_path, math.floor(13 * scale))
     renderer.font_help_key   = font_help_key
+    renderer.font_help_key_small = font_help_key_small
     renderer.font_help_label = font_help_label
     renderer.font_bgm        = font_bgm
     logo_2048 = love.graphics.newImage("assets/logo/logo_2048.png")
@@ -5247,13 +5250,15 @@ end
 -- ============================================================================
 -- Draw key badge rounded rectangle with text
 -- ============================================================================
-local function drawKeyBadge(text, x, y, w, h, alpha_override)
+local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
     local scale = _G.scale
     local badge_a = alpha_override or 1.0
-    local visual_offset_y = -math.max(1, math.floor(1.5 * scale))
+    local key_font = font_override or ((h < math.floor(22 * scale)) and font_help_key_small) or font_help_key
+    local is_small = (key_font == font_help_key_small) or (h < math.floor(22 * scale))
+    local visual_offset_y = is_small and -math.max(0, math.floor(0.5 * scale)) or -math.max(1, math.floor(1.5 * scale))
     local original_text = text
     text = renderer.getButtonPrompt(text)
-    local letter_offset_y = (text == "Y" or text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale)))
+    local letter_offset_y = is_small and visual_offset_y or ((text == "Y" or text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale))))
 
     if original_text == "Y" or text == "Y" then
         renderer.theme_button_x = x + w / 2
@@ -5404,10 +5409,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 love.graphics.circle("line", cx, cy + press_shift_y, r)
 
                 -- Text letter
-                love.graphics.setFont(font_help_key)
+                love.graphics.setFont(key_font)
                 love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-                local tw = font_help_key:getWidth(text)
-                local th = font_help_key:getHeight()
+                local tw = key_font:getWidth(text)
+                local th = key_font:getHeight()
                 love.graphics.print(text, cx - tw/2, cy - th/2 + letter_offset_y + press_shift_y)
                 return
             end
@@ -5427,10 +5432,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
             love.graphics.circle("line", cx, cy + press_shift_y, r)
 
             -- Text letter
-            love.graphics.setFont(font_help_key)
+            love.graphics.setFont(key_font)
             love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-            local tw = font_help_key:getWidth(text)
-            local th = font_help_key:getHeight()
+            local tw = key_font:getWidth(text)
+            local th = key_font:getHeight()
             love.graphics.print(text, cx - tw/2, cy - th/2 + letter_offset_y + press_shift_y)
             return
         end
@@ -5449,10 +5454,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
                 roundedRect("line", x, y + press_shift_y, w, h, cr)
 
                 -- Text
-                love.graphics.setFont(font_help_key)
+                love.graphics.setFont(key_font)
                 love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-                local tw = font_help_key:getWidth(text)
-                local th = font_help_key:getHeight()
+                local tw = key_font:getWidth(text)
+                local th = key_font:getHeight()
                 love.graphics.print(text, x + (w - tw) / 2, y + (h - th) / 2 + letter_offset_y + press_shift_y)
                 return
             end
@@ -5472,10 +5477,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
             roundedRect("line", x, y + press_shift_y, w, h, cr)
 
             -- Text
-            love.graphics.setFont(font_help_key)
+            love.graphics.setFont(key_font)
             love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-            local tw = font_help_key:getWidth(text)
-            local th = font_help_key:getHeight()
+            local tw = key_font:getWidth(text)
+            local th = key_font:getHeight()
             love.graphics.print(text, x + (w - tw) / 2, y + (h - th) / 2 + letter_offset_y + press_shift_y)
             return
         end
@@ -5497,10 +5502,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override)
         roundedRect("line", x, y + press_shift_y, w, h, cr)
 
         -- Badge text
-        love.graphics.setFont(font_help_key)
+        love.graphics.setFont(key_font)
         love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-        local tw = font_help_key:getWidth(text)
-        local th = font_help_key:getHeight()
+        local tw = key_font:getWidth(text)
+        local th = key_font:getHeight()
 
         -- Visual alignment corrections for arrows in ClearSans
         local offset_x, offset_y = 0, letter_offset_y + press_shift_y
@@ -9646,10 +9651,10 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
     local l1_x = start_tab_x - shoulder_badge_w - math.floor(12 * scale)
     local r1_x = start_tab_x + total_tabs_w + math.floor(12 * scale)
     if l1_x > math.floor(8 * scale) then
-        drawKeyBadge("L1", l1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h)
+        drawKeyBadge("L1", l1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
     end
     if r1_x + shoulder_badge_w < w - math.floor(8 * scale) then
-        drawKeyBadge("R1", r1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h)
+        drawKeyBadge("R1", r1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
     end
 
     -- Active tab underline
