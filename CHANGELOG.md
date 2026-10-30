@@ -8,6 +8,7 @@
 - Display earned powerups in header subtitle below 2048
 
 ### Changed
+- Updated Honk theme with high-contrast colors and dynamic circular pond water ripples
 - Redesigned Ocean theme with maritime blue tiles and animated underwater effects
 - Redesigned Forest theme tiles with a forest green progression
 - New static icons for game modes

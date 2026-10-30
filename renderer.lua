@@ -1019,35 +1019,35 @@ local themes = {
         help_key_text    = {hex("#ffffff")},
     },
     honk = {
-        -- Wetland Pond: soft swamp green and pond blue accents.
+        -- Goose Pond: clean pond water with goose feather and beak tones
         tile_colors = {
-            [0]    = {hex("#e2ece9")},   -- light green-gray water
-            [2]    = {hex("#ffffff")},   -- clean white goose color
-            [4]    = {hex("#f7f0e1")},   -- eggshell white
-            [8]    = {hex("#fbdca4")},   -- orange beak yellow
-            [16]   = {hex("#f9c264")},   -- dark orange
-            [32]   = {hex("#dbecf5")},   -- sky blue
-            [64]   = {hex("#b4d4e7")},   -- baby blue
-            [128]  = {hex("#8ebbd9")},   -- soft blue
-            [256]  = {hex("#5293c1")},   -- deep water blue
-            [512]  = {hex("#2d71a1")},   -- lake blue
-            [1024] = {hex("#164e75")},   -- deep navy
-            [2048] = {hex("#ff8000")},   -- neon orange
+            [0]    = {hex("#224654")},
+            [2]    = {hex("#ffffff")},
+            [4]    = {hex("#fef08a")},
+            [8]    = {hex("#fde047")},
+            [16]   = {hex("#facc15")},
+            [32]   = {hex("#fb923c")},
+            [64]   = {hex("#f97316")},
+            [128]  = {hex("#ea580c")},
+            [256]  = {hex("#06b6d4")},
+            [512]  = {hex("#0284c7")},
+            [1024] = {hex("#0f766e")},
+            [2048] = {hex("#eab308")},
         },
-        super_tile_color = {hex("#ff8000")},
-        dark_text        = {hex("#1a3c34")},
-        light_text       = {hex("#bfe4f4")},
-        ui_text          = {hex("#1a6c5a")},   -- wetlands forest green
-        bg_color         = {hex("#eef7f4")},   -- wetland water backdrop
-        board_color      = {hex("#d2e4df")},   -- soft frame
-        score_bg_color   = {hex("#d2e4df")},
-        score_label      = {hex("#1a6c5a")},
-        score_value      = {hex("#1a3c34")},
-        overlay_win      = {hex("#5293c1")},
-        overlay_lose     = {hex("#d2e4df")},
-        help_bg_color    = {hex("#d2e4df")},
-        help_key_color   = {hex("#1a6c5a")},
-        help_key_text    = {hex("#ffffff")},
+        super_tile_color = {hex("#f43f5e")},
+        dark_text        = {hex("#112630")},
+        light_text       = {hex("#ffffff")},
+        ui_text          = {hex("#0f3342")},
+        bg_color         = {hex("#e8f4f8")},
+        board_color      = {hex("#183b48")},
+        score_bg_color   = {hex("#183b48")},
+        score_label      = {hex("#7dd3fc")},
+        score_value      = {hex("#ffffff")},
+        overlay_win      = {hex("#eab308")},
+        overlay_lose     = {hex("#183b48")},
+        help_bg_color    = {hex("#183b48")},
+        help_key_color   = {hex("#f59e0b")},
+        help_key_text    = {hex("#112630")},
     },
     quantum = {
         -- Quantum Cyber: Deep cyber navy, glowing electric cyan and blue.
@@ -2080,102 +2080,111 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Layer 1: Ambient morning mist and sun glare on pond
-        local cx, cy = w / 2, h / 2
-        for i = 1, 3 do
-            local mist_x = cx + math.sin(t * 0.2 + i) * 150 * scale
-            local mist_y = cy + math.cos(t * 0.15 + i * 1.5) * 80 * scale
-            local pulse = 0.5 + 0.5 * math.sin(t * 0.3 + i * 2)
-            love.graphics.setColor(1.0, 0.95, 0.8, 0.08 * pulse) -- warm sun glow
-            love.graphics.circle("fill", mist_x, mist_y, (180 + i * 40) * scale)
-        end
-
-        -- Layer 2: Distant water shimmer
-        local shimmer_rng = love.math.newRandomGenerator(88)
-        love.graphics.setLineWidth(math.max(1, math.floor(scale)))
-        for i = 1, 15 do
-            local sx = shimmer_rng:random() * w
-            local sy = h * 0.05 + shimmer_rng:random() * (h * 0.55)
-            local s_length = (20 + shimmer_rng:random() * 50) * scale
-            local s_speed = 0.5 + shimmer_rng:random() * 0.5
-            local offset_x = (sx + t * 15 * s_speed) % (w + s_length) - s_length
-            
-            local alpha = (0.05 + 0.05 * math.sin(t * (1.5 + shimmer_rng:random()) + i))
-            if alpha > 0.01 then
-                love.graphics.setColor(0.9, 0.95, 1.0, alpha)
-                love.graphics.line(offset_x, sy, offset_x + s_length, sy)
+        -- Layer 1: Undulating pond surface currents
+        local current_layers = {
+            {y_ratio = 0.18, freq = 0.008, spd = 0.8, amp = 6.0, alpha = 0.10, col = {0.05, 0.65, 0.85}},
+            {y_ratio = 0.34, freq = 0.006, spd = -0.6, amp = 8.0, alpha = 0.08, col = {0.01, 0.52, 0.78}},
+            {y_ratio = 0.52, freq = 0.009, spd = 0.9, amp = 7.0, alpha = 0.09, col = {0.02, 0.71, 0.83}},
+            {y_ratio = 0.68, freq = 0.007, spd = -0.7, amp = 9.0, alpha = 0.08, col = {0.05, 0.65, 0.85}},
+            {y_ratio = 0.84, freq = 0.010, spd = 0.75, amp = 7.5, alpha = 0.10, col = {0.01, 0.52, 0.78}},
+        }
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        local step = math.max(12, math.floor(w / 32))
+        for _, wl in ipairs(current_layers) do
+            local base_y = h * wl.y_ratio
+            love.graphics.setColor(wl.col[1], wl.col[2], wl.col[3], wl.alpha)
+            local pts = {}
+            for x = -step, w + step, step do
+                local wy = base_y + math.sin(x * wl.freq + t * wl.spd) * wl.amp * scale
+                                 + math.cos(x * wl.freq * 1.6 - t * wl.spd * 0.7) * (wl.amp * 0.35 * scale)
+                table.insert(pts, x)
+                table.insert(pts, wy)
+            end
+            if #pts >= 4 then
+                love.graphics.line(pts)
             end
         end
 
-        -- Layer 3: Water surface ripples
+        -- Layer 2: Concentric circular water ripples
         love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-        local ripple_rng = love.math.newRandomGenerator(123)
-        for i = 1, 12 do
-            local rx = ripple_rng:random() * w
-            local ry = h * 0.1 + ripple_rng:random() * (h * 0.6)
-            local cycle = 3.0 + ripple_rng:random() * 2.5
-            local progress = ((t + i * 1.7) % cycle) / cycle
-            
-            local radius = progress * 75 * scale
-            -- Fade in quickly, then fade out slowly
-            local alpha = (progress < 0.1) and (progress / 0.1) * 0.3 or (1.0 - progress) * 0.3
-            
-            if alpha > 0.01 then
-                love.graphics.setColor(0.85, 0.95, 1.0, alpha)
-                love.graphics.ellipse("line", rx, ry, radius, radius * 0.3)
-                if radius > 12 * scale then
-                    love.graphics.setColor(0.85, 0.95, 1.0, alpha * 0.4)
-                    love.graphics.ellipse("line", rx, ry, radius - 8 * scale, (radius - 8 * scale) * 0.3)
+        local ripple_positions = {
+            {0.16, 0.18, 0.0, 3.8},
+            {0.84, 0.15, 1.4, 4.2},
+            {0.50, 0.32, 2.7, 3.6},
+            {0.20, 0.52, 0.8, 4.0},
+            {0.80, 0.58, 2.1, 3.7},
+            {0.35, 0.74, 1.1, 4.4},
+            {0.72, 0.82, 3.2, 3.9},
+            {0.12, 0.88, 2.3, 4.1},
+        }
+        local max_radius = 65 * scale
+        for _, rdata in ipairs(ripple_positions) do
+            local rx = w * rdata[1]
+            local ry = h * rdata[2]
+            local delay = rdata[3]
+            local cycle = rdata[4]
+            local progress = ((t + delay) % cycle) / cycle
+
+            if progress < 0.12 then
+                local splash_a = (1.0 - progress / 0.12) * 0.30
+                local splash_r = (2.0 + progress * 15.0) * scale
+                love.graphics.setColor(0.05, 0.65, 0.85, splash_a)
+                love.graphics.circle("fill", rx, ry, splash_r)
+            end
+
+            local r1 = (4.0 + progress * max_radius)
+            local fade1 = math.sin(progress * math.pi)
+            local a1 = fade1 * 0.28
+            if a1 > 0.01 and r1 > 2 then
+                love.graphics.setColor(0.01, 0.52, 0.78, a1)
+                love.graphics.circle("line", rx, ry, r1)
+            end
+
+            if progress > 0.18 then
+                local prog2 = (progress - 0.18) / 0.82
+                local r2 = (3.0 + prog2 * max_radius * 0.70)
+                local fade2 = math.sin(prog2 * math.pi)
+                local a2 = fade2 * 0.20
+                if a2 > 0.01 and r2 > 2 then
+                    love.graphics.setColor(0.05, 0.65, 0.85, a2)
+                    love.graphics.circle("line", rx, ry, r2)
                 end
             end
         end
 
-        -- Layer 4: Overlapping waves at bottom
-        -- Added a subtle gradient effect by layering colors
-        local wave_layers = {
-            {y = 0.55, h = 12, c = {0.55, 0.78, 0.88, 0.35}},
-            {y = 0.65, h = 15, c = {0.45, 0.72, 0.85, 0.50}},
-            {y = 0.75, h = 18, c = {0.35, 0.65, 0.80, 0.70}},
-            {y = 0.85, h = 22, c = {0.25, 0.58, 0.75, 0.85}},
-        }
-        
-        for i, wl in ipairs(wave_layers) do
-            love.graphics.setColor(wl.c)
-            local points = {}
-            table.insert(points, 0)
-            table.insert(points, h)
-            
-            local segments = 45
-            local wave_height = wl.h * scale
-            local base_y = h * wl.y
-            
-            for s = 0, segments do
-                local px = (s / segments) * w
-                -- Combines two sine waves for a more organic, less uniform "sloshing" motion
-                local wave1 = math.sin(t * (0.4 + i * 0.1) + s * 0.25 + i * 1.8)
-                local wave2 = math.cos(t * (0.3 + i * 0.05) + s * 0.15 + i * 2.5) * 0.5
-                local py = base_y + (wave1 + wave2) * wave_height
-                table.insert(points, px)
-                table.insert(points, py)
-            end
-            
-            table.insert(points, w)
-            table.insert(points, h)
-            
-            love.graphics.polygon("fill", points)
-            
-            -- Bright highlight line on the crest of each wave
-            love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-            love.graphics.setColor(1.0, 1.0, 1.0, 0.25)
-            for s = 1, segments do
-                local x1 = points[2 + (s-1)*2 + 1]
-                local y1 = points[2 + (s-1)*2 + 2]
-                local x2 = points[2 + s*2 + 1]
-                local y2 = points[2 + s*2 + 2]
-                love.graphics.line(x1, y1, x2, y2)
-            end
+        -- Layer 3: Subtle rising pond bubbles and light sparkles
+        love.graphics.setLineWidth(math.max(1, math.floor(scale)))
+        local golden = 0.6180339887
+        for i = 1, 14 do
+            local bx = ((i * golden) % 1.0) * w + math.sin(t * 0.8 + i) * 12 * scale
+            local by = (h + 20 * scale - ((t * 14.0 + i * 41.3) % (h + 40 * scale)))
+            local pulse = 0.5 + 0.5 * math.sin(t * 1.5 + i * 2.0)
+            local alpha = 0.22 * pulse
+            local sz = (2.0 + (i % 3) * 1.0) * scale
+            love.graphics.setColor(0.01, 0.52, 0.78, alpha)
+            love.graphics.circle("line", bx, by, sz)
+            love.graphics.setColor(1.0, 1.0, 1.0, alpha * 0.75)
+            love.graphics.circle("fill", bx, by, sz * 0.5)
         end
 
+        -- Layer 4: Drifting goose down feathers
+        for i = 1, 5 do
+            local base_x = (i * 127.3) % w
+            local base_y = (i * 89.1) % h
+            local fx = (base_x + t * 9.0) % (w + 40 * scale) - 20 * scale
+            local fy = (base_y + math.sin(t * 1.1 + i * 1.7) * 8 * scale) % (h + 40 * scale) - 20 * scale
+            local f_len = (14 + (i % 3) * 3) * scale
+            local rot = math.sin(t * 0.9 + i) * 0.25
+            love.graphics.push()
+            love.graphics.translate(fx, fy)
+            love.graphics.rotate(rot)
+            love.graphics.setColor(1.0, 1.0, 1.0, 0.35)
+            love.graphics.ellipse("fill", 0, 0, f_len * 0.85, 3 * scale)
+            love.graphics.setColor(0.85, 0.95, 1.0, 0.55)
+            love.graphics.setLineWidth(math.max(1, math.floor(scale)))
+            love.graphics.line(-f_len, 0, f_len, 0)
+            love.graphics.pop()
+        end
 
         love.graphics.pop()
 

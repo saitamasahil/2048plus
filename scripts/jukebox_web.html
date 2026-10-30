@@ -3031,55 +3031,55 @@ const THEMES_CATALOG = [
   {
     "id": "honk",
     "name": "Untitled Goose",
-    "bg": "#eef7f4",
-    "board": "#d2e4df",
-    "accent": "#5293c1",
-    "text": "#1a6c5a",
+    "bg": "#e8f4f8",
+    "board": "#183b48",
+    "accent": "#f59e0b",
+    "text": "#0f3342",
     "is_dark": false,
     "tiles": {
       "2": {
         "bg": "#ffffff",
-        "color": "#1a3c34"
+        "color": "#112630"
       },
       "4": {
-        "bg": "#f7f0e1",
-        "color": "#1a3c34"
+        "bg": "#fef08a",
+        "color": "#112630"
       },
       "8": {
-        "bg": "#fbdca4",
-        "color": "#1a3c34"
+        "bg": "#fde047",
+        "color": "#112630"
       },
       "16": {
-        "bg": "#f9c264",
-        "color": "#1a3c34"
+        "bg": "#facc15",
+        "color": "#112630"
       },
       "32": {
-        "bg": "#dbecf5",
-        "color": "#1a3c34"
+        "bg": "#fb923c",
+        "color": "#112630"
       },
       "64": {
-        "bg": "#b4d4e7",
-        "color": "#1a3c34"
+        "bg": "#f97316",
+        "color": "#112630"
       },
       "128": {
-        "bg": "#8ebbd9",
-        "color": "#1a3c34"
+        "bg": "#ea580c",
+        "color": "#ffffff"
       },
       "256": {
-        "bg": "#5293c1",
-        "color": "#bfe4f4"
+        "bg": "#06b6d4",
+        "color": "#ffffff"
       },
       "512": {
-        "bg": "#2d71a1",
-        "color": "#bfe4f4"
+        "bg": "#0284c7",
+        "color": "#ffffff"
       },
       "1024": {
-        "bg": "#164e75",
-        "color": "#bfe4f4"
+        "bg": "#0f766e",
+        "color": "#ffffff"
       },
       "2048": {
-        "bg": "#ff8000",
-        "color": "#1a3c34"
+        "bg": "#eab308",
+        "color": "#112630"
       }
     }
   },
@@ -5208,94 +5208,126 @@ function drawOcean(ctx, w, h, t) {
 
 // Honk theme
 function drawHonk(ctx, w, h, t) {
-  // Mist orbs
-  for (let i = 1; i <= 3; i++) {
-    const mistX = (w * 0.5) + Math.sin(t * 0.2 + i) * 60;
-    const mistY = (h * 0.5) + Math.cos(t * 0.15 + i * 1.5) * 20;
-    const pulse = 0.5 + 0.5 * Math.sin(t * 0.3 + i * 2);
-    ctx.fillStyle = `rgba(255, 242, 204, ${0.08 * pulse})`;
+  // Undulating pond surface currents
+  const currentLayers = [
+    { yRatio: 0.18, freq: 0.008, spd: 0.8, amp: 6.0, alpha: 0.12, col: '14, 165, 233' },
+    { yRatio: 0.34, freq: 0.006, spd: -0.6, amp: 8.0, alpha: 0.10, col: '2, 132, 199' },
+    { yRatio: 0.52, freq: 0.009, spd: 0.9, amp: 7.0, alpha: 0.11, col: '6, 182, 212' },
+    { yRatio: 0.68, freq: 0.007, spd: -0.7, amp: 9.0, alpha: 0.10, col: '14, 165, 233' },
+    { yRatio: 0.84, freq: 0.010, spd: 0.75, amp: 7.5, alpha: 0.12, col: '2, 132, 199' }
+  ];
+  ctx.lineWidth = 1.5;
+  currentLayers.forEach(wl => {
+    const baseY = h * wl.yRatio;
+    ctx.strokeStyle = `rgba(${wl.col}, ${wl.alpha})`;
     ctx.beginPath();
-    ctx.arc(mistX, mistY, h * 0.7 + i * 15, 0, Math.PI * 2);
-    ctx.fill();
-  }
+    const step = 8;
+    for (let x = -step; x <= w + step; x += step) {
+      const wy = baseY + Math.sin(x * wl.freq + t * wl.spd) * wl.amp
+                       + Math.cos(x * wl.freq * 1.6 - t * wl.spd * 0.7) * (wl.amp * 0.35);
+      if (x === -step) ctx.moveTo(x, wy);
+      else ctx.lineTo(x, wy);
+    }
+    ctx.stroke();
+  });
 
-  // Water shimmer
-  ctx.lineWidth = 1;
-  const golden = 0.6180339887;
-  for (let i = 1; i <= 15; i++) {
-    const sx = ((i * golden) % 1.0) * w;
-    const sy = h * 0.05 + ((i * golden * 1.41) % 1.0) * (h * 0.55);
-    const sLen = 20 + (i % 6) * 15;
-    const sSpeed = 0.5 + (i % 4) * 0.2;
-    const offset = ((sx + t * 18 * sSpeed) % (w + sLen)) - sLen;
-    const alpha = 0.06 + 0.05 * Math.sin(t * 1.5 + i);
-    if (alpha > 0.01) {
-      ctx.strokeStyle = `rgba(230, 242, 255, ${alpha})`;
+  // Concentric circular water ripples
+  const ripplePositions = [
+    [0.16, 0.18, 0.0, 3.8],
+    [0.84, 0.15, 1.4, 4.2],
+    [0.50, 0.32, 2.7, 3.6],
+    [0.20, 0.52, 0.8, 4.0],
+    [0.80, 0.58, 2.1, 3.7],
+    [0.35, 0.74, 1.1, 4.4],
+    [0.72, 0.82, 3.2, 3.9],
+    [0.12, 0.88, 2.3, 4.1]
+  ];
+  const maxRadius = Math.min(w, h) * 0.14;
+  ripplePositions.forEach(([rxPct, ryPct, delay, cycle]) => {
+    const rx = w * rxPct;
+    const ry = h * ryPct;
+    const progress = ((t + delay) % cycle) / cycle;
+
+    // Splash droplet
+    if (progress < 0.12) {
+      const splashA = (1.0 - progress / 0.12) * 0.35;
+      const splashR = 2.0 + progress * 15.0;
+      ctx.fillStyle = `rgba(14, 165, 233, ${splashA})`;
       ctx.beginPath();
-      ctx.moveTo(offset, sy);
-      ctx.lineTo(offset + sLen, sy);
+      ctx.arc(rx, ry, splashR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Primary circle
+    const r1 = 4.0 + progress * maxRadius;
+    const fade1 = Math.sin(progress * Math.PI);
+    const a1 = fade1 * 0.32;
+    if (a1 > 0.01 && r1 > 2) {
+      ctx.strokeStyle = `rgba(2, 132, 199, ${a1})`;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(rx, ry, r1, 0, Math.PI * 2);
       ctx.stroke();
     }
-  }
 
-  // Elliptical ripples
-  ctx.lineWidth = 1.2;
-  for (let i = 1; i <= 10; i++) {
-    const rx = ((i * 0.73) % 1.0) * w;
-    const ry = h * 0.12 + ((i * 0.41) % 1.0) * (h * 0.55);
-    const cycle = 3.0 + (i % 5) * 0.5;
-    const prog = ((t + i * 1.7) % cycle) / cycle;
-    const radius = prog * (h * 0.6);
-    const alpha = (prog < 0.1 ? prog / 0.1 : 1.0 - prog) * 0.3;
-    if (alpha > 0.01) {
-      ctx.strokeStyle = `rgba(217, 242, 255, ${alpha})`;
-      ctx.beginPath();
-      ctx.ellipse(rx, ry, radius, radius * 0.3, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      if (radius > 10) {
-        ctx.strokeStyle = `rgba(217, 242, 255, ${alpha * 0.4})`;
+    // Secondary concentric circle
+    if (progress > 0.18) {
+      const prog2 = (progress - 0.18) / 0.82;
+      const r2 = 3.0 + prog2 * maxRadius * 0.70;
+      const fade2 = Math.sin(prog2 * Math.PI);
+      const a2 = fade2 * 0.22;
+      if (a2 > 0.01 && r2 > 2) {
+        ctx.strokeStyle = `rgba(14, 165, 233, ${a2})`;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.ellipse(rx, ry, radius - 6, (radius - 6) * 0.3, 0, 0, Math.PI * 2);
+        ctx.arc(rx, ry, r2, 0, Math.PI * 2);
         ctx.stroke();
       }
     }
-  }
+  });
 
-  // Sloshing waves
-  const waveLayers = [
-    { y: 0.55, h: 4, c: 'rgba(140, 199, 224, 0.35)' },
-    { y: 0.65, h: 6, c: 'rgba(115, 184, 217, 0.50)' },
-    { y: 0.75, h: 8, c: 'rgba(89, 166, 204, 0.70)' },
-    { y: 0.85, h: 10, c: 'rgba(64, 148, 191, 0.85)' }
-  ];
-  waveLayers.forEach((wl, idx) => {
-    ctx.fillStyle = wl.c;
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    const segs = 35;
-    const crestPoints = [];
-    for (let s = 0; s <= segs; s++) {
-      const px = (s / segs) * w;
-      const w1 = Math.sin(t * (0.4 + idx * 0.1) + s * 0.25 + idx * 1.8);
-      const w2 = Math.cos(t * (0.3 + idx * 0.05) + s * 0.15 + idx * 2.5) * 0.5;
-      const py = h * wl.y + (w1 + w2) * wl.h;
-      crestPoints.push({ x: px, y: py });
-      ctx.lineTo(px, py);
-    }
-    ctx.lineTo(w, h);
-    ctx.closePath();
-    ctx.fill();
-
-    // Wave crests
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+  // Rising bubbles and sparkles
+  const golden = 0.6180339887;
+  for (let i = 1; i <= 14; i++) {
+    const bx = ((i * golden) % 1.0) * w + Math.sin(t * 0.8 + i) * 12;
+    const by = (h + 20 - ((t * 14.0 + i * 41.3) % (h + 40)));
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.5 + i * 2.0);
+    const alpha = 0.24 * pulse;
+    const sz = 2.0 + (i % 3);
+    ctx.strokeStyle = `rgba(2, 132, 199, ${alpha})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    crestPoints.forEach((pt, pi) => {
-      if (pi === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
+    ctx.arc(bx, by, sz, 0, Math.PI * 2);
     ctx.stroke();
-  });
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.75})`;
+    ctx.beginPath();
+    ctx.arc(bx, by, sz * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Drifting goose down feathers
+  for (let i = 1; i <= 5; i++) {
+    const baseX = (i * 127.3) % w;
+    const baseY = (i * 89.1) % h;
+    const fx = (baseX + t * 9.0) % (w + 40) - 20;
+    const fy = (baseY + Math.sin(t * 1.1 + i * 1.7) * 8) % (h + 40) - 20;
+    const fLen = 14 + (i % 3) * 3;
+    const rot = Math.sin(t * 0.9 + i) * 0.25;
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.rotate(rot);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, fLen * 0.85, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(215, 235, 250, 0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-fLen, 0);
+    ctx.lineTo(fLen, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 // Nebula theme
