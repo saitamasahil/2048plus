@@ -567,6 +567,8 @@ function android_console.updateLayout()
     geo.screen_y = screen_y
     geo.screen_w = screen_w
     geo.screen_h = screen_h
+    geo.screen_rx = 12
+    geo.screen_ry = 12
     geo.scale_x = screen_w / 640
     geo.scale_y = screen_h / 480
 
@@ -2165,7 +2167,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     local crt = apply_crt and getCrtShader()
     if crt and in_crt_transition and renderer.drawCrtScreenWithTransition then
         pcall(function() crt:send("screen_size", {vw, vh}) end)
-        renderer.drawCrtScreenWithTransition(fs_canvas, crt, origin_x, 0, math.floor(vw * scale_fs_x), math.floor(vh * scale_fs_y), origin_x, 0, scale_fs_x, scale_fs_y)
+        renderer.drawCrtScreenWithTransition(fs_canvas, crt, origin_x, 0, math.floor(vw * scale_fs_x), math.floor(vh * scale_fs_y), origin_x, 0, scale_fs_x, scale_fs_y, 0, 0)
     else
         if crt then
             pcall(function()
@@ -2433,19 +2435,22 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
 
     if not skip_screen_draw then
         -- Render virtual screen with rounded corners
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.stencil(function()
-            love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
-        end, "replace", 1)
-        love.graphics.setStencilTest("greater", 0)
-
         local in_crt_transition = renderer.isCrtTransitionActive and renderer.isCrtTransitionActive()
         local apply_crt = _G.crt_filter or in_crt_transition
         local crt = apply_crt and getCrtShader()
+        local s_rx = geo.screen_rx or 12
+        local s_ry = geo.screen_ry or 12
+
         if crt and in_crt_transition and renderer.drawCrtScreenWithTransition then
             pcall(function() crt:send("screen_size", {640, 480}) end)
-            renderer.drawCrtScreenWithTransition(canvas, crt, geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, geo.screen_x, geo.screen_y, geo.scale_x, geo.scale_y)
+            renderer.drawCrtScreenWithTransition(canvas, crt, geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, geo.screen_x, geo.screen_y, geo.scale_x, geo.scale_y, s_rx, s_ry)
         else
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.stencil(function()
+                love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, s_rx, s_ry)
+            end, "replace", 1)
+            love.graphics.setStencilTest("greater", 0)
+
             if crt then
                 pcall(function()
                     crt:send("screen_size", {640, 480})
@@ -2456,13 +2461,13 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
             if crt then
                 love.graphics.setShader()
             end
+            love.graphics.setStencilTest()
         end
-        love.graphics.setStencilTest()
 
         -- Screen inner frame border
         love.graphics.setColor(bzr * 0.75, bzg * 0.75, bzb * 0.75, 0.85)
         love.graphics.setLineWidth(2)
-        love.graphics.rectangle("line", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, 12, 12)
+        love.graphics.rectangle("line", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, s_rx, s_ry)
     end
 
     -- Battery LED indicator on top right bezel above screen

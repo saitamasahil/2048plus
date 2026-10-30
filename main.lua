@@ -2258,7 +2258,7 @@ function love.draw()
         love.graphics.setCanvas()
 
         if in_crt_transition and renderer.drawCrtScreenWithTransition then
-            renderer.drawCrtScreenWithTransition(crt_main_canvas, crt_shader, 0, 0, w, h, 0, 0, 1, 1)
+            renderer.drawCrtScreenWithTransition(crt_main_canvas, crt_shader, 0, 0, w, h, 0, 0, 1, 1, 0, 0)
         else
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.setShader(crt_shader)

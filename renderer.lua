@@ -6188,7 +6188,7 @@ function renderer.startThemeTransition(drawTarget, direction)
 end
 
 -- Draw canvas with CRT wipe transition and phosphor beam front
-function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy, vw, vh, draw_x, draw_y, sx, sy)
+function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy, vw, vh, draw_x, draw_y, sx, sy, rx, ry)
     local p = math.max(0, math.min(1, 1 - (crt_transition_timer / crt_transition_duration)))
     local ease_p = p * p * (3 - 2 * p)
     local turning_on = crt_transition_turning_on
@@ -6206,7 +6206,29 @@ function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy,
     local radius = max_dist * ease_p
 
     local scale = _G.scale or 1
+    rx = rx or 0
+    ry = ry or rx or 0
 
+    local prev_comp, prev_val = love.graphics.getStencilTest()
+
+    -- Screen viewport mask
+    love.graphics.stencil(function()
+        if rx > 0 then
+            love.graphics.rectangle("fill", vx, vy, vw, vh, rx, ry)
+        else
+            love.graphics.rectangle("fill", vx, vy, vw, vh)
+        end
+    end, "replace", 2, false)
+
+    -- Sweep circle mask
+    if radius > 0 then
+        love.graphics.stencil(function()
+            love.graphics.circle("fill", cx, cy, radius)
+        end, "decrement", 1, true)
+    end
+
+    -- Draw unswept area
+    love.graphics.setStencilTest("equal", 2)
     love.graphics.setColor(1, 1, 1, 1)
     if turning_on then
         -- Clean non-CRT layer underneath
@@ -6218,13 +6240,8 @@ function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy,
         love.graphics.setShader()
     end
 
-    -- Stencil mask for the expanding sweep
-    local prev_comp, prev_val = love.graphics.getStencilTest()
-    love.graphics.stencil(function()
-        love.graphics.circle("fill", cx, cy, radius)
-    end, "replace", 2)
-    love.graphics.setStencilTest("greater", 1)
-
+    -- Draw swept area
+    love.graphics.setStencilTest("equal", 1)
     love.graphics.setColor(1, 1, 1, 1)
     if turning_on then
         -- CRT layer taking over inside the sweep
@@ -6236,14 +6253,9 @@ function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy,
         love.graphics.draw(source_canvas, draw_x, draw_y, 0, sx or 1, sy or 1)
     end
 
-    if prev_comp then
-        love.graphics.setStencilTest(prev_comp, prev_val)
-    else
-        love.graphics.setStencilTest()
-    end
-
     -- Glowing phosphor beam edge along the front
     if radius > 4 and radius < max_dist then
+        love.graphics.setStencilTest("greater", 0)
         love.graphics.push("all")
         local scx, scy, scw, sch = love.graphics.getScissor()
         if love.graphics.intersectScissor then
@@ -6286,6 +6298,12 @@ function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy,
             love.graphics.setScissor()
         end
         love.graphics.pop()
+    end
+
+    if prev_comp then
+        love.graphics.setStencilTest(prev_comp, prev_val)
+    else
+        love.graphics.setStencilTest()
     end
 
     love.graphics.setColor(1, 1, 1, 1)
