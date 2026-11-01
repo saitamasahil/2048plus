@@ -96,7 +96,7 @@ local text_size_pill_to_y = 0
 local text_size_pill_to_w = 0
 local text_size_pill_to_h = 0
 local text_size_transition_enlarging = true
-local TEXT_SIZE_TRANSITION_DURATION = 0.38
+local TEXT_SIZE_TRANSITION_DURATION = 0.22
 
 -- CRT filter transition state
 local crt_transition_timer = 0
@@ -7773,90 +7773,19 @@ function renderer.drawSettings(selection, skip_transition)
             roundedRect("line", px, py - 1 * scale, pw, ph, 6 * scale)
         end
 
-        local is_enlarging = text_size_transition_enlarging
-        local pill_mid_y = (text_size_pill_from_y + text_size_pill_to_y) * 0.5 + (text_size_pill_from_h + text_size_pill_to_h) * 0.25
-        local cx, cy
-        if is_enlarging then
-            cx = 0
-            cy = pill_mid_y
-        else
-            cx = w
-            cy = pill_mid_y
-        end
+        -- Dissolve old layout into new layout
+        local old_alpha = math.max(0, 1 - t_progress * 2.2)
+        local new_t = math.max(0, math.min(1, (t_progress - 0.1) / 0.9))
+        local new_alpha = new_t * new_t * (3 - 2 * new_t)
 
-        local max_dist = math.sqrt(w * w + math.max(cy, h - cy) ^ 2) + 20
-        local radius = max_dist * ease_p
-
-        local prev_comp, prev_val = love.graphics.getStencilTest()
-
-        love.graphics.stencil(function()
-            love.graphics.rectangle("fill", 0, 0, w, h)
-        end, "replace", 2, false)
-
-        if radius > 0 then
-            love.graphics.stencil(function()
-                love.graphics.circle("fill", cx, cy, radius)
-            end, "decrement", 1, true)
-        end
-
-        love.graphics.setStencilTest("equal", 2)
-        love.graphics.setBlendMode("alpha", "premultiplied")
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(text_size_old_canvas, 0, 0)
-
-        love.graphics.setStencilTest("equal", 1)
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(text_size_new_canvas, 0, 0)
         love.graphics.setBlendMode("alpha", "alphamultiply")
-
-        if radius > 4 and radius < max_dist then
-            love.graphics.setStencilTest("greater", 0)
-            love.graphics.push("all")
-            local scx, scy, scw, sch = love.graphics.getScissor()
-            if love.graphics.intersectScissor then
-                love.graphics.intersectScissor(0, 0, w, h)
-            else
-                love.graphics.setScissor(0, 0, w, h)
-            end
-
-            if is_enlarging then
-                love.graphics.setColor(0.2, 0.75, 1.0, 0.75 * (1 - ease_p * 0.25))
-                love.graphics.setLineWidth(math.max(2, math.floor(3.5 * scale)))
-                love.graphics.circle("line", cx, cy, radius)
-
-                love.graphics.setColor(1, 1, 1, 0.95)
-                love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-                love.graphics.circle("line", cx, cy, radius)
-
-                love.graphics.setColor(0.1, 0.45, 1.0, 0.35 * (1 - ease_p * 0.25))
-                love.graphics.setLineWidth(math.max(4, math.floor(8 * scale)))
-                love.graphics.circle("line", cx, cy, radius)
-            else
-                love.graphics.setColor(0.3, 0.95, 0.75, 0.75 * (1 - ease_p * 0.25))
-                love.graphics.setLineWidth(math.max(2, math.floor(3.5 * scale)))
-                love.graphics.circle("line", cx, cy, radius)
-
-                love.graphics.setColor(1, 1, 1, 0.95)
-                love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-                love.graphics.circle("line", cx, cy, radius)
-
-                love.graphics.setColor(0.1, 0.8, 0.55, 0.35 * (1 - ease_p * 0.25))
-                love.graphics.setLineWidth(math.max(4, math.floor(8 * scale)))
-                love.graphics.circle("line", cx, cy, radius)
-            end
-
-            if scx then
-                love.graphics.setScissor(scx, scy, scw, sch)
-            else
-                love.graphics.setScissor()
-            end
-            love.graphics.pop()
+        if old_alpha > 0.001 then
+            love.graphics.setColor(1, 1, 1, old_alpha)
+            love.graphics.draw(text_size_old_canvas, 0, 0)
         end
-
-        if prev_comp then
-            love.graphics.setStencilTest(prev_comp, prev_val)
-        else
-            love.graphics.setStencilTest()
+        if new_alpha > 0.001 then
+            love.graphics.setColor(1, 1, 1, new_alpha)
+            love.graphics.draw(text_size_new_canvas, 0, 0)
         end
         love.graphics.setColor(1, 1, 1, 1)
     else

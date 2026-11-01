@@ -256,7 +256,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
  
-@@ -8076,7 +8114,8 @@
+@@ -8005,7 +8043,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -266,7 +266,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -8552,7 +8591,8 @@
+@@ -8481,7 +8520,8 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x0, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x0 = right_x0 - label_gap
@@ -276,7 +276,7 @@
              right_x0 = right_x0 - key_w
              drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
              right_x0 = right_x0 - item_gap
-@@ -8829,7 +8869,8 @@
+@@ -8758,7 +8798,8 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x1, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x1 = right_x1 - label_gap
@@ -286,7 +286,7 @@
              right_x1 = right_x1 - key_w
              drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
              right_x1 = right_x1 - item_gap
-@@ -8972,7 +9013,8 @@
+@@ -8901,7 +8942,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -296,7 +296,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -9868,8 +9910,10 @@
+@@ -9797,8 +9839,10 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
@@ -308,7 +308,7 @@
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10228,7 +10272,7 @@
+@@ -10157,7 +10201,7 @@
  
          -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
          if not _G.achievements_slide_ready then
@@ -317,7 +317,7 @@
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -10881,7 +10925,8 @@
+@@ -10810,7 +10854,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -327,7 +327,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11113,7 +11158,8 @@
+@@ -11042,7 +11087,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -337,7 +337,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -12057,7 +12103,8 @@
+@@ -11986,7 +12032,8 @@
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
          right_x = right_x - label_gap
@@ -347,7 +347,7 @@
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12828,7 +12875,8 @@
+@@ -12757,7 +12804,8 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap

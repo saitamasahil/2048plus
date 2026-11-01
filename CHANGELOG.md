@@ -6,7 +6,8 @@
 - Added Customization Hub to preview and equip themes, board skins, and companion pets
 - Added new background music tracks from [Chosic](https://www.chosic.com/free-music/) by Luke Bergs, Purrple Cat, Ghostrifter Official, Sakura Girl, and Roa
 - Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic), used with permission
-- Added directional sweep transition for Text Size & CRT shader toggle in Settings
+- Added smooth crossfade and selection pill morph transition for Text Size in Settings
+- Added directional sweep transition for CRT shader toggle in Settings
 - Added transition animation for store item sorting and filter cycling
 - Display earned powerups in header subtitle below 2048
 - Added support for non-Mali chipsets by removing hardcoded libmali loading, prioritizing system EGL drivers, and added execute permissions for launch script in muOS
