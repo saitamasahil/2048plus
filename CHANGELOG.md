@@ -8,6 +8,7 @@
 - Display earned powerups in header subtitle below 2048
 
 ### Changed
+- Updated statistics screen with career metrics, games played per mode, and L1/R1 tab switching
 - Updated Honk theme with high-contrast colors and dynamic circular pond water ripples
 - Redesigned Ocean theme with maritime blue tiles and animated underwater effects
 - Redesigned Forest theme tiles with a forest green progression
@@ -16,6 +17,7 @@
 - Rebalance plus mode powerup milestone rewards
 
 ### Fixed
+- Fixed Settings header text visibility in Cherry theme
 - Fixed achievements not unlocking after playing Huge mode
 - Fixed number visibility on 2048 and higher number tiles in Cosmic theme
 - Added support for non-Mali chipsets by removing hardcoded libmali loading and prioritizing system EGL drivers
