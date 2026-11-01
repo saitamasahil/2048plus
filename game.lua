@@ -180,6 +180,18 @@ function Game.new(mode)
                 _G.stats.classic_games = (_G.stats.classic_games or 0) + 1
             elseif self.mode == "plus" then
                 _G.stats.plus_games = (_G.stats.plus_games or 0) + 1
+            elseif self.mode == "timeattack" then
+                _G.stats.timeattack_games = (_G.stats.timeattack_games or 0) + 1
+                _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
+            elseif self.mode == "huge" then
+                _G.stats.huge_games = (_G.stats.huge_games or 0) + 1
+                _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
+            elseif self.mode == "nomercy" then
+                _G.stats.nomercy_games = (_G.stats.nomercy_games or 0) + 1
+                _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
+            elseif self.mode == "goose" then
+                _G.stats.goose_games = (_G.stats.goose_games or 0) + 1
+                _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
             else
                 _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
             end
@@ -1012,6 +1024,18 @@ function Game:restart()
             _G.stats.classic_games = (_G.stats.classic_games or 0) + 1
         elseif self.mode == "plus" then
             _G.stats.plus_games = (_G.stats.plus_games or 0) + 1
+        elseif self.mode == "timeattack" then
+            _G.stats.timeattack_games = (_G.stats.timeattack_games or 0) + 1
+            _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
+        elseif self.mode == "huge" then
+            _G.stats.huge_games = (_G.stats.huge_games or 0) + 1
+            _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
+        elseif self.mode == "nomercy" then
+            _G.stats.nomercy_games = (_G.stats.nomercy_games or 0) + 1
+            _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
+        elseif self.mode == "goose" then
+            _G.stats.goose_games = (_G.stats.goose_games or 0) + 1
+            _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
         else
             _G.stats.arcade_games = (_G.stats.arcade_games or 0) + 1
         end

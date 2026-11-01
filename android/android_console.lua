@@ -1080,7 +1080,7 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             sw.last_x = x
             sw.fired = true
         elseif not sw.fired and math.abs(diff_x) >= 40 and math.abs(diff_x) > math.abs(diff_y) * 1.5 then
-            local ev = (diff_x < 0) and input.events.RIGHT or input.events.LEFT
+            local ev = (diff_x < 0) and input.events.R1 or input.events.L1
             emitEvent(ev)
             pcall(function()
                 local timer = require("timer")
@@ -1342,6 +1342,36 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                     triggerHaptic(0.015)
                     swipe_track[id] = nil
                     return
+                end
+            end
+
+            -- Achievements shoulder button taps
+            if _G.appState == "ACHIEVEMENTS" then
+                if _G.achievements_l1_bounds then
+                    local b = _G.achievements_l1_bounds
+                    if gx >= b.x and gx <= b.x + b.w and gy >= b.y and gy <= b.y + b.h then
+                        emitEvent(input.events.L1)
+                        pcall(function()
+                            local timer = require("timer")
+                            timer.after(0.08, function() releaseEvent(input.events.L1) end)
+                        end)
+                        triggerHaptic(0.015)
+                        swipe_track[id] = nil
+                        return
+                    end
+                end
+                if _G.achievements_r1_bounds then
+                    local b = _G.achievements_r1_bounds
+                    if gx >= b.x and gx <= b.x + b.w and gy >= b.y and gy <= b.y + b.h then
+                        emitEvent(input.events.R1)
+                        pcall(function()
+                            local timer = require("timer")
+                            timer.after(0.08, function() releaseEvent(input.events.R1) end)
+                        end)
+                        triggerHaptic(0.015)
+                        swipe_track[id] = nil
+                        return
+                    end
                 end
             end
 

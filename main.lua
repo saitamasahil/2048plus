@@ -522,6 +522,10 @@ function love.load(args)
         classic_games = 0,
         plus_games = 0,
         arcade_games = 0,
+        timeattack_games = 0,
+        huge_games = 0,
+        nomercy_games = 0,
+        goose_games = 0,
     }
     for k, v in pairs(defaults) do
         if _G.stats[k] == nil then
@@ -646,6 +650,21 @@ function love.update(dt)
             _G.achievements_scroll = _G.achievements_scroll + diff * 15 * dt
             if math.abs(_G.achievements_scroll - _G.achievements_scroll_target) < 0.01 then
                 _G.achievements_scroll = _G.achievements_scroll_target
+            end
+        end
+    end
+
+    -- Smooth scroll interpolation for statistics
+    if _G.stats_scroll == nil then _G.stats_scroll = 0 end
+    if _G.stats_scroll_target == nil then _G.stats_scroll_target = 0 end
+    if not _G.screen_transitions then
+        _G.stats_scroll = _G.stats_scroll_target
+    else
+        if _G.stats_scroll ~= _G.stats_scroll_target then
+            local diff = _G.stats_scroll_target - _G.stats_scroll
+            _G.stats_scroll = _G.stats_scroll + diff * 15 * dt
+            if math.abs(_G.stats_scroll - _G.stats_scroll_target) < 0.01 then
+                _G.stats_scroll = _G.stats_scroll_target
             end
         end
     end
@@ -828,6 +847,10 @@ function love.update(dt)
                     elseif sel == "Achievements" or sel == "Achievements & Stats" then
                         _G.appState = "ACHIEVEMENTS"
                         _G.achievements_tab = 1
+                        _G.achievements_scroll = 0
+                        _G.achievements_scroll_target = 0
+                        _G.stats_scroll = 0
+                        _G.stats_scroll_target = 0
                     elseif sel == "Tutorial" then
                         _G.appState = "TUTORIAL"
                         _G.tutorial_page = 1
@@ -1322,60 +1345,89 @@ function love.update(dt)
                     _G.appState = "MENU"
                     _G.achievements_scroll = 0
                     _G.achievements_scroll_target = 0
+                    _G.stats_scroll = 0
+                    _G.stats_scroll_target = 0
                 end)
-            elseif event == input.events.LEFT or event == input.events.L1 then
-                if _G.achievements_tab == 2 then
+            elseif event == input.events.L1 then
+                local cur_t = _G.achievements_tab or 1
+                local next_tab = (cur_t > 1) and (cur_t - 1) or 2
+                if next_tab ~= cur_t then
                     sound.playMenuMove()
                     queueTransitionAction(event, 0.08, function()
                         if _G.screen_transitions then
-                            renderer.captureOldAchievementsSlide(2)
+                            renderer.captureOldAchievementsSlide(cur_t)
                             _G.achievements_slide_dir = -1
                             _G.achievements_slide_timer = 0.20
                             _G.achievements_slide_ready = false
                         end
-                        _G.achievements_tab = 1
+                        _G.achievements_tab = next_tab
                     end)
                 end
-            elseif event == input.events.RIGHT or event == input.events.R1 then
-                if _G.achievements_tab == 1 then
+            elseif event == input.events.R1 then
+                local cur_t = _G.achievements_tab or 1
+                local next_tab = (cur_t < 2) and (cur_t + 1) or 1
+                if next_tab ~= cur_t then
                     sound.playMenuMove()
                     queueTransitionAction(event, 0.08, function()
                         if _G.screen_transitions then
-                            renderer.captureOldAchievementsSlide(1)
+                            renderer.captureOldAchievementsSlide(cur_t)
                             _G.achievements_slide_dir = 1
                             _G.achievements_slide_timer = 0.20
                             _G.achievements_slide_ready = false
                         end
-                        _G.achievements_tab = 2
+                        _G.achievements_tab = next_tab
                     end)
                 end
-            elseif event == input.events.UP and _G.achievements_tab == 1 then
-                local old_target = _G.achievements_scroll_target or 0
-                _G.achievements_scroll_target = math.max(0, old_target - 1)
-                if _G.achievements_scroll_target ~= old_target then
-                    sound.playMenuMove()
+            elseif event == input.events.UP then
+                if (_G.achievements_tab or 1) == 1 then
+                    local old_target = _G.achievements_scroll_target or 0
+                    _G.achievements_scroll_target = math.max(0, old_target - 1)
+                    if _G.achievements_scroll_target ~= old_target then
+                        sound.playMenuMove()
+                    end
+                else
+                    local old_target = _G.stats_scroll_target or 0
+                    _G.stats_scroll_target = math.max(0, old_target - 1)
+                    if _G.stats_scroll_target ~= old_target then
+                        sound.playMenuMove()
+                    end
                 end
-            elseif event == input.events.DOWN and _G.achievements_tab == 1 then
-                local max_scroll = _G.achievements_max_scroll
-                if not max_scroll and renderer.getAchievementsMaxScroll then
-                    max_scroll = renderer.getAchievementsMaxScroll()
+            elseif event == input.events.DOWN then
+                if (_G.achievements_tab or 1) == 1 then
+                    local max_scroll = _G.achievements_max_scroll
+                    if not max_scroll and renderer.getAchievementsMaxScroll then
+                        max_scroll = renderer.getAchievementsMaxScroll()
+                    end
+                    if not max_scroll then
+                        local h = _G.is_console_active() and 480 or love.graphics.getHeight()
+                        local scale = _G.is_console_active() and 1.0 or (_G.scale or 1.0)
+                        local item_h = math.floor(85 * scale)
+                        local header_h = math.floor(115 * scale)
+                        local footer_h = math.floor(55 * scale)
+                        local visible_area = h - header_h - footer_h
+                        local total_items = (renderer.getAchievementsCount and renderer.getAchievementsCount()) or 34
+                        local total_height = total_items * item_h
+                        max_scroll = math.max(0, math.ceil((total_height - visible_area) / item_h))
+                    end
+                    local old_target = _G.achievements_scroll_target or 0
+                    _G.achievements_scroll_target = math.min(max_scroll, old_target + 1)
+                    if _G.achievements_scroll_target ~= old_target then
+                        sound.playMenuMove()
+                    end
+                else
+                    local max_scroll = _G.stats_max_scroll
+                    if not max_scroll and renderer.getStatsMaxScroll then
+                        max_scroll = renderer.getStatsMaxScroll()
+                    end
+                    max_scroll = max_scroll or 0
+                    local old_target = _G.stats_scroll_target or 0
+                    _G.stats_scroll_target = math.min(max_scroll, old_target + 1)
+                    if _G.stats_scroll_target ~= old_target then
+                        sound.playMenuMove()
+                    end
                 end
-                if not max_scroll then
-                    local h = _G.is_console_active() and 480 or love.graphics.getHeight()
-                    local scale = _G.is_console_active() and 1.0 or (_G.scale or 1.0)
-                    local item_h = math.floor(85 * scale)
-                    local header_h = math.floor(115 * scale)
-                    local footer_h = math.floor(55 * scale)
-                    local visible_area = h - header_h - footer_h
-                    local total_items = (renderer.getAchievementsCount and renderer.getAchievementsCount()) or 34
-                    local total_height = total_items * item_h
-                    max_scroll = math.max(0, math.ceil((total_height - visible_area) / item_h))
-                end
-                local old_target = _G.achievements_scroll_target or 0
-                _G.achievements_scroll_target = math.min(max_scroll, old_target + 1)
-                if _G.achievements_scroll_target ~= old_target then
-                    sound.playMenuMove()
-                end
+            elseif event == input.events.Y then
+                renderer.cycleTheme(1)
             end
             return
         elseif _G.appState == "CHEATS_MENU" then
@@ -2045,7 +2097,8 @@ drawCurrentScreen = function()
     elseif _G.appState == "CHEATS_MENU" then
         renderer.drawSecretMenu(_G.cheats_selection or 1)
     elseif _G.appState == "ACHIEVEMENTS" then
-        renderer.drawAchievements(_G.achievements_scroll or 0)
+        local scr = (_G.achievements_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+        renderer.drawAchievements(scr)
     elseif _G.appState == "THEME_SELECT" then
         renderer.drawThemeSelect()
     elseif _G.appState == "SETTINGS" then
@@ -2326,23 +2379,45 @@ function love.mousereleased(x, y, button, istouch, presses)
                 return
             end
         end
-        -- Achievements tab click
-        if _G.appState == "ACHIEVEMENTS" and _G.achievements_tab_bounds then
-            for idx, b in ipairs(_G.achievements_tab_bounds) do
+        -- Achievements tab and shoulder button click
+        if _G.appState == "ACHIEVEMENTS" then
+            if _G.achievements_l1_bounds then
+                local b = _G.achievements_l1_bounds
                 if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
-                    local cur_tab = _G.achievements_tab or 1
-                    if idx ~= cur_tab then
-                        local sound = require("sound")
-                        if sound and sound.playMenuMove then sound.playMenuMove() end
-                        if _G.screen_transitions then
-                            renderer.captureOldAchievementsSlide(cur_tab)
-                            _G.achievements_slide_dir = (idx > cur_tab) and 1 or -1
-                            _G.achievements_slide_timer = 0.20
-                            _G.achievements_slide_ready = false
-                        end
-                        _G.achievements_tab = idx
+                    local input_mod = require("input")
+                    if input_mod and input_mod.handleInput then
+                        input_mod.handleInput(input_mod.events.L1)
                     end
                     return
+                end
+            end
+            if _G.achievements_r1_bounds then
+                local b = _G.achievements_r1_bounds
+                if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
+                    local input_mod = require("input")
+                    if input_mod and input_mod.handleInput then
+                        input_mod.handleInput(input_mod.events.R1)
+                    end
+                    return
+                end
+            end
+            if _G.achievements_tab_bounds then
+                for idx, b in ipairs(_G.achievements_tab_bounds) do
+                    if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
+                        local cur_tab = _G.achievements_tab or 1
+                        if idx ~= cur_tab then
+                            local sound = require("sound")
+                            if sound and sound.playMenuMove then sound.playMenuMove() end
+                            if _G.screen_transitions then
+                                renderer.captureOldAchievementsSlide(cur_tab)
+                                _G.achievements_slide_dir = (idx > cur_tab) and 1 or -1
+                                _G.achievements_slide_timer = 0.20
+                                _G.achievements_slide_ready = false
+                            end
+                            _G.achievements_tab = idx
+                        end
+                        return
+                    end
                 end
             end
         end
@@ -2352,6 +2427,30 @@ function love.mousereleased(x, y, button, istouch, presses)
                 if _G.cycleStoreSortMode then
                     _G.cycleStoreSortMode()
                 end
+            end
+        end
+    end
+end
+
+function love.wheelmoved(x, y)
+    if _G.appState == "ACHIEVEMENTS" then
+        if y > 0 then
+            if (_G.achievements_tab or 1) == 1 then
+                local old_target = _G.achievements_scroll_target or 0
+                _G.achievements_scroll_target = math.max(0, old_target - 1)
+            else
+                local old_target = _G.stats_scroll_target or 0
+                _G.stats_scroll_target = math.max(0, old_target - 1)
+            end
+        elseif y < 0 then
+            if (_G.achievements_tab or 1) == 1 then
+                local max_scroll = _G.achievements_max_scroll or 0
+                local old_target = _G.achievements_scroll_target or 0
+                _G.achievements_scroll_target = math.min(max_scroll, old_target + 1)
+            else
+                local max_scroll = _G.stats_max_scroll or 0
+                local old_target = _G.stats_scroll_target or 0
+                _G.stats_scroll_target = math.min(max_scroll, old_target + 1)
             end
         end
     end

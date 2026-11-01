@@ -279,7 +279,8 @@ function renderer.captureOldAchievementsSlide(tab)
     end
     love.graphics.setCanvas({achievements_old_canvas, stencil = true})
     love.graphics.clear()
-    renderer.drawAchievements(0, true, true, tab)
+    local s = (tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+    renderer.drawAchievements(s, true, true, tab)
     love.graphics.setCanvas()
 end
 
@@ -5260,6 +5261,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
     text = renderer.getButtonPrompt(text)
     local letter_offset_y = is_small and visual_offset_y or ((text == "Y" or text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale))))
 
+    if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" then
+        letter_offset_y = letter_offset_y - 0.5 * scale
+    end
+
     if original_text == "Y" or text == "Y" then
         renderer.theme_button_x = x + w / 2
         renderer.theme_button_y = y + h / 2
@@ -10054,6 +10059,33 @@ function renderer.getAchievementsMaxScroll()
     return math.max(0, math.ceil((total_height - avail_h) / item_h))
 end
 
+function renderer.getStatsMaxScroll()
+    if _G.stats_max_scroll then
+        return _G.stats_max_scroll
+    end
+    local is_console = _G.is_console_active and _G.is_console_active()
+    local h = is_console and 480 or love.graphics.getHeight()
+    local scale = is_console and 1.0 or (_G.scale or 1.0)
+    local padding = math.floor(20 * scale)
+    local title_h = font_title and font_title:getHeight() or math.floor(36 * scale)
+    local tab_y = padding + title_h + math.floor(10 * scale)
+    local score_h = font_score and font_score:getHeight() or math.floor(24 * scale)
+    local line_y = tab_y + score_h + math.floor(4 * scale)
+    local list_y = line_y + math.floor(12 * scale)
+    local footer_h = math.floor(55 * scale)
+    local avail_h = h - list_y - footer_h
+
+    local card_h = math.floor(58 * scale)
+    local card_gap = math.floor(8 * scale)
+    local sec_h = math.floor(26 * scale)
+    local stat_step = card_h + card_gap
+
+    local total_stats_height = sec_h + (4 * (card_h + card_gap)) + math.floor(10 * scale)
+        + sec_h + (3 * (card_h + card_gap)) + math.floor(16 * scale)
+
+    return math.max(0, math.ceil((total_stats_height - avail_h) / stat_step))
+end
+
 function renderer.drawAchievements(scroll, skip_transition, static_only, override_tab)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
@@ -10082,7 +10114,8 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             end
             love.graphics.setCanvas({achievements_new_canvas, stencil = true})
             love.graphics.clear()
-            renderer.drawAchievements(scroll, true, true, active_tab)
+            local new_tab_scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+            renderer.drawAchievements(new_tab_scroll, true, true, active_tab)
             love.graphics.setCanvas()
             _G.achievements_slide_ready = true
         end
@@ -10220,6 +10253,21 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         {x = t1_x, y = tab_y, w = t1_w, h = line_y + line_h - tab_y + math.floor(8 * scale)},
         {x = t2_x, y = tab_y, w = t2_w, h = line_y + line_h - tab_y + math.floor(8 * scale)}
     }
+
+    -- Shoulder badges for tab switching
+    local shoulder_badge_w = math.floor(32 * scale)
+    local shoulder_badge_h = math.floor(18 * scale)
+    local shoulder_badge_y = math.floor(tab_y + font_score:getHeight() * 0.42 - shoulder_badge_h / 2)
+    local l1_x = start_tab_x - shoulder_badge_w - math.floor(14 * scale)
+    local r1_x = start_tab_x + total_tab_w + math.floor(14 * scale)
+    if l1_x > math.floor(8 * scale) then
+        drawKeyBadge("L1", l1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
+    end
+    if r1_x + shoulder_badge_w < w - math.floor(8 * scale) then
+        drawKeyBadge("R1", r1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
+    end
+    _G.achievements_l1_bounds = {x = l1_x - math.floor(6 * scale), y = shoulder_badge_y - math.floor(4 * scale), w = shoulder_badge_w + math.floor(12 * scale), h = shoulder_badge_h + math.floor(8 * scale)}
+    _G.achievements_r1_bounds = {x = r1_x - math.floor(6 * scale), y = shoulder_badge_y - math.floor(4 * scale), w = shoulder_badge_w + math.floor(12 * scale), h = shoulder_badge_h + math.floor(8 * scale)}
 
     local list_y = line_y + math.floor(12 * scale)
     local footer_h = math.floor(55 * scale)
@@ -10504,70 +10552,175 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             end
         end
         love.graphics.setScissor()
+
+        -- Scroll position indicator for Tab 1
+        if _G.achievements_max_scroll and _G.achievements_max_scroll > 0 then
+            local scroll_track_h = avail_h - math.floor(16 * scale)
+            local scroll_track_y = list_y + math.floor(8 * scale)
+            local scroll_track_x = w - padding + math.floor(6 * scale)
+            local bar_total_steps = _G.achievements_max_scroll + 1
+            local thumb_h = math.max(math.floor(20 * scale), math.floor(scroll_track_h / bar_total_steps))
+            local thumb_progress = (_G.achievements_scroll or 0) / _G.achievements_max_scroll
+            thumb_progress = math.max(0, math.min(1, thumb_progress))
+            local thumb_y = scroll_track_y + thumb_progress * (scroll_track_h - thumb_h)
+            local base_bar_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
+
+            love.graphics.setColor(base_bar_col[1], base_bar_col[2], base_bar_col[3], 0.15)
+            roundedRect("fill", scroll_track_x, scroll_track_y, math.floor(3 * scale), scroll_track_h, math.floor(1.5 * scale))
+
+            love.graphics.setColor(base_bar_col[1], base_bar_col[2], base_bar_col[3], 0.5)
+            roundedRect("fill", scroll_track_x, thumb_y, math.floor(3 * scale), thumb_h, math.floor(1.5 * scale))
+        end
     elseif active_tab == 2 then
-        -- Tab 2: Statistics Cards
+        -- Tab 2 Statistics with categorized sections
         local avail_h = h - list_y - footer_h
         local col_w = math.floor((w - padding * 3) / 2)
-        local row_h = math.floor(avail_h / 4)
+        local card_h = math.floor(58 * scale)
         local card_gap = math.floor(8 * scale)
+        local sec_h = math.floor(26 * scale)
+        local stat_step = card_h + card_gap
+        local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
 
-        local function drawStatCard(x, y, card_w, card_h, label, value)
-            -- Card background
-            love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.85)
-            roundedRect("fill", x, y, card_w, card_h, math.floor(10 * scale))
-
-            local border_color = ui_text
-            local label_color = ui_text
-            local val_color = ui_text
-            
-            local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
-            border_color = base_text_col
-            label_color = base_text_col
-            val_color = base_text_col
-
-            -- Card border
-            love.graphics.setColor(border_color[1], border_color[2], border_color[3], 0.3)
-            love.graphics.setLineWidth(math.floor(1.5 * scale))
-            roundedRect("line", x, y, card_w, card_h, math.floor(10 * scale))
-
-            -- Muted small label
-            love.graphics.setFont(font_label)
-            love.graphics.setColor(label_color[1], label_color[2], label_color[3], 0.90)
-            love.graphics.print(label, x + math.floor(12 * scale), y + math.floor(8 * scale))
-
-            -- Large value
-            love.graphics.setFont(font_score)
-            love.graphics.setColor(val_color[1], val_color[2], val_color[3], 1.0)
-            love.graphics.print(value, x + math.floor(12 * scale), y + card_h - font_score:getHeight() - math.floor(8 * scale))
-        end
+        -- Load mode high scores
+        local save_mod = require("save")
+        local classic_hs = save_mod.loadHighScore("classic") or 0
+        local plus_hs = save_mod.loadHighScore("plus") or 0
+        local ta_hs = save_mod.loadHighScore("timeattack") or 0
+        local huge_hs = save_mod.loadHighScore("huge") or 0
+        local nomercy_hs = save_mod.loadHighScore("nomercy") or 0
+        local goose_hs = save_mod.loadHighScore("goose") or 0
 
         local s = _G.stats or {}
         local games_played = s.games_played or 0
         local classic = s.classic_games or 0
         local plus = s.plus_games or 0
-        local arcade = s.arcade_games or 0
-        local games_str = string.format("%s (C:%d P:%d A:%d)", formatNum(games_played), classic, plus, arcade)
-
+        local ta_games = s.timeattack_games or 0
+        local huge_games = s.huge_games or 0
+        local nomercy_games = s.nomercy_games or 0
+        local goose_games = s.goose_games or 0
+        local arcade = s.arcade_games or (ta_games + huge_games + nomercy_games + goose_games)
+        local highest_score = math.max(s.highest_score or 0, classic_hs, plus_hs, ta_hs, huge_hs, nomercy_hs, goose_hs)
         local highest_tile = s.highest_tile or 0
-        local tile_str = highest_tile > 0 and tostring(highest_tile) or "None"
-
         local bombs = s.bombs_used or 0
         local swaps = s.swaps_used or 0
-        local powerups_str = string.format("Bombs: %s | Swaps: %s", formatNum(bombs), formatNum(swaps))
 
-        -- Left profile column
+        local total_stats_height = sec_h + (4 * (card_h + card_gap)) + math.floor(10 * scale)
+            + sec_h + (3 * (card_h + card_gap)) + math.floor(16 * scale)
+
+        _G.stats_max_scroll = math.max(0, math.ceil((total_stats_height - avail_h) / stat_step))
+        if _G.stats_scroll_target and _G.stats_scroll_target > _G.stats_max_scroll then
+            _G.stats_scroll_target = _G.stats_max_scroll
+        end
+
+        local active_scroll = scroll or _G.stats_scroll or 0
+        local current_stats_y = list_y - math.floor(active_scroll * stat_step)
+
+        love.graphics.setScissor(0, list_y - math.floor(5 * scale), w, avail_h + math.floor(5 * scale))
+
+        local function drawSectionHeader(text, sec_y)
+            love.graphics.setFont(font_help_label)
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.9)
+            love.graphics.print(text, padding, sec_y)
+
+            local txt_w = font_help_label:getWidth(text)
+            local line_y = sec_y + math.floor(font_help_label:getHeight() / 2)
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.22)
+            love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
+            love.graphics.line(padding + txt_w + math.floor(12 * scale), line_y, w - padding, line_y)
+        end
+
+        local function drawStatCard(x, y, card_w, card_h, label, value, subtitle)
+            -- Card background
+            love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.88)
+            roundedRect("fill", x, y, card_w, card_h, math.floor(10 * scale))
+
+            -- Card border
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.28)
+            love.graphics.setLineWidth(math.floor(1.5 * scale))
+            roundedRect("line", x, y, card_w, card_h, math.floor(10 * scale))
+
+            -- Upper label
+            love.graphics.setFont(font_help_key_small)
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.75)
+            love.graphics.print(label, x + math.floor(12 * scale), y + math.floor(7 * scale))
+
+            -- Optional subtitle on right
+            if subtitle and subtitle ~= "" then
+                local sub_w = font_help_key_small:getWidth(subtitle)
+                love.graphics.print(subtitle, x + card_w - sub_w - math.floor(12 * scale), y + math.floor(7 * scale))
+            end
+
+            -- Value text
+            love.graphics.setFont(font_score)
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
+            local val_y = y + card_h - font_score:getHeight() - math.floor(7 * scale)
+            love.graphics.print(value, x + math.floor(12 * scale), val_y)
+        end
+
         local x1 = padding
-        drawStatCard(x1, list_y + row_h * 0, col_w, row_h - card_gap, "HIGHEST SCORE", formatNum(s.highest_score or 0))
-        drawStatCard(x1, list_y + row_h * 1, col_w, row_h - card_gap, "HIGHEST TILE REACHED", tile_str)
-        drawStatCard(x1, list_y + row_h * 2, col_w, row_h - card_gap, "TOTAL TIME PLAYED", formatTime(s.time_played or 0))
-        drawStatCard(x1, list_y + row_h * 3, col_w, row_h - card_gap, "GAMES STARTED", games_str)
-
-        -- Right gameplay column
         local x2 = padding * 2 + col_w
-        drawStatCard(x2, list_y + row_h * 0, col_w, row_h - card_gap, "TOTAL MOVES MADE", formatNum(s.moves_made or 0))
-        drawStatCard(x2, list_y + row_h * 1, col_w, row_h - card_gap, "TOTAL TILES MERGED", formatNum(s.tiles_merged or 0))
-        drawStatCard(x2, list_y + row_h * 2, col_w, row_h - card_gap, "POWERUPS USED", powerups_str)
-        drawStatCard(x2, list_y + row_h * 3, col_w, row_h - card_gap, "UNDOS TRIGGERED", formatNum(s.undos_used or 0))
+        local cursor_y = current_stats_y
+
+        -- Career Overview Section
+        drawSectionHeader("CAREER OVERVIEW", cursor_y)
+        cursor_y = cursor_y + sec_h
+
+        local tile_str = (highest_tile > 0) and tostring(highest_tile) or "None"
+        local games_str = formatNum(games_played)
+        local games_sub = string.format("C:%d P:%d A:%d", classic, plus, arcade)
+        local powerups_val = string.format("B: %s | S: %s", formatNum(bombs), formatNum(swaps))
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "HIGHEST SCORE", formatNum(highest_score))
+        drawStatCard(x2, cursor_y, col_w, card_h, "HIGHEST TILE", tile_str)
+        cursor_y = cursor_y + card_h + card_gap
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "TOTAL TIME PLAYED", formatTime(s.time_played or 0))
+        drawStatCard(x2, cursor_y, col_w, card_h, "GAMES STARTED", games_str, games_sub)
+        cursor_y = cursor_y + card_h + card_gap
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "TOTAL MOVES MADE", formatNum(s.moves_made or 0))
+        drawStatCard(x2, cursor_y, col_w, card_h, "TOTAL TILES MERGED", formatNum(s.tiles_merged or 0))
+        cursor_y = cursor_y + card_h + card_gap
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "POWERUPS USED", powerups_val)
+        drawStatCard(x2, cursor_y, col_w, card_h, "UNDOS TRIGGERED", formatNum(s.undos_used or 0))
+        cursor_y = cursor_y + card_h + card_gap + math.floor(10 * scale)
+
+        -- Mode High Scores Section
+        drawSectionHeader("MODE HIGH SCORES", cursor_y)
+        cursor_y = cursor_y + sec_h
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "CLASSIC MODE", (classic_hs > 0) and formatNum(classic_hs) or "--", string.format("Games: %d", classic))
+        drawStatCard(x2, cursor_y, col_w, card_h, "PLUS MODE", (plus_hs > 0) and formatNum(plus_hs) or "--", string.format("Games: %d", plus))
+        cursor_y = cursor_y + card_h + card_gap
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "TIME ATTACK", (ta_hs > 0) and formatNum(ta_hs) or "--", string.format("Games: %d", ta_games))
+        drawStatCard(x2, cursor_y, col_w, card_h, "HUGE GRID", (huge_hs > 0) and formatNum(huge_hs) or "--", string.format("Games: %d", huge_games))
+        cursor_y = cursor_y + card_h + card_gap
+
+        drawStatCard(x1, cursor_y, col_w, card_h, "NO MERCY", (nomercy_hs > 0) and formatNum(nomercy_hs) or "--", string.format("Games: %d", nomercy_games))
+        drawStatCard(x2, cursor_y, col_w, card_h, "GOOSE MODE", (goose_hs > 0) and formatNum(goose_hs) or "--", string.format("Games: %d", goose_games))
+        cursor_y = cursor_y + card_h + card_gap + math.floor(16 * scale)
+
+        love.graphics.setScissor()
+
+        -- Scroll position indicator for Tab 2
+        if _G.stats_max_scroll and _G.stats_max_scroll > 0 then
+            local scroll_track_h = avail_h - math.floor(16 * scale)
+            local scroll_track_y = list_y + math.floor(8 * scale)
+            local scroll_track_x = w - padding + math.floor(6 * scale)
+            local bar_total_steps = _G.stats_max_scroll + 1
+            local thumb_h = math.max(math.floor(20 * scale), math.floor(scroll_track_h / bar_total_steps))
+            local thumb_progress = (_G.stats_scroll or 0) / _G.stats_max_scroll
+            thumb_progress = math.max(0, math.min(1, thumb_progress))
+            local thumb_y = scroll_track_y + thumb_progress * (scroll_track_h - thumb_h)
+
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.15)
+            roundedRect("fill", scroll_track_x, scroll_track_y, math.floor(3 * scale), scroll_track_h, math.floor(1.5 * scale))
+
+            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.5)
+            roundedRect("fill", scroll_track_x, thumb_y, math.floor(3 * scale), thumb_h, math.floor(1.5 * scale))
+        end
     end
 
     -- Footer bar for Achievements & Stats
@@ -10585,7 +10738,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         left_x = left_x + dpad_size + math.floor(6 * scale)
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(ui_text)
-        local label = (active_tab == 1) and "Scroll / Switch Tab" or "Switch Tab"
+        local label = "Scroll"
         love.graphics.print(label, left_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
 
         -- Action buttons: B Back, Y Theme
