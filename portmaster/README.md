@@ -14,18 +14,19 @@ Source Code: [GitHub Repository](https://github.com/saitamasahil/2048plus)
 
 ## Controls
 
-| Button | Action |
-|--|--| 
-| **D-Pad / Left Stick** | Swipe tiles / Navigate Menus / Seek Track (◄ -10s / ► +10s in Jukebox) |
-| **A** | Confirm / Select Item / Confirm Powerup Target |
-| **B** | Undo Move (Classic & Plus Mode) / Cancel Target / Go Back |
-| **X** | Quit to Menu (Pause / Game Over / Victory) |
-| **Y** | Cycle Unlocked Themes |
-| **L1** | Activate Swap Powerup (Plus Mode) / Activate Shield (Game Over) / Open Jukebox |
-| **R1** | Activate Bomb Powerup (Plus Mode) / Activate Shield (Game Over) / Open Store |
-| **Select** | Show Coin Balance During Gameplay |
-| **Start** | Open Pause Menu / Resume Gameplay |
-| **Menu + Start** | Exit the game safely (force quit) |
+| Action | Button |
+|:---|:---|
+| **Move Tiles** | D-Pad / Left Stick |
+| **Confirm / Select Item** | `A` |
+| **Undo Move / Back / Cancel** | `B` |
+| **Quit to Menu** | `X` |
+| **Cycle Unlocked Themes** | `Y` |
+| **Activate Swap Powerup** | `L1` |
+| **Activate Bomb Powerup** | `R1` |
+| **Seek Music** | D-Pad Left / Right |
+| **Show Coin Balance** | `Select` |
+| **Pause Menu / Resume** | `Start` |
+| **Force Quit App** | `Menu + Start` |
 
 *Note: Your progress is automatically saved after every move. You can safely close the game and pick up exactly where you left off.*
 
