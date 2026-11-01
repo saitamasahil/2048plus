@@ -95,7 +95,8 @@ local text_size_pill_to_x = 0
 local text_size_pill_to_y = 0
 local text_size_pill_to_w = 0
 local text_size_pill_to_h = 0
-local TEXT_SIZE_TRANSITION_DURATION = 0.22
+local text_size_transition_enlarging = true
+local TEXT_SIZE_TRANSITION_DURATION = 0.38
 
 -- CRT filter transition state
 local crt_transition_timer = 0
@@ -174,6 +175,8 @@ function renderer.startTextSizeTransition(old_size, new_size)
     text_size_transition_timer = TEXT_SIZE_TRANSITION_DURATION
     text_size_new_canvas_ready = false
     text_size_transition_selection = sel
+    text_size_transition_enlarging = (new_size == "large")
+    _G.text_size_transition_enlarging = text_size_transition_enlarging
 end
 
 function renderer.finishTextSizeTransition()
@@ -7713,12 +7716,13 @@ function renderer.drawSettings(selection, skip_transition)
 
     if in_text_size_transition then
         local t_progress = math.max(0, math.min(1, 1 - (text_size_transition_timer / TEXT_SIZE_TRANSITION_DURATION)))
-        local p = 1 - (1 - t_progress) ^ 3
+        local ease_p = t_progress * t_progress * (3 - 2 * t_progress)
+        local pill_p = 1 - (1 - t_progress) ^ 3
 
-        local px = text_size_pill_from_x + (text_size_pill_to_x - text_size_pill_from_x) * p
-        local py = text_size_pill_from_y + (text_size_pill_to_y - text_size_pill_from_y) * p
-        local pw = text_size_pill_from_w + (text_size_pill_to_w - text_size_pill_from_w) * p
-        local ph = text_size_pill_from_h + (text_size_pill_to_h - text_size_pill_from_h) * p
+        local px = text_size_pill_from_x + (text_size_pill_to_x - text_size_pill_from_x) * pill_p
+        local py = text_size_pill_from_y + (text_size_pill_to_y - text_size_pill_from_y) * pill_p
+        local pw = text_size_pill_from_w + (text_size_pill_to_w - text_size_pill_from_w) * pill_p
+        local ph = text_size_pill_from_h + (text_size_pill_to_h - text_size_pill_from_h) * pill_p
 
         menu_anim_x = px
         menu_anim_y = py
@@ -7732,16 +7736,98 @@ function renderer.drawSettings(selection, skip_transition)
         love.graphics.setColor(help_key_color)
         drawSelectionPill(px, py - 1 * scale, pw, ph, 6 * scale)
 
-        local a_old = 1 - p
+        local pill_pulse = math.sin(t_progress * math.pi)
+        if pill_pulse > 0 then
+            love.graphics.setColor(1, 1, 1, 0.40 * pill_pulse)
+            love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+            roundedRect("line", px, py - 1 * scale, pw, ph, 6 * scale)
+        end
+
+        local is_enlarging = text_size_transition_enlarging
+        local pill_mid_y = (text_size_pill_from_y + text_size_pill_to_y) * 0.5 + (text_size_pill_from_h + text_size_pill_to_h) * 0.25
+        local cx, cy
+        if is_enlarging then
+            cx = 0
+            cy = pill_mid_y
+        else
+            cx = w
+            cy = pill_mid_y
+        end
+
+        local max_dist = math.sqrt(w * w + math.max(cy, h - cy) ^ 2) + 20
+        local radius = max_dist * ease_p
+
+        local prev_comp, prev_val = love.graphics.getStencilTest()
+
+        love.graphics.stencil(function()
+            love.graphics.rectangle("fill", 0, 0, w, h)
+        end, "replace", 2, false)
+
+        if radius > 0 then
+            love.graphics.stencil(function()
+                love.graphics.circle("fill", cx, cy, radius)
+            end, "decrement", 1, true)
+        end
+
+        love.graphics.setStencilTest("equal", 2)
         love.graphics.setBlendMode("alpha", "premultiplied")
-        love.graphics.setColor(a_old, a_old, a_old, a_old)
+        love.graphics.setColor(1, 1, 1, 1)
         love.graphics.draw(text_size_old_canvas, 0, 0)
 
-        local a_new = p
-        love.graphics.setColor(a_new, a_new, a_new, a_new)
+        love.graphics.setStencilTest("equal", 1)
+        love.graphics.setColor(1, 1, 1, 1)
         love.graphics.draw(text_size_new_canvas, 0, 0)
-
         love.graphics.setBlendMode("alpha", "alphamultiply")
+
+        if radius > 4 and radius < max_dist then
+            love.graphics.setStencilTest("greater", 0)
+            love.graphics.push("all")
+            local scx, scy, scw, sch = love.graphics.getScissor()
+            if love.graphics.intersectScissor then
+                love.graphics.intersectScissor(0, 0, w, h)
+            else
+                love.graphics.setScissor(0, 0, w, h)
+            end
+
+            if is_enlarging then
+                love.graphics.setColor(0.2, 0.75, 1.0, 0.75 * (1 - ease_p * 0.25))
+                love.graphics.setLineWidth(math.max(2, math.floor(3.5 * scale)))
+                love.graphics.circle("line", cx, cy, radius)
+
+                love.graphics.setColor(1, 1, 1, 0.95)
+                love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+                love.graphics.circle("line", cx, cy, radius)
+
+                love.graphics.setColor(0.1, 0.45, 1.0, 0.35 * (1 - ease_p * 0.25))
+                love.graphics.setLineWidth(math.max(4, math.floor(8 * scale)))
+                love.graphics.circle("line", cx, cy, radius)
+            else
+                love.graphics.setColor(0.3, 0.95, 0.75, 0.75 * (1 - ease_p * 0.25))
+                love.graphics.setLineWidth(math.max(2, math.floor(3.5 * scale)))
+                love.graphics.circle("line", cx, cy, radius)
+
+                love.graphics.setColor(1, 1, 1, 0.95)
+                love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+                love.graphics.circle("line", cx, cy, radius)
+
+                love.graphics.setColor(0.1, 0.8, 0.55, 0.35 * (1 - ease_p * 0.25))
+                love.graphics.setLineWidth(math.max(4, math.floor(8 * scale)))
+                love.graphics.circle("line", cx, cy, radius)
+            end
+
+            if scx then
+                love.graphics.setScissor(scx, scy, scw, sch)
+            else
+                love.graphics.setScissor()
+            end
+            love.graphics.pop()
+        end
+
+        if prev_comp then
+            love.graphics.setStencilTest(prev_comp, prev_val)
+        else
+            love.graphics.setStencilTest()
+        end
         love.graphics.setColor(1, 1, 1, 1)
     else
         menu_anim_target_x = layout.target_ox
