@@ -7628,7 +7628,7 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
     local tx = (w - tw) / 2
     local ty = layout.start_y + (layout.header_h - th) / 2
 
-    love.graphics.setColor(getTileColor(2048))
+    love.graphics.setColor(ui_text)
     love.graphics.setFont(f_title)
     love.graphics.print(title_text, tx, ty)
 
