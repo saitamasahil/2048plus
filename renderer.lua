@@ -10651,9 +10651,14 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             end
 
             -- Value text
-            love.graphics.setFont(font_score)
+            local val_font = font_score
+            local max_val_w = card_w - math.floor(24 * scale)
+            if val_font:getWidth(value) > max_val_w and font_help_key then
+                val_font = (font_help_key:getWidth(value) <= max_val_w) and font_help_key or font_help_key_small
+            end
+            love.graphics.setFont(val_font)
             love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
-            local val_y = y + card_h - font_score:getHeight() - math.floor(7 * scale)
+            local val_y = y + card_h - val_font:getHeight() - math.floor(7 * scale)
             love.graphics.print(value, x + math.floor(12 * scale), val_y)
         end
 
@@ -10668,7 +10673,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         local tile_str = (highest_tile > 0) and tostring(highest_tile) or "None"
         local games_str = formatNum(games_played)
         local games_sub = string.format("C:%d P:%d A:%d", classic, plus, arcade)
-        local powerups_val = string.format("B: %s | S: %s", formatNum(bombs), formatNum(swaps))
+        local powerups_val = string.format("Bomb: %s | Swap: %s", formatNum(bombs), formatNum(swaps))
 
         drawStatCard(x1, cursor_y, col_w, card_h, "HIGHEST SCORE", formatNum(highest_score))
         drawStatCard(x2, cursor_y, col_w, card_h, "HIGHEST TILE", tile_str)
