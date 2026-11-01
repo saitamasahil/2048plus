@@ -265,7 +265,7 @@ build_linux() {
         fi
 
         OUTPUT_APPIMAGE="$BUILD_DIR/2048_Plus-x86_64.AppImage"
-        ARCH=x86_64 ./appimagetool-x86_64.AppImage squashfs-root "$OUTPUT_APPIMAGE" >/dev/null
+        ARCH=x86_64 ./appimagetool-x86_64.AppImage -n squashfs-root "$OUTPUT_APPIMAGE" >/dev/null 2>&1
         echo "[OK] Linux AppImage created: build/2048_Plus-x86_64.AppImage ($(du -h "$OUTPUT_APPIMAGE" | cut -f1))"
     )
 
