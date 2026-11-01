@@ -4,8 +4,11 @@
 ### Added
 - Added standalone release builds for Android, Linux, and Windows
 - Added Customization Hub to preview and equip themes, board skins, and companion pets
-- Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic), used with permission, plus new background music tracks by Luke Bergs, Purrple Cat, Ghostrifter Official, Sakura Girl, and Roa
+- Added new background music tracks from [Chosic](https://www.chosic.com/free-music/) by Luke Bergs, Purrple Cat, Ghostrifter Official, Sakura Girl, and Roa
+- Added "Pearl" by [Kirara Magic](https://www.youtube.com/@KiraraMagic), used with permission
+- Added directional sweep transition for Text Size & CRT shader toggle in Settings
 - Display earned powerups in header subtitle below 2048
+- Added support for non-Mali chipsets by removing hardcoded libmali loading, prioritizing system EGL drivers, and added execute permissions for launch script in muOS
 
 ### Changed
 - Updated statistics screen with career metrics, games played per mode, and L1/R1 tab switching
@@ -20,8 +23,6 @@
 - Fixed Settings header text visibility in Cherry theme
 - Fixed achievements not unlocking after playing Huge mode
 - Fixed number visibility on 2048 and higher number tiles in Cosmic theme
-- Added support for non-Mali chipsets by removing hardcoded libmali loading and prioritizing system EGL drivers
-- Added execute permissions for launch script for muOS
 
 ## [7.0.1]
 ### Added
