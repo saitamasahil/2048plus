@@ -43,12 +43,12 @@ This project is inspired by and references the popular open-source [2048](https:
 ### Linux
 Download `2048_Plus-x86_64.AppImage` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](https://github.com/saitamasahil/2048plus#building-from-source) instructions. Make it executable (`chmod +x 2048_Plus-x86_64.AppImage`), and run it.
 
-Saves are stored in: `~/.local/share/love/2048plus/`
+Saves are stored in: `~/.local/share/2048plus/`
 
 ### Windows
 Download and extract `2048_Plus-win64.zip` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](https://github.com/saitamasahil/2048plus#building-from-source) instructions, then run `2048 Plus.exe`.
 
-Saves are stored in: `%APPDATA%\LOVE\2048plus\`
+Saves are stored in: `%APPDATA%\2048plus\`
 
 ### Android
 Download `2048plus.apk` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page, open it on your Android device (enable "Install from unknown sources" if prompted), and install.
