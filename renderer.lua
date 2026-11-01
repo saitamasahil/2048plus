@@ -10090,7 +10090,10 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
     local padding = math.floor(20 * scale)
-    local active_tab = override_tab or _G.achievements_tab
+    local active_tab = override_tab or _G.achievements_tab or 1
+    if scroll == nil then
+        scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+    end
 
     -- Slide animation state
     if not static_only and _G.achievements_slide_timer and _G.achievements_slide_timer > 0 then
@@ -10612,7 +10615,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             _G.stats_scroll_target = _G.stats_max_scroll
         end
 
-        local active_scroll = scroll or _G.stats_scroll or 0
+        local active_scroll = scroll
         local current_stats_y = list_y - math.floor(active_scroll * stat_step)
 
         love.graphics.setScissor(0, list_y - math.floor(5 * scale), w, avail_h + math.floor(5 * scale))

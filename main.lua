@@ -391,11 +391,18 @@ function love.load(args)
 
     function _G.cycleTheme(direction)
         local dir = direction or 1
+        if _G.stats_scroll_target then
+            _G.stats_scroll = _G.stats_scroll_target
+        end
+        if _G.achievements_scroll_target then
+            _G.achievements_scroll = _G.achievements_scroll_target
+        end
         local function getCurrentDrawTarget()
             if _G.appState == "GAME" and game then
                 return game
             elseif _G.appState == "ACHIEVEMENTS" then
-                return function() renderer.drawAchievements(_G.achievements_scroll or 0, true) end
+                local scr = (_G.achievements_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+                return function() renderer.drawAchievements(scr, true) end
             elseif _G.appState == "TUTORIAL" then
                 return function() renderer.drawTutorial(_G.tutorial_page or 1, true) end
             elseif _G.appState == "ABOUT" then
@@ -1427,7 +1434,7 @@ function love.update(dt)
                     end
                 end
             elseif event == input.events.Y then
-                renderer.cycleTheme(1)
+                if _G.cycleTheme then _G.cycleTheme(1) end
             end
             return
         elseif _G.appState == "CHEATS_MENU" then
