@@ -379,6 +379,9 @@ function love.load(args)
     end
 
     function _G.cycleStoreSortMode()
+        if _G.screen_transitions and renderer.captureOldStoreScreen then
+            renderer.captureOldStoreScreen()
+        end
         _G.store_sort_mode = ((_G.store_sort_mode or 0) + 1) % 10
         _G.store_selection = 1
         _G.store_scroll = 0

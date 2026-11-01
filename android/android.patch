@@ -39,7 +39,7 @@
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -2329,6 +2335,9 @@
+@@ -2332,6 +2338,9 @@
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
@@ -49,7 +49,7 @@
      if button == 1 then
          -- Customization tab click
          if _G.appState == "THEME_SELECT" then
-@@ -2463,6 +2472,18 @@
+@@ -2466,6 +2475,18 @@
      end
  end
  

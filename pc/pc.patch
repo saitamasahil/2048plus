@@ -84,7 +84,7 @@
      end
  
      sound.init()
-@@ -473,6 +476,7 @@
+@@ -476,6 +479,7 @@
      _G.time_attack_time = save.loadTimeAttackTime() or 60
      _G.vibration = save.loadVibration()
      _G.crt_filter = save.loadCrtFilter()
@@ -92,7 +92,7 @@
      _G.merge_fx = "default"
      _G.board_skin = save.loadBoardSkin() or "default"
  
-@@ -1777,7 +1781,16 @@
+@@ -1780,7 +1784,16 @@
                          end
                          _G.crt_filter = new_crt
                          save.saveCrtFilter(_G.crt_filter)
@@ -110,7 +110,7 @@
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2515,3 +2528,9 @@
+@@ -2518,3 +2531,9 @@
          end
      end
  end
@@ -122,7 +122,7 @@
 +end
 --- a/renderer.lua
 +++ b/renderer.lua
-@@ -266,7 +266,7 @@
+@@ -273,7 +273,7 @@
  
  function renderer.captureOldTutorialSlide(page)
      local w, h = love.graphics.getDimensions()
@@ -131,7 +131,7 @@
          tutorial_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({tutorial_old_canvas, stencil = true})
-@@ -277,7 +277,7 @@
+@@ -284,7 +284,7 @@
  
  function renderer.captureOldAchievementsSlide(tab)
      local w, h = love.graphics.getDimensions()
@@ -140,7 +140,7 @@
          achievements_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({achievements_old_canvas, stencil = true})
-@@ -5218,6 +5218,14 @@
+@@ -5241,6 +5241,14 @@
  -- ============================================================================
  -- Get proper text for button prompts based on OS
  -- ============================================================================
@@ -155,7 +155,7 @@
  function renderer.getButtonPrompt(key)
      if love.system.getOS() == "Web" then
          local web_mapping = {
-@@ -5232,6 +5240,20 @@
+@@ -5255,6 +5263,20 @@
              DPAD = "Arrows"
          }
          return web_mapping[key] or key
@@ -176,7 +176,7 @@
      end
      return key
  end
-@@ -5247,6 +5269,16 @@
+@@ -5270,6 +5292,16 @@
          text = text:gsub("Press Y", "Press C")
          text = text:gsub("%[Y%]", "[C]")
          text = text:gsub("B button", "Esc key")
@@ -193,7 +193,7 @@
      end
      return text
  end
-@@ -7314,7 +7346,7 @@
+@@ -7344,7 +7376,7 @@
  
          -- Capture the new page to tutorial_new_canvas ONCE at the start of transition
          if not _G.tutorial_slide_ready then
@@ -202,7 +202,7 @@
                  tutorial_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({tutorial_new_canvas, stencil = true})
-@@ -7464,7 +7496,8 @@
+@@ -7494,7 +7526,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -212,7 +212,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -7534,6 +7567,8 @@
+@@ -7564,6 +7597,8 @@
      local undo_lbl = "Undo Limit (Classic/Huge): " .. undo_val
      local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
      local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
@@ -221,7 +221,7 @@
  
      return {
          "Audio & Haptics",
-@@ -7543,6 +7578,7 @@
+@@ -7573,6 +7608,7 @@
          undo_lbl,
          ta_lbl,
          crt_lbl,
@@ -229,7 +229,7 @@
          "Back"
      }
  end
-@@ -7557,7 +7593,7 @@
+@@ -7587,7 +7623,7 @@
      local badge_h = math.floor(28 * scale)
      local badge_y = h - badge_h - math.floor(7 * scale)
  
@@ -238,7 +238,7 @@
      local total_h = header_h + math.floor(12 * scale) + menu_h
      local available_h = badge_y - math.floor(10 * scale)
      local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
-@@ -7581,6 +7617,7 @@
+@@ -7611,6 +7647,7 @@
              "Undo Limit (Classic/Huge): Unlimited",
              "Time Attack Max Limit: 90s",
              "CRT Shader: Off",
@@ -246,7 +246,7 @@
              "Back"
          }
      end
-@@ -7672,7 +7709,8 @@
+@@ -7702,7 +7739,8 @@
              love.graphics.print(action.label, right_x, layout.badge_y + (layout.badge_h - font_help_label:getHeight()) / 2)
  
              right_x = right_x - label_gap
@@ -256,7 +256,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
  
-@@ -8046,7 +8084,8 @@
+@@ -8076,7 +8114,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -266,7 +266,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -8522,7 +8561,8 @@
+@@ -8552,7 +8591,8 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x0, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x0 = right_x0 - label_gap
@@ -276,7 +276,7 @@
              right_x0 = right_x0 - key_w
              drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
              right_x0 = right_x0 - item_gap
-@@ -8799,7 +8839,8 @@
+@@ -8829,7 +8869,8 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x1, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x1 = right_x1 - label_gap
@@ -286,7 +286,7 @@
              right_x1 = right_x1 - key_w
              drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
              right_x1 = right_x1 - item_gap
-@@ -8942,7 +8983,8 @@
+@@ -8972,7 +9013,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -296,7 +296,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -9838,8 +9880,10 @@
+@@ -9868,8 +9910,10 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
@@ -308,7 +308,7 @@
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10198,7 +10242,7 @@
+@@ -10228,7 +10272,7 @@
  
          -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
          if not _G.achievements_slide_ready then
@@ -317,7 +317,7 @@
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -10851,7 +10895,8 @@
+@@ -10881,7 +10925,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -327,7 +327,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11083,7 +11128,8 @@
+@@ -11113,7 +11158,8 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -337,7 +337,7 @@
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -11967,7 +12013,8 @@
+@@ -12057,7 +12103,8 @@
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
          right_x = right_x - label_gap
@@ -347,7 +347,7 @@
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12738,7 +12785,8 @@
+@@ -12828,7 +12875,8 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap
