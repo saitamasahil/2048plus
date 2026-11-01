@@ -3005,34 +3005,34 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
 
     if transition_dir == 1 then
         -- Console to Fullscreen
-        if t < 0.48 then
-            local fade_out = (1.0 - (t / 0.48)) ^ 1.5
-            local slide_y = (t / 0.48) * 24
-            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_out, false)
-        else
-            local in_p = (t - 0.48) / 0.52
-            local fade_in = in_p ^ 1.3
-            local settle_y = (1.0 - in_p) * 16
-            android_console.drawFullscreen(game_draw_fn, dt, in_p, true)
+        local fs_fade = math.min(1.0, t * 1.5)
+        local settle_y = (1.0 - t) * 16
+        android_console.drawFullscreen(game_draw_fn, dt, t, true)
 
-            love.graphics.setColor(1, 1, 1, fade_in)
-            love.graphics.draw(fs_canvas, origin_x, settle_y, 0, scale_fs_x, scale_fs_y)
+        love.graphics.setColor(1, 1, 1, fs_fade)
+        love.graphics.draw(fs_canvas, origin_x, settle_y, 0, scale_fs_x, scale_fs_y)
+
+        if t < 0.65 then
+            local chassis_p = t / 0.65
+            local fade_out = (1.0 - chassis_p) ^ 1.4
+            local slide_y = chassis_p * 32
+            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_out, false)
         end
     else
         -- Fullscreen to Console
-        if t > 0.48 then
-            local out_p = (t - 0.48) / 0.52
-            local fade_out = out_p ^ 1.3
-            local slide_y = (1.0 - out_p) * -16
-            android_console.drawFullscreen(game_draw_fn, dt, out_p, true)
+        local in_p = 1.0 - t
+        local chassis_fade = math.min(1.0, in_p * 1.5)
+        local slide_y = (1.0 - in_p) * 24
+        android_console.drawConsole(game_draw_fn, dt, slide_y, chassis_fade, false)
+
+        if t > 0.35 then
+            local fs_p = (t - 0.35) / 0.65
+            local fade_out = fs_p ^ 1.3
+            local fs_slide_y = (1.0 - fs_p) * -16
+            android_console.drawFullscreen(game_draw_fn, dt, fs_p, true)
 
             love.graphics.setColor(1, 1, 1, fade_out)
-            love.graphics.draw(fs_canvas, origin_x, slide_y, 0, scale_fs_x, scale_fs_y)
-        else
-            local in_p = 1.0 - (t / 0.48)
-            local fade_in = in_p ^ 1.4
-            local slide_y = (1.0 - in_p) * 20
-            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_in, false)
+            love.graphics.draw(fs_canvas, origin_x, fs_slide_y, 0, scale_fs_x, scale_fs_y)
         end
     end
 end
@@ -3059,6 +3059,12 @@ function android_console.draw(game_draw_fn)
         if not _G.game or not _G.game.moves or _G.game.moves == 0 then
             console_has_swiped = false
             swipe_text_alpha = 1.0
+        end
+        if android_view_mode == "fullscreen" and _G.screen_transitions then
+            transition_active = true
+            transition_dir = 1
+            transition_progress = 0.0
+            transition_target = 1.0
         end
     end
     last_is_gameplay = is_gameplay

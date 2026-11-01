@@ -1,6 +1,8 @@
+diff --git a/conf.lua b/conf.lua
+index 8b3ce51..aa06c77 100644
 --- a/conf.lua
 +++ b/conf.lua
-@@ -5,10 +5,12 @@
+@@ -5,10 +5,12 @@ function love.conf(t)
  
      t.window.title = "2048 Plus"
      t.window.icon = nil
@@ -15,7 +17,7 @@
      t.window.vsync = 1
      t.window.display = 1
      t.window.highdpi = true
-@@ -17,7 +19,7 @@
+@@ -17,7 +19,7 @@ function love.conf(t)
  
      t.modules.thread = false
      t.modules.audio = true
@@ -24,9 +26,11 @@
      t.modules.physics = false
      t.modules.sound = true
      t.modules.touch = true
+diff --git a/main.lua b/main.lua
+index c3f9951..8e86ce2 100644
 --- a/main.lua
 +++ b/main.lua
-@@ -102,6 +102,12 @@
+@@ -104,6 +104,12 @@ local function queueTransitionAction(key, delay, action, direction)
  end
  
  function love.load(args)
@@ -39,7 +43,7 @@
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -2332,6 +2338,9 @@
+@@ -2337,6 +2343,9 @@ function love.draw()
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
@@ -49,7 +53,7 @@
      if button == 1 then
          -- Customization tab click
          if _G.appState == "THEME_SELECT" then
-@@ -2466,6 +2475,18 @@
+@@ -2471,6 +2480,18 @@ function love.wheelmoved(x, y)
      end
  end
  

@@ -59,7 +59,9 @@ local drawCurrentScreen
 
 local function captureOldScreen()
     local w, h = 640, 480
-    if not _G.is_console_active() then
+    if _G.android_fullscreen then
+        w, h = love.graphics.getDimensions()
+    elseif not _G.is_console_active() then
         w, h = love.graphics.getDimensions()
     end
     if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
@@ -67,7 +69,7 @@ local function captureOldScreen()
     end
     love.graphics.setCanvas({old_screen_canvas, stencil = true})
     love.graphics.clear()
-    if _G.is_console_active() then
+    if (_G.is_console_active and _G.is_console_active()) and not _G.android_fullscreen then
         local real_getDims = love.graphics.getDimensions
         local real_getW = love.graphics.getWidth
         local real_getH = love.graphics.getHeight
@@ -576,8 +578,9 @@ function love.update(dt)
             -- Skip global slide for menus with custom panel transitions
             -- Circle wipe transition into game
             local going_to_game_from_play = (last_app_state == "PLAY_SELECT" or last_app_state == "ARCADE_MENU") and _G.appState == "GAME"
-            local skip_slide = not going_to_game_from_play and
-                (_G.appState == "ARCADE_MENU" or last_app_state == "ARCADE_MENU" or _G.appState == "PLAY_SELECT" or last_app_state == "PLAY_SELECT")
+            local is_android_fs_game = _G.is_console_active and _G.is_console_active() and _G.android_console and _G.android_console.getViewMode and _G.android_console.getViewMode() == "fullscreen" and _G.appState == "GAME"
+            local skip_slide = is_android_fs_game or (not going_to_game_from_play and
+                (_G.appState == "ARCADE_MENU" or last_app_state == "ARCADE_MENU" or _G.appState == "PLAY_SELECT" or last_app_state == "PLAY_SELECT"))
             if not skip_slide and _G.screen_transitions then
                 -- Determine direction from hierarchy depth
                 local old_depth = STATE_DEPTH[last_app_state] or 0
@@ -2168,7 +2171,9 @@ local function draw_internal()
     end
 
     local sc_w, sc_h = 640, 480
-    if not _G.is_console_active() then
+    if _G.android_fullscreen then
+        sc_w, sc_h = love.graphics.getDimensions()
+    elseif not _G.is_console_active() then
         sc_w, sc_h = love.graphics.getDimensions()
     end
     local w, h = sc_w, sc_h
