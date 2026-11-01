@@ -4,6 +4,7 @@ import sys
 import shutil
 import tempfile
 import subprocess
+import getpass
 from PIL import Image
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -25,8 +26,23 @@ if not KEYSTORE:
     else:
         KEYSTORE = cache_debug
 
-KEY_ALIAS = os.environ.get("KEY_ALIAS", "androiddebugkey" if "debug" in os.path.basename(KEYSTORE) else "release")
-KS_PASS = os.environ.get("KEYSTORE_PASS") or os.environ.get("KS_PASS") or ("android" if "debug" in os.path.basename(KEYSTORE) else "")
+is_debug_keystore = "debug" in os.path.basename(KEYSTORE)
+KEY_ALIAS = os.environ.get("KEY_ALIAS", "androiddebugkey" if is_debug_keystore else "release")
+
+KS_PASS = os.environ.get("KEYSTORE_PASS") or os.environ.get("KS_PASS")
+if not KS_PASS:
+    if is_debug_keystore:
+        KS_PASS = "android"
+    else:
+        try:
+            KS_PASS = getpass.getpass(f"Enter password for {os.path.basename(KEYSTORE)}: ")
+        except (KeyboardInterrupt, EOFError):
+            print("\nBuild cancelled.")
+            sys.exit(1)
+        if not KS_PASS:
+            print("Error: Keystore password cannot be empty.")
+            sys.exit(1)
+
 KEY_PASS = os.environ.get("KEY_PASS", KS_PASS)
 ICON_SRC = os.path.join(PROJECT_ROOT, "assets/logo/logo_2048.png")
 PACKAGE_NAME = os.environ.get("PACKAGE_NAME", "com.saitamasahil.plus2048")

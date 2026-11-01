@@ -8,3 +8,4 @@ static/
 android/release.keystore
 android/debug.keystore
 test/saves/
+__pycache__/
