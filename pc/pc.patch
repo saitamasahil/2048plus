@@ -33,7 +33,7 @@
  _G.achievements = {
 --- a/input.lua
 +++ b/input.lua
-@@ -119,6 +119,16 @@
+@@ -119,6 +119,19 @@
  end
  
  function love.keypressed(key)
@@ -45,17 +45,23 @@
 +
 +    if _G.controls_help == "auto" then
 +        _G.input_mode = "keyboard"
++        if renderer and renderer.checkControlModeChange then
++            renderer.checkControlModeChange()
++        end
 +    end
 +
      local triggered = false
      for event_name, k in pairs(input.events) do
          if key == k then
-@@ -216,6 +226,10 @@
+@@ -216,6 +229,13 @@
  end
  
  function love.gamepadpressed(js, button)
 +    if _G.controls_help == "auto" then
 +        _G.input_mode = "gamepad"
++        if renderer and renderer.checkControlModeChange then
++            renderer.checkControlModeChange()
++        end
 +    end
 +
      local event = input.joystick_mapping[button]
@@ -92,7 +98,7 @@
      _G.merge_fx = "default"
      _G.board_skin = save.loadBoardSkin() or "default"
  
-@@ -1780,7 +1784,16 @@
+@@ -1780,7 +1784,19 @@
                          end
                          _G.crt_filter = new_crt
                          save.saveCrtFilter(_G.crt_filter)
@@ -107,10 +113,13 @@
 +                            _G.controls_help = "auto"
 +                        end
 +                        save.saveControlsHelp(_G.controls_help)
++                        if renderer and renderer.checkControlModeChange then
++                            renderer.checkControlModeChange()
++                        end
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2518,3 +2531,9 @@
+@@ -2518,3 +2534,9 @@
          end
      end
  end
@@ -122,7 +131,7 @@
 +end
 --- a/renderer.lua
 +++ b/renderer.lua
-@@ -273,7 +273,7 @@
+@@ -279,7 +279,7 @@
  
  function renderer.captureOldTutorialSlide(page)
      local w, h = love.graphics.getDimensions()
@@ -131,7 +140,7 @@
          tutorial_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({tutorial_old_canvas, stencil = true})
-@@ -284,7 +284,7 @@
+@@ -290,7 +290,7 @@
  
  function renderer.captureOldAchievementsSlide(tab)
      local w, h = love.graphics.getDimensions()
@@ -140,10 +149,11 @@
          achievements_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({achievements_old_canvas, stencil = true})
-@@ -5241,6 +5241,14 @@
+@@ -5247,7 +5247,15 @@
  -- ============================================================================
  -- Get proper text for button prompts based on OS
  -- ============================================================================
+-function renderer.getButtonPrompt(key)
 +function renderer.isKeyboardMode()
 +    local mode = _G.controls_help or "auto"
 +    if mode == "auto" then
@@ -152,14 +162,15 @@
 +    return mode == "keyboard"
 +end
 +
- function renderer.getButtonPrompt(key)
++function renderer.getButtonPrompt(key, mode_override)
      if love.system.getOS() == "Web" then
          local web_mapping = {
-@@ -5255,6 +5263,20 @@
+             A = "Enter",
+@@ -5261,6 +5269,20 @@
              DPAD = "Arrows"
          }
          return web_mapping[key] or key
-+    elseif renderer.isKeyboardMode() then
++    elseif (mode_override == true) or (mode_override == nil and renderer.isKeyboardMode()) then
 +        local keyboard_mapping = {
 +            A = "Enter",
 +            B = "Backsp",
@@ -176,7 +187,7 @@
      end
      return key
  end
-@@ -5270,6 +5292,16 @@
+@@ -5276,6 +5298,16 @@
          text = text:gsub("Press Y", "Press C")
          text = text:gsub("%[Y%]", "[C]")
          text = text:gsub("B button", "Esc key")
@@ -193,7 +204,7 @@
      end
      return text
  end
-@@ -7344,7 +7376,7 @@
+@@ -7425,7 +7457,7 @@
  
          -- Capture the new page to tutorial_new_canvas ONCE at the start of transition
          if not _G.tutorial_slide_ready then
@@ -202,17 +213,16 @@
                  tutorial_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({tutorial_new_canvas, stencil = true})
-@@ -7494,7 +7526,8 @@
+@@ -7575,7 +7607,7 @@
  
              -- Badge
              right_x = right_x - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -7564,6 +7597,8 @@
+@@ -7645,6 +7677,8 @@
      local undo_lbl = "Undo Limit (Classic/Huge): " .. undo_val
      local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
      local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
@@ -221,7 +231,7 @@
  
      return {
          "Audio & Haptics",
-@@ -7573,6 +7608,7 @@
+@@ -7654,6 +7688,7 @@
          undo_lbl,
          ta_lbl,
          crt_lbl,
@@ -229,7 +239,7 @@
          "Back"
      }
  end
-@@ -7587,7 +7623,7 @@
+@@ -7668,7 +7703,7 @@
      local badge_h = math.floor(28 * scale)
      local badge_y = h - badge_h - math.floor(7 * scale)
  
@@ -238,7 +248,7 @@
      local total_h = header_h + math.floor(12 * scale) + menu_h
      local available_h = badge_y - math.floor(10 * scale)
      local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
-@@ -7611,6 +7647,7 @@
+@@ -7692,6 +7727,7 @@
              "Undo Limit (Classic/Huge): Unlimited",
              "Time Attack Max Limit: 90s",
              "CRT Shader: Off",
@@ -246,69 +256,63 @@
              "Back"
          }
      end
-@@ -7702,7 +7739,8 @@
+@@ -7783,7 +7819,7 @@
              love.graphics.print(action.label, right_x, layout.badge_y + (layout.badge_h - font_help_label:getHeight()) / 2)
  
              right_x = right_x - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
  
-@@ -8005,7 +8043,8 @@
+@@ -8086,7 +8122,7 @@
  
              -- Badge
              right_x = right_x - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -8481,7 +8520,8 @@
+@@ -8562,7 +8598,7 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x0, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x0 = right_x0 - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x0 = right_x0 - key_w
              drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
              right_x0 = right_x0 - item_gap
-@@ -8758,7 +8798,8 @@
+@@ -8839,7 +8875,7 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x1, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x1 = right_x1 - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x1 = right_x1 - key_w
              drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
              right_x1 = right_x1 - item_gap
-@@ -8901,7 +8942,8 @@
+@@ -8982,7 +9018,7 @@
  
              -- Badge
              right_x = right_x - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -9797,8 +9839,10 @@
+@@ -9878,8 +9914,9 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
 +        -- Badge
          right_x = right_x - label_gap
 -        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+        local translated_key = renderer.getButtonPrompt(action.key)
-+        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++        local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10157,7 +10201,7 @@
+@@ -10238,7 +10275,7 @@
  
          -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
          if not _G.achievements_slide_ready then
@@ -317,43 +321,39 @@
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -10810,7 +10854,8 @@
+@@ -10891,7 +10928,7 @@
  
              -- Badge
              right_x = right_x - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11042,7 +11087,8 @@
+@@ -11123,7 +11160,7 @@
  
              -- Badge
              right_x = right_x - label_gap
 -            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+            local translated_key = renderer.getButtonPrompt(action.key)
-+            local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -11986,7 +12032,8 @@
+@@ -12067,7 +12104,7 @@
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
          right_x = right_x - label_gap
 -        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+        local translated_key = renderer.getButtonPrompt(action.key)
-+        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++        local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12757,7 +12804,8 @@
+@@ -12838,7 +12875,7 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap
 -        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(action.key) + math.floor(12 * scale))
-+        local translated_key = renderer.getButtonPrompt(action.key)
-+        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
++        local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
          right_x = right_x - key_w
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2

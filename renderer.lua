@@ -108,6 +108,12 @@ local store_sort_transition_timer = 0
 local STORE_SORT_TRANSITION_DURATION = 0.28
 local store_sort_old_canvas = nil
 
+-- Control hint transition state
+local footer_prompt_anim_timer = 0
+local FOOTER_PROMPT_DURATION = 0.20
+local footer_prompt_prev_kb_mode = nil
+local last_control_hint_kb_mode = nil
+
 -- Arcade Menu animation state
 local arcade_panel_y_offset = 9999  -- starts fully hidden off screen below
 local arcade_panel_target = 9999    -- target offset
@@ -5274,6 +5280,44 @@ function renderer.formatText(text)
     return text
 end
 
+function renderer.checkControlModeChange()
+    if renderer.isKeyboardMode then
+        local cur_kb = renderer.isKeyboardMode()
+        if last_control_hint_kb_mode == nil then
+            last_control_hint_kb_mode = cur_kb
+        elseif cur_kb ~= last_control_hint_kb_mode then
+            if _G.screen_transitions then
+                footer_prompt_anim_timer = FOOTER_PROMPT_DURATION
+                footer_prompt_prev_kb_mode = last_control_hint_kb_mode
+            else
+                footer_prompt_anim_timer = 0
+                footer_prompt_prev_kb_mode = nil
+            end
+            last_control_hint_kb_mode = cur_kb
+        end
+    end
+end
+
+function renderer.getHelpBadgeWidth(key, font, explicit_kb_mode)
+    local scale = _G.scale or 1
+    local font_key = font or font_help_key
+    local cur_kb = (explicit_kb_mode == true) or (explicit_kb_mode == nil and (renderer.isKeyboardMode and renderer.isKeyboardMode() or false))
+    local cur_prompt = renderer.getButtonPrompt(key, cur_kb)
+    local cur_w = math.max(math.floor(28 * scale), (font_key and font_key:getWidth(cur_prompt) or 0) + math.floor(12 * scale))
+    if key == "DPAD" then
+        return cur_w
+    end
+
+    if explicit_kb_mode == nil and _G.screen_transitions and footer_prompt_anim_timer > 0 and footer_prompt_prev_kb_mode ~= nil then
+        local prev_prompt = renderer.getButtonPrompt(key, footer_prompt_prev_kb_mode)
+        local prev_w = math.max(math.floor(28 * scale), (font_key and font_key:getWidth(prev_prompt) or 0) + math.floor(12 * scale))
+        local t_prog = math.max(0, math.min(1, 1 - (footer_prompt_anim_timer / FOOTER_PROMPT_DURATION)))
+        local p = 1 - (1 - t_prog) ^ 3
+        return math.floor(prev_w + (cur_w - prev_w) * p)
+    end
+    return cur_w
+end
+
 -- ============================================================================
 -- Draw key badge rounded rectangle with text
 -- ============================================================================
@@ -5357,14 +5401,25 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
         shadow_shrink = 0.3
     end
 
-    local function draw()
-        if original_text == "DPAD" then
+    local is_transitioning = _G.screen_transitions and footer_prompt_anim_timer > 0 and footer_prompt_prev_kb_mode ~= nil
+    local t_prog = is_transitioning and math.max(0, math.min(1, 1 - (footer_prompt_anim_timer / FOOTER_PROMPT_DURATION))) or 0
+    local cur_kb = renderer.isKeyboardMode and renderer.isKeyboardMode() or false
+    local old_prompt = is_transitioning and renderer.getButtonPrompt(original_text, footer_prompt_prev_kb_mode) or text
+    local new_prompt = is_transitioning and renderer.getButtonPrompt(original_text, cur_kb) or text
+
+    local function drawBadgeContent(target_text, cur_badge_a)
+        local cur_offset_y = is_small and visual_offset_y or ((target_text == "Y" or target_text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale))))
+        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" then
+            cur_offset_y = cur_offset_y - 0.5 * scale
+        end
+
+        if original_text == "DPAD" or target_text == "DPAD" then
             local aw = w * 0.32
             local cr = math.floor(aw * 0.25)
 
             if _G.theme == "matrix" then
                 -- Black background cross shifted by press_shift_y
-                love.graphics.setColor(0, 0, 0, 1)
+                love.graphics.setColor(0, 0, 0, cur_badge_a)
                 love.graphics.rectangle("fill", x, y + (h - aw) / 2 + press_shift_y, w, aw)
                 love.graphics.rectangle("fill", x + (w - aw) / 2, y + press_shift_y, aw, h)
 
@@ -5387,15 +5442,15 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
                 local dot_u = is_up and math.max(2.5 * scale, 2) or dot_r
                 local dot_d = is_down and math.max(2.5 * scale, 2) or dot_r
 
-                love.graphics.circle("fill", x + w/2 - offset, y + h/2 + press_shift_y, dot_l) -- Left
-                love.graphics.circle("fill", x + w/2 + offset, y + h/2 + press_shift_y, dot_r_active) -- Right
-                love.graphics.circle("fill", x + w/2, y + h/2 - offset + press_shift_y, dot_u) -- Up
-                love.graphics.circle("fill", x + w/2, y + h/2 + offset + press_shift_y, dot_d) -- Down
+                love.graphics.circle("fill", x + w/2 - offset, y + h/2 + press_shift_y, dot_l)
+                love.graphics.circle("fill", x + w/2 + offset, y + h/2 + press_shift_y, dot_r_active)
+                love.graphics.circle("fill", x + w/2, y + h/2 - offset + press_shift_y, dot_u)
+                love.graphics.circle("fill", x + w/2, y + h/2 + offset + press_shift_y, dot_d)
                 return
             end
 
             -- D-Pad shadow shrinks when pressed
-            love.graphics.setColor(0, 0, 0, 0.2)
+            love.graphics.setColor(0, 0, 0, 0.2 * cur_badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             love.graphics.rectangle("fill", x, y + (h - aw) / 2 + sh, w, aw, cr)
             love.graphics.rectangle("fill", x + (w - aw) / 2, y + sh, aw, h, cr)
@@ -5418,137 +5473,147 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
             local dot_u = is_up and math.max(2.5 * scale, 2) or dot_r
             local dot_d = is_down and math.max(2.5 * scale, 2) or dot_r
 
-            love.graphics.circle("fill", x + w/2 - offset, y + h/2 + press_shift_y, dot_l) -- Left
-            love.graphics.circle("fill", x + w/2 + offset, y + h/2 + press_shift_y, dot_r_active) -- Right
-            love.graphics.circle("fill", x + w/2, y + h/2 - offset + press_shift_y, dot_u) -- Up
-            love.graphics.circle("fill", x + w/2, y + h/2 + offset + press_shift_y, dot_d) -- Down
+            love.graphics.circle("fill", x + w/2 - offset, y + h/2 + press_shift_y, dot_l)
+            love.graphics.circle("fill", x + w/2 + offset, y + h/2 + press_shift_y, dot_r_active)
+            love.graphics.circle("fill", x + w/2, y + h/2 - offset + press_shift_y, dot_u)
+            love.graphics.circle("fill", x + w/2, y + h/2 + offset + press_shift_y, dot_d)
             return
         end
 
-        if text == "A" or text == "B" or text == "X" or text == "Y" then
+        if target_text == "A" or target_text == "B" or target_text == "X" or target_text == "Y" then
             local cx, cy = x + w/2, y + h/2
             local r = h * 0.45
 
             if _G.theme == "matrix" then
                 -- Black background circle
-                love.graphics.setColor(0, 0, 0, badge_a)
+                love.graphics.setColor(0, 0, 0, cur_badge_a)
                 love.graphics.circle("fill", cx, cy + press_shift_y, r)
 
                 -- Green outline circle
-                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
+                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
                 love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
                 love.graphics.circle("line", cx, cy + press_shift_y, r)
 
                 -- Text letter
                 love.graphics.setFont(key_font)
-                love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-                local tw = key_font:getWidth(text)
+                love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
+                local tw = key_font:getWidth(target_text)
                 local th = key_font:getHeight()
-                love.graphics.print(text, cx - tw/2, cy - th/2 + letter_offset_y + press_shift_y)
+                love.graphics.print(target_text, cx - tw/2, cy - th/2 + cur_offset_y + press_shift_y)
                 return
             end
 
             -- Button shadow shrinks when pressed
-            love.graphics.setColor(0, 0, 0, 0.25 * badge_a)
+            love.graphics.setColor(0, 0, 0, 0.25 * cur_badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             love.graphics.circle("fill", cx, cy + sh, r)
 
             -- Button body shifted by press_shift_y
-            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
+            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
             love.graphics.circle("fill", cx, cy + press_shift_y, r)
 
             -- Button border
-            love.graphics.setColor(1, 1, 1, 0.15 * badge_a)
+            love.graphics.setColor(1, 1, 1, 0.15 * cur_badge_a)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
             love.graphics.circle("line", cx, cy + press_shift_y, r)
 
             -- Text letter
             love.graphics.setFont(key_font)
-            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-            local tw = key_font:getWidth(text)
+            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
+            local tw = key_font:getWidth(target_text)
             local th = key_font:getHeight()
-            love.graphics.print(text, cx - tw/2, cy - th/2 + letter_offset_y + press_shift_y)
+            love.graphics.print(target_text, cx - tw/2, cy - th/2 + cur_offset_y + press_shift_y)
             return
         end
 
-        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" or original_text == "START" or original_text == "SELECT" or original_text == "DOWN" or string.len(text) > 1 then
+        if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" or original_text == "START" or original_text == "SELECT" or original_text == "DOWN" or string.len(target_text) > 1 then
             local cr = math.floor(h * 0.4)
 
             if _G.theme == "matrix" then
                 -- Black background capsule
-                love.graphics.setColor(0, 0, 0, badge_a)
+                love.graphics.setColor(0, 0, 0, cur_badge_a)
                 roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
                 -- Green outline capsule
-                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
+                love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
                 love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
                 roundedRect("line", x, y + press_shift_y, w, h, cr)
 
                 -- Text
                 love.graphics.setFont(key_font)
-                love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-                local tw = key_font:getWidth(text)
+                love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
+                local tw = key_font:getWidth(target_text)
                 local th = key_font:getHeight()
-                love.graphics.print(text, x + (w - tw) / 2, y + (h - th) / 2 + letter_offset_y + press_shift_y)
+                love.graphics.print(target_text, x + (w - tw) / 2, y + (h - th) / 2 + cur_offset_y + press_shift_y)
                 return
             end
 
             -- Shadow shrinks when pressed
-            love.graphics.setColor(0, 0, 0, 0.2 * badge_a)
+            love.graphics.setColor(0, 0, 0, 0.2 * cur_badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
             roundedRect("fill", x, y + sh, w, h, cr)
 
             -- Body shifted by press_shift_y
-            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
+            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
             roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
             -- Border
-            love.graphics.setColor(1, 1, 1, 0.15 * badge_a)
+            love.graphics.setColor(1, 1, 1, 0.15 * cur_badge_a)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
             roundedRect("line", x, y + press_shift_y, w, h, cr)
 
             -- Text
             love.graphics.setFont(key_font)
-            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-            local tw = key_font:getWidth(text)
+            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
+            local tw = key_font:getWidth(target_text)
             local th = key_font:getHeight()
-            love.graphics.print(text, x + (w - tw) / 2, y + (h - th) / 2 + letter_offset_y + press_shift_y)
+            love.graphics.print(target_text, x + (w - tw) / 2, y + (h - th) / 2 + cur_offset_y + press_shift_y)
             return
         end
 
         local cr = math.floor(h * 0.3)
 
         -- Badge shadow shrinks when pressed
-        love.graphics.setColor(0, 0, 0, 0.2 * badge_a)
+        love.graphics.setColor(0, 0, 0, 0.2 * cur_badge_a)
         local sh_off = math.max(1, math.floor(2 * scale)) * shadow_shrink
         roundedRect("fill", x, y + sh_off, w, h, cr)
 
         -- Badge background shifted by press_shift_y
-        love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * badge_a)
+        love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
         roundedRect("fill", x, y + press_shift_y, w, h, cr)
 
         -- Subtle border for a clean, premium feel
-        love.graphics.setColor(1, 1, 1, 0.15 * badge_a)
+        love.graphics.setColor(1, 1, 1, 0.15 * cur_badge_a)
         love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
         roundedRect("line", x, y + press_shift_y, w, h, cr)
 
         -- Badge text
         love.graphics.setFont(key_font)
-        love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * badge_a)
-        local tw = key_font:getWidth(text)
+        love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
+        local tw = key_font:getWidth(target_text)
         local th = key_font:getHeight()
 
         -- Visual alignment corrections for arrows in ClearSans
-        local offset_x, offset_y = 0, letter_offset_y + press_shift_y
-        if text == "←" then
+        local offset_x, offset_y = 0, cur_offset_y + press_shift_y
+        if target_text == "←" then
             offset_y = offset_y - math.floor(2 * scale)
             offset_x = math.floor(1 * scale)
-        elseif text == "→" then
+        elseif target_text == "→" then
             offset_y = offset_y - math.floor(2 * scale)
             offset_x = -math.floor(1 * scale)
         end
 
-        love.graphics.print(text, x + (w - tw) / 2 + offset_x, y + (h - th) / 2 + offset_y)
+        love.graphics.print(target_text, x + (w - tw) / 2 + offset_x, y + (h - th) / 2 + offset_y)
+    end
+
+    local function draw()
+        if is_transitioning and old_prompt ~= new_prompt then
+            local p = 1 - (1 - t_prog) ^ 3
+            drawBadgeContent(old_prompt, (1 - p) * badge_a)
+            drawBadgeContent(new_prompt, p * badge_a)
+        else
+            drawBadgeContent(text, badge_a)
+        end
     end
 
     -- Canvas supersampling wrapper:
@@ -5591,7 +5656,14 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
 
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setBlendMode("alpha", "premultiplied")
-    love.graphics.draw(badge_canvas, badge_quad, x - pad, y - pad, 0, 0.5, 0.5)
+    if is_transitioning then
+        local pop = 1.0 + 0.10 * math.sin(t_prog * math.pi)
+        local cx = x + w / 2
+        local cy = y + h / 2
+        love.graphics.draw(badge_canvas, badge_quad, cx, cy, 0, 0.5 * pop, 0.5 * pop, (w / 2 + pad) * 2, (h / 2 + pad) * 2)
+    else
+        love.graphics.draw(badge_canvas, badge_quad, x - pad, y - pad, 0, 0.5, 0.5)
+    end
     love.graphics.setBlendMode("alpha", "alphamultiply")
 end
 
@@ -5778,8 +5850,7 @@ function renderer.drawHelp(game)
 
         -- Badge
         right_x = right_x - label_gap
-        local translated_key = renderer.getButtonPrompt(action.key)
-        local key_w = math.max(math.floor(28 * scale), font_help_key:getWidth(translated_key) + math.floor(12 * scale))
+        local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
         if action.key == "DPAD" then
             key_w = badge_h
         end
@@ -6395,6 +6466,16 @@ function renderer.updateTransition(dt)
         store_sort_transition_timer = math.max(0, store_sort_transition_timer - dt)
         if store_sort_transition_timer == 0 then
             store_sort_old_canvas = nil
+        end
+    end
+    renderer.checkControlModeChange()
+    if not _G.screen_transitions then
+        footer_prompt_anim_timer = 0
+        footer_prompt_prev_kb_mode = nil
+    elseif footer_prompt_anim_timer > 0 then
+        footer_prompt_anim_timer = math.max(0, footer_prompt_anim_timer - dt)
+        if footer_prompt_anim_timer == 0 then
+            footer_prompt_prev_kb_mode = nil
         end
     end
     if toast_timer > 0 then
