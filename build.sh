@@ -85,7 +85,13 @@ prepare_pc_love() {
       --exclude="bin" \
       --exclude="portmaster" \
       --exclude="pc" \
+      --exclude="android" \
+      --exclude="test" \
       --exclude="mux_*" \
+      --exclude="banner.png" \
+      --exclude="*.dat" \
+      --exclude="static" \
+      --exclude=".vscode" \
       "$PROJECT_ROOT/" "$TMP_STAGE/" > /dev/null
 
     # Apply PC patch cleanly to staged copy without touching source repository
@@ -179,7 +185,12 @@ build_portmaster() {
       --exclude="licenses" \
       --exclude="portmaster" \
       --exclude="pc" \
+      --exclude="android" \
+      --exclude="test" \
       --exclude="mux_*" \
+      --exclude="*.dat" \
+      --exclude="static" \
+      --exclude=".vscode" \
       "$PROJECT_ROOT/" "$TMP_STAGE/gamedata/" > /dev/null
 
     tar -czf "$TMP_STAGE/gamedata.tar.gz" -C "$TMP_STAGE" gamedata
@@ -341,8 +352,12 @@ build_android() {
       --exclude="portmaster" \
       --exclude="pc" \
       --exclude="android" \
+      --exclude="test" \
       --exclude="mux_*" \
+      --exclude="banner.png" \
+      --exclude="*.dat" \
       --exclude="static" \
+      --exclude=".vscode" \
       "$PROJECT_ROOT/" "$TMP_STAGE/" > /dev/null || [ $? -eq 24 ]
 
     # Copy android console module and assets into staged build
