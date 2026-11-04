@@ -1,4 +1,6 @@
 # Changelog
+## [8.0.1]
+- Minor UI Improvements
 
 ## [8.0.0]
 ### Added
