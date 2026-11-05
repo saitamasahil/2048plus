@@ -168,6 +168,17 @@ manifest = manifest.replace('package="org.love2d.android"', f'package="{PACKAGE_
 manifest = manifest.replace('org.love2d.android.DYNAMIC_RECEIVER', f'{PACKAGE_NAME}.DYNAMIC_RECEIVER')
 manifest = manifest.replace('org.love2d.android.androidx-startup', f'{PACKAGE_NAME}.androidx-startup')
 
+# Retain activity in recents and prevent recreation on calls or configuration changes
+manifest = manifest.replace(
+    'android:launchMode="singleInstance"',
+    'android:launchMode="singleTask" android:alwaysRetainTaskState="true" android:autoRemoveFromRecents="false"'
+)
+manifest = manifest.replace('android:resizeableActivity="false"', 'android:resizeableActivity="true"')
+manifest = manifest.replace(
+    'android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize"',
+    'android:configChanges="density|fontScale|keyboard|keyboardHidden|layoutDirection|locale|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|touchscreen"'
+)
+
 with open(manifest_path, "w", encoding="utf-8") as f:
     f.write(manifest)
 

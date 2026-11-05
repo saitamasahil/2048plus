@@ -127,7 +127,7 @@ index c3f9951..b673bae 100644
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2523,3 +2539,9 @@ function love.visible(v)
+@@ -2537,3 +2553,9 @@ function love.visible(v)
          end
      end
  end

@@ -2510,16 +2510,30 @@ end
 
 function love.focus(f)
     if not f then
+        if sound and sound.onPause then
+            pcall(sound.onPause)
+        end
         if game and game.saveGameState then
             pcall(function() game:saveGameState() end)
+        end
+    else
+        if sound and sound.onResume then
+            pcall(sound.onResume)
         end
     end
 end
 
 function love.visible(v)
     if not v then
+        if sound and sound.onPause then
+            pcall(sound.onPause)
+        end
         if game and game.saveGameState then
             pcall(function() game:saveGameState() end)
+        end
+    else
+        if sound and sound.onResume then
+            pcall(sound.onResume)
         end
     end
 end
