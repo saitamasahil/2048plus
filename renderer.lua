@@ -6248,6 +6248,22 @@ local function drawStencilCircle()
     love.graphics.circle("fill", transition_center_x, transition_center_y, radius)
 end
 
+function renderer.isThemeTransitionActive()
+    return transition_timer > 0 and transition_canvas ~= nil
+end
+
+function renderer.drawThemeTransitionOverlay()
+    if transition_timer > 0 and transition_canvas then
+        love.graphics.stencil(drawStencilCircle, "replace", 1)
+        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.setBlendMode("replace", "premultiplied")
+        love.graphics.draw(transition_canvas, 0, 0)
+        love.graphics.setBlendMode("alpha", "alphamultiply")
+        love.graphics.setStencilTest()
+    end
+end
+
 function renderer.startThemeTransition(drawTarget, direction)
     if not _G.screen_transitions then
         return
@@ -6286,25 +6302,59 @@ function renderer.startThemeTransition(drawTarget, direction)
         love.graphics.getWidth = real_getW
         love.graphics.getHeight = real_getH
     elseif _G.android_fullscreen then
-        local real_getDims = love.graphics.getDimensions
-        local real_getW = love.graphics.getWidth
-        local real_getH = love.graphics.getHeight
-        love.graphics.getDimensions = function() return w, h end
-        love.graphics.getWidth = function() return w end
-        love.graphics.getHeight = function() return h end
-        local prev_scale = _G.scale
-        _G.scale = 1.0
-
-        if type(drawTarget) == "function" then
-            drawTarget()
-        else
-            renderer.draw(drawTarget, true)
+        local ac = _G.android_console
+        if not ac then
+            local ok, mod = pcall(require, "android.android_console")
+            if not ok then ok, mod = pcall(require, "android_console") end
+            if ok then ac = mod end
         end
+        local captured = false
+        if ac and ac.drawFullscreen and ac.getFullscreenCanvas then
+            local fs_draw_fn = function()
+                if type(drawTarget) == "function" then
+                    drawTarget()
+                else
+                    renderer.draw(drawTarget, true)
+                end
+            end
+            ac.drawFullscreen(fs_draw_fn, 0, 1.0, true)
+            local fs_c = ac.getFullscreenCanvas()
+            if fs_c then
+                local fw = fs_c:getWidth()
+                local fh = fs_c:getHeight()
+                if not transition_canvas or transition_canvas:getWidth() ~= fw or transition_canvas:getHeight() ~= fh then
+                    transition_canvas = love.graphics.newCanvas(fw, fh)
+                end
+                love.graphics.setCanvas({transition_canvas, stencil = true})
+                love.graphics.clear()
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.draw(fs_c, 0, 0)
+                captured = true
+            end
+        end
+        if not captured then
+            local real_getDims = love.graphics.getDimensions
+            local real_getW = love.graphics.getWidth
+            local real_getH = love.graphics.getHeight
+            love.graphics.getDimensions = function() return w, h end
+            love.graphics.getWidth = function() return w end
+            love.graphics.getHeight = function() return h end
+            local prev_scale = _G.scale
+            _G.scale = 1.0
 
-        _G.scale = prev_scale
-        love.graphics.getDimensions = real_getDims
-        love.graphics.getWidth = real_getW
-        love.graphics.getHeight = real_getH
+            love.graphics.setCanvas({transition_canvas, stencil = true})
+            love.graphics.clear()
+            if type(drawTarget) == "function" then
+                drawTarget()
+            else
+                renderer.draw(drawTarget, true)
+            end
+
+            _G.scale = prev_scale
+            love.graphics.getDimensions = real_getDims
+            love.graphics.getWidth = real_getW
+            love.graphics.getHeight = real_getH
+        end
     else
         if type(drawTarget) == "function" then
             drawTarget()
@@ -6319,8 +6369,10 @@ function renderer.startThemeTransition(drawTarget, direction)
     transition_direction = dir
     local scale_factor = (_G.is_console_active and _G.is_console_active()) and 1.0 or (_G.scale or 1.0)
     if _G.android_fullscreen then
-        transition_center_x = _G.android_fs_theme_x or math.floor(w / 2)
-        transition_center_y = _G.android_fs_theme_y or math.floor(h - 50)
+        local cur_w = _G.android_fs_vw or w
+        local cur_h = _G.android_fs_vh or h
+        transition_center_x = _G.android_fs_theme_x or math.floor(cur_w / 2)
+        transition_center_y = _G.android_fs_theme_y or math.floor(cur_h - 50)
     elseif _G.appState == "THEME_SELECT" and (_G.customization_tab or 1) == 1 then
         transition_center_x = renderer.theme_dpad_x or math.floor(32 * scale_factor)
         transition_center_y = renderer.theme_dpad_y or (h - math.floor(21 * scale_factor))
@@ -10123,15 +10175,9 @@ function renderer.draw(game, skip_transition)
         renderer.drawPetCompanion(layout.board_x + (layout.board_size or 300) * 0.5, layout.board_y, _G.scale or 1, game)
     end
 
-    if not skip_transition and transition_timer > 0 and transition_canvas then
-        -- Draw old screen outside stencil
-        love.graphics.stencil(drawStencilCircle, "replace", 1)
-        love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0) -- Draw where stencil is 0
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.setBlendMode("replace", "premultiplied")
-        love.graphics.draw(transition_canvas, 0, 0)
-        love.graphics.setBlendMode("alpha", "alphamultiply")
-        love.graphics.setStencilTest() -- Disable stencil
+    local is_fs = _G.android_fullscreen and (_G.android_console or package.loaded["android.android_console"] or package.loaded["android_console"])
+    if not skip_transition and not is_fs and renderer.isThemeTransitionActive() then
+        renderer.drawThemeTransitionOverlay()
     end
 
     drawToast()

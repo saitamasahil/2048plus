@@ -509,6 +509,10 @@ function android_console.getCanvas()
     return game_canvas
 end
 
+function android_console.getFullscreenCanvas()
+    return fs_canvas
+end
+
 function android_console.updateLayout()
     local real_w, real_h = love.graphics.getDimensions()
     if real_w > real_h then
@@ -2050,7 +2054,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     local p_h = 34
     fs_top_buttons.pause = { x = p_x, y = p_y, w = p_w, h = p_h }
 
-    local is_pause_pressed = (fs_button_pressed == "pause")
+    local is_pause_pressed = (not only_render_canvas and fs_button_pressed == "pause")
     local p_offset = is_pause_pressed and 1.5 or 0
     if is_pause_pressed then
         love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * top_alpha)
@@ -2077,7 +2081,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     local c_h = 34
     fs_top_buttons.console = { x = c_x, y = c_y, w = c_w, h = c_h }
 
-    local is_con_pressed = (fs_button_pressed == "console")
+    local is_con_pressed = (not only_render_canvas and fs_button_pressed == "console")
     local c_offset = is_con_pressed and 1.5 or 0
     if is_con_pressed then
         love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * top_alpha)
@@ -2145,7 +2149,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
                 _G.android_fs_theme_x = btn.x + math.floor(btn.w / 2)
                 _G.android_fs_theme_y = btn.y + math.floor(btn.h / 2)
             end
-            local is_pressed = (fs_button_pressed == btn.id)
+            local is_pressed = (not only_render_canvas and fs_button_pressed == btn.id)
             local press_offset = is_pressed and 2 or 0
 
             if is_pressed then
@@ -2178,6 +2182,10 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
                 love.graphics.setFont(f_lbl)
             end
         end
+    end
+
+    if not only_render_canvas and renderer.isThemeTransitionActive and renderer.isThemeTransitionActive() then
+        renderer.drawThemeTransitionOverlay()
     end
 
     love.graphics.setCanvas()
