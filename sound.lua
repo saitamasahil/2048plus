@@ -917,37 +917,12 @@ function sound.onResume()
             if currentBgmSource then
                 local ok, playing = pcall(function() return currentBgmSource:isPlaying() end)
                 if not ok or not playing then
-                    sound.recoverBgmStream()
+                    sound.playNextBgm()
                 end
             elseif in_game and bgmStartDelay == 0 then
                 sound.startFreshGameBgm()
             end
         end
-    end
-end
-
-function sound.checkAudioResume()
-    local in_game = _G.appState == "GAME"
-    local in_jukebox = _G.appState == "JUKEBOX"
-    if not (sound.isBgmEnabled() and (in_game or in_jukebox)) then
-        return
-    end
-    if bgmPausedByUser then return end
-
-    if bgmStoppedBySystem then
-        sound.onResume()
-        return
-    end
-
-    if currentBgmSource then
-        local ok, playing = pcall(function() return currentBgmSource:isPlaying() end)
-        if not ok or not playing then
-            if bgmStartDelay == 0 then
-                sound.recoverBgmStream()
-            end
-        end
-    elseif in_game and bgmStartDelay == 0 then
-        sound.startFreshGameBgm()
     end
 end
 
@@ -1010,20 +985,13 @@ function sound.update(dt)
     if #bgmPlaylist == 0 then return end
 
     if currentBgmSource then
-        if not currentBgmSource:isPlaying() and bgmStartDelay == 0 then
-            -- Verify whether the track reached its end naturally or stopped unexpectedly
-            local pos, dur = sound.getBgmProgress()
-            if dur > 0 and pos < (dur - 1.0) then
-                -- Interrupted or stalled mid stream so recover current track
-                sound.recoverBgmStream()
-            else
-                sound.playNextBgm()
-                if in_jukebox then
-                    _G.jukebox_selection = currentBgmIdx
-                end
+        if not currentBgmSource:isPlaying() and bgmStartDelay == 0 and not bgmPausedByUser and not bgmStoppedBySystem then
+            sound.playNextBgm()
+            if in_jukebox then
+                _G.jukebox_selection = currentBgmIdx
             end
         end
-    elseif in_game and bgmStartDelay == 0 then
+    elseif in_game and bgmStartDelay == 0 and not bgmPausedByUser and not bgmStoppedBySystem then
         sound.startFreshGameBgm()
     end
 end
