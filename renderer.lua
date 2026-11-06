@@ -5366,10 +5366,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
     local badge_a = alpha_override or 1.0
     local key_font = font_override or ((h < math.floor(22 * scale)) and font_help_key_small) or font_help_key
     local is_small = (key_font == font_help_key_small) or (h < math.floor(22 * scale))
-    local visual_offset_y = is_small and -math.max(0, math.floor(0.5 * scale)) or -math.max(1, math.floor(1.5 * scale))
+    local visual_offset_y = is_small and -math.max(0, math.floor(0.5 * scale)) or -math.max(1, math.floor(scale))
     local original_text = text
     text = renderer.getButtonPrompt(text)
-    local letter_offset_y = is_small and visual_offset_y or ((text == "Y" or text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale))))
+    local letter_offset_y = visual_offset_y
 
     if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" then
         letter_offset_y = letter_offset_y - 0.5 * scale
@@ -5448,7 +5448,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
     local new_prompt = is_transitioning and renderer.getButtonPrompt(original_text, cur_kb) or text
 
     local function drawBadgeContent(target_text, cur_badge_a)
-        local cur_offset_y = is_small and visual_offset_y or ((target_text == "Y" or target_text == "C") and visual_offset_y or (visual_offset_y - math.max(1, math.floor(1 * scale))))
+        local cur_offset_y = visual_offset_y
         if original_text == "L1" or original_text == "R1" or original_text == "L" or original_text == "R" then
             cur_offset_y = cur_offset_y - 0.5 * scale
         end
@@ -13285,7 +13285,7 @@ function renderer.drawJukebox(selection, skip_transition)
         drawKeyBadge("B", start_btn_x, ky, key_w, k_sz, card_alpha)
 
         local label_fh = font_help_label:getHeight()
-        local label_y = pill_center_y - math.floor(label_fh / 2) - math.max(1, math.floor(1 * scale))
+        local label_y = pill_center_y - math.floor(label_fh / 2)
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(text_title)
         love.graphics.print(btn_label, start_btn_x + key_w + gap, label_y)
