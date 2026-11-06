@@ -477,6 +477,8 @@ function love.load(args)
     _G.undo_mode = save.loadUndoMode() or "classic"
     _G.time_attack_time = save.loadTimeAttackTime() or 60
     _G.vibration = save.loadVibration()
+    _G.button_vibration = save.loadButtonVibration()
+    _G.console_haptics = _G.button_vibration
     _G.crt_filter = save.loadCrtFilter()
     _G.merge_fx = "default"
     _G.board_skin = save.loadBoardSkin() or "default"
@@ -1694,6 +1696,14 @@ function love.update(dt)
                         save.saveVibration(_G.vibration)
                         sound.playMenuSelect()
                         sound.vibrate(0.1)
+                    elseif sel:match("^Button Vibration") or sel:match("^Console Haptics") then
+                        _G.button_vibration = not _G.button_vibration
+                        _G.console_haptics = _G.button_vibration
+                        save.saveButtonVibration(_G.button_vibration)
+                        sound.playMenuSelect()
+                        if _G.button_vibration and love.system and love.system.vibrate then
+                            love.system.vibrate(0.015)
+                        end
                     elseif sel == "Back" then
                         sound.playMenuBack()
                         if _G.screen_transitions then

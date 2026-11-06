@@ -7717,12 +7717,17 @@ end
 function renderer.getSettingsOptions()
     local sound = require("sound")
     if _G.settings_page == "audio" then
-        return {
+        local opts = {
             "Sound Effects: " .. (sound.isEnabled() and "On" or "Off"),
             "Music: " .. (sound.isBgmEnabled() and "On" or "Off"),
             "Vibration: " .. (_G.vibration and "On" or "Off"),
-            "Back"
         }
+        if love.system.getOS() == "Android" or _G.android_console then
+            local btn_vib = (_G.button_vibration ~= nil) and _G.button_vibration or _G.console_haptics
+            table.insert(opts, "Button Vibration: " .. (btn_vib and "On" or "Off"))
+        end
+        table.insert(opts, "Back")
+        return opts
     end
 
     local anim_speed_lbl = "Gameplay Animation Speed: " .. (_G.animation_speed:gsub("^%l", string.upper))
@@ -7773,6 +7778,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
             "Sound Effects: Off",
             "Music: Off",
             "Vibration: Off",
+            "Button Vibration: Off",
             "Back"
         }
     else

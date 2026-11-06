@@ -394,6 +394,13 @@ function android_console.init(input_ref)
         if save.loadFullscreenTutorialSeen then
             fs_tutorial_seen = save.loadFullscreenTutorialSeen()
         end
+        if save.loadButtonVibration and _G.button_vibration == nil then
+            _G.button_vibration = save.loadButtonVibration()
+            _G.console_haptics = _G.button_vibration
+        elseif save.loadConsoleHaptics and _G.console_haptics == nil then
+            _G.console_haptics = save.loadConsoleHaptics()
+            _G.button_vibration = _G.console_haptics
+        end
     end
     if android_view_mode == "fullscreen" then
         fs_tutorial_seen = true
@@ -430,12 +437,34 @@ local function releaseEvent(event)
 end
 
 local function triggerHaptic(duration)
+    if _G.button_vibration == false or _G.console_haptics == false then return end
     pcall(function()
         if love.system and love.system.vibrate then
             love.system.vibrate(duration or 0.015)
         end
     end)
 end
+
+function android_console.getHapticsEnabled()
+    if _G.button_vibration ~= nil then return _G.button_vibration ~= false end
+    return _G.console_haptics ~= false
+end
+
+function android_console.setHapticsEnabled(enabled)
+    local val = (enabled ~= false)
+    _G.button_vibration = val
+    _G.console_haptics = val
+    local ok_save, save = pcall(require, "save")
+    if ok_save and save then
+        if save.saveButtonVibration then
+            save.saveButtonVibration(val)
+        elseif save.saveConsoleHaptics then
+            save.saveConsoleHaptics(val)
+        end
+    end
+end
+android_console.getButtonVibration = android_console.getHapticsEnabled
+android_console.setButtonVibration = android_console.setHapticsEnabled
 
 function android_console.getViewMode()
     return android_view_mode

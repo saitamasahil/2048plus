@@ -623,6 +623,34 @@ function save.loadVibration()
     return true
 end
 
+local BUTTON_VIBRATION_FILE = "button_vibration.dat"
+local CONSOLE_HAPTICS_FILE = "console_haptics.dat"
+function save.saveButtonVibration(enabled)
+    local path = getFilePath(BUTTON_VIBRATION_FILE)
+    local file = io.open(path, "w")
+    if file then
+        file:write(enabled and "1" or "0")
+        file:close()
+    end
+end
+save.saveConsoleHaptics = save.saveButtonVibration
+
+function save.loadButtonVibration()
+    local path = getFilePath(BUTTON_VIBRATION_FILE)
+    local file = io.open(path, "r")
+    if not file then
+        path = getFilePath(CONSOLE_HAPTICS_FILE)
+        file = io.open(path, "r")
+    end
+    if file then
+        local content = file:read("*all")
+        file:close()
+        return content ~= "0"
+    end
+    return true
+end
+save.loadConsoleHaptics = save.loadButtonVibration
+
 local CRT_FILE = "crt_filter.dat"
 function save.saveCrtFilter(enabled)
     local path = getFilePath(CRT_FILE)
