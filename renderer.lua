@@ -13621,6 +13621,49 @@ end
 -- Grounded Real-Physics Dog Companion Engine
 -- Pet behaviors
 -- Pet movement states
+local dog_frame_anchors = {
+    roxy = {
+        run = { 32, 31, 31, 32, 33, 32.5, 33, 32 },
+        walk = { 32, 31.5, 31.5, 32.5, 32.5 },
+        sniff_walk = { 32, 32, 32, 32.5, 32.5, 31, 32.5, 33 },
+        sniff = { 33, 32.5, 32.5, 32.5, 32.5, 32.5, 33, 33 },
+        sit = { 31.5, 31.5, 31, 30.5, 30.5, 30.5, 30.5, 30.5, 30.5 },
+        jump = { 30.5, 30.5, 31, 31, 31, 33, 33, 32, 33, 32, 32.5 },
+        idle1 = { 31.5, 31.5, 31.5, 31.5, 31.5 },
+        idle2 = { 31.5, 31.5, 31.5, 31.5, 31.5 }
+    },
+    milo = {
+        run = { 33.5, 33, 33.5, 34, 37, 38, 39, 39 },
+        walk = { 32.5, 31, 31, 31.5, 31.5 },
+        sniff_walk = { 34.5, 33.5, 34, 34.5, 34, 35, 34.5, 34.5 },
+        sniff = { 35, 34, 34, 34.5, 34.5, 34, 34.5, 34.5 },
+        sit = { 32, 32, 31.5, 31, 31, 31, 31, 31, 31 },
+        jump = { 32, 32, 33.5, 34.5, 38, 39, 40, 41, 41.5, 43.5, 43 },
+        idle1 = { 32, 32, 32, 32, 32 },
+        idle2 = { 32, 32, 32, 32, 32 }
+    },
+    bruno = {
+        run = { 35, 34.5, 35, 33.5, 32, 33, 32, 34 },
+        walk = { 34.5, 32, 32, 32.5, 33 },
+        sniff_walk = { 34.5, 33.5, 34.5, 34.5, 34.5, 33, 34.5, 34.5 },
+        sniff = { 35, 34, 34.5, 34.5, 35, 34, 34.5, 34.5 },
+        sit = { 32, 32, 31.5, 31, 31, 31, 31, 31, 31 },
+        jump = { 32, 32, 32.5, 34.5, 35, 35, 35, 35, 33.5, 32.5, 34 },
+        idle1 = { 32, 32, 32, 32, 32 },
+        idle2 = { 32, 32.5, 33, 32.5, 32.5 }
+    },
+    coco = {
+        run = { 34, 33.5, 35.5, 34.5, 33.5, 34.5, 34.5, 32.5 },
+        walk = { 32, 31, 31.5, 32, 31.5 },
+        sniff_walk = { 35, 34.5, 35, 33, 35, 34.5, 35, 34.5 },
+        sniff = { 34.5, 35, 34.5, 35, 34.5, 35, 34.5, 34 },
+        sit = { 31.5, 31.5, 31.5, 31, 31.5, 31, 31.5, 31, 31.5 },
+        jump = { 31.5, 31, 30.5, 33, 32, 32, 32, 32, 31, 31.5, 31 },
+        idle1 = { 31.5, 32, 31.5, 32, 31.5 },
+        idle2 = { 31.5, 32, 32, 32, 32 }
+    }
+}
+
 local dog_phys = {
     x = nil,
     y = nil,
@@ -13923,6 +13966,15 @@ function renderer.drawDogCompanion(cx, cy, scale, game)
     if img then
         local target_body_h = math.floor(38 * scale)
         local s = target_body_h / 30
+        local state_key = dog_phys.state
+        if state_key == "idle" then
+            state_key = (dog_phys.idle_type == 2) and "idle2" or "idle1"
+        end
+        local ox = 32
+        local b_anchors = dog_frame_anchors[active_breed]
+        if b_anchors and b_anchors[state_key] then
+            ox = b_anchors[state_key][frame_idx] or 32
+        end
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.draw(
             img,
@@ -13931,8 +13983,8 @@ function renderer.drawDogCompanion(cx, cy, scale, game)
             0,
             s * dog_phys.facing,
             s * dog_phys.squish_sy,
-            32,  -- Center of 64x64 cell
-            48   -- Ground contact baseline in 64x64 cell
+            ox,
+            48
         )
     end
 
