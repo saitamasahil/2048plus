@@ -61,7 +61,7 @@ function Game.new(mode)
     self.timerFlashTimer = 0
 
     -- Plus Mode state
-    local initial_powerups = _G.cheat_max_powerups and 99 or 1
+    local initial_powerups = _G.cheat_max_powerups and 99 or 0
     local extra_undo, extra_bomb, extra_swap = 0, 0, 0
     if self.mode == "plus" and _G.stats then
         local pi = _G.stats.purchased_items or {}
@@ -986,7 +986,7 @@ function Game:restart()
     self.undoHistory = {}
     self.animationTimer = 0
     if self.mode == "plus" then
-        local initial_powerups = _G.cheat_max_powerups and 99 or 1
+        local initial_powerups = _G.cheat_max_powerups and 99 or 0
         local extra_undo, extra_bomb, extra_swap = 0, 0, 0
         if _G.stats then
             local pi = _G.stats.purchased_items or {}
