@@ -50,6 +50,7 @@ local STATE_DEPTH = {
     THEME_SELECT  = 1,
     CHEATS_MENU   = 1,
     SETTINGS      = 1,
+    STORE         = 1,
     JUKEBOX       = 1,
     DINO          = 2,
 }
