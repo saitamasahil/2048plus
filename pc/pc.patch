@@ -23,7 +23,7 @@ index 8b3ce51..94814dd 100644
      t.modules.sound = true
      t.modules.touch = true
 diff --git a/globals.lua b/globals.lua
-index 06c11fb..4610632 100644
+index 740858f..5ecc4ca 100644
 --- a/globals.lua
 +++ b/globals.lua
 @@ -79,6 +79,8 @@ _G.time_attack_time = 60
@@ -74,10 +74,10 @@ index 46d3d37..9fd0948 100644
      if event then
          input.state[event] = true
 diff --git a/main.lua b/main.lua
-index c3f9951..b673bae 100644
+index 301bc1d..4fdc17c 100644
 --- a/main.lua
 +++ b/main.lua
-@@ -104,6 +104,9 @@ local function queueTransitionAction(key, delay, action, direction)
+@@ -105,6 +105,9 @@ local function queueTransitionAction(key, delay, action, direction)
  end
  
  function love.load(args)
@@ -87,7 +87,7 @@ index c3f9951..b673bae 100644
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -137,8 +140,8 @@ function love.load(args)
+@@ -138,8 +141,8 @@ function love.load(args)
          love.filesystem.createDirectory("")
          save.init(save_dir)
      else
@@ -98,7 +98,7 @@ index c3f9951..b673bae 100644
      end
  
      sound.init()
-@@ -480,6 +483,7 @@ function love.load(args)
+@@ -481,6 +484,7 @@ function love.load(args)
      _G.button_vibration = save.loadButtonVibration()
      _G.console_haptics = _G.button_vibration
      _G.crt_filter = save.loadCrtFilter()
@@ -106,7 +106,7 @@ index c3f9951..b673bae 100644
      _G.merge_fx = "default"
      _G.board_skin = save.loadBoardSkin() or "default"
  
-@@ -1793,7 +1797,19 @@ function love.update(dt)
+@@ -1794,7 +1798,19 @@ function love.update(dt)
                          end
                          _G.crt_filter = new_crt
                          save.saveCrtFilter(_G.crt_filter)
@@ -127,7 +127,7 @@ index c3f9951..b673bae 100644
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2547,3 +2563,9 @@ function love.visible(v)
+@@ -2548,3 +2564,9 @@ function love.visible(v)
          end
      end
  end
@@ -138,7 +138,7 @@ index c3f9951..b673bae 100644
 +    renderer.init()
 +end
 diff --git a/renderer.lua b/renderer.lua
-index 0a5afe1..087109d 100644
+index 4d9886f..5ee3d7f 100644
 --- a/renderer.lua
 +++ b/renderer.lua
 @@ -319,7 +319,7 @@ end
@@ -368,7 +368,7 @@ index 0a5afe1..087109d 100644
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2
 diff --git a/save.lua b/save.lua
-index 6289da8..2c5e77a 100644
+index 71c75b5..e1f8321 100644
 --- a/save.lua
 +++ b/save.lua
 @@ -68,6 +68,10 @@ local function getFilePath(filename)

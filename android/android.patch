@@ -27,10 +27,10 @@ index 8b3ce51..aa06c77 100644
      t.modules.sound = true
      t.modules.touch = true
 diff --git a/main.lua b/main.lua
-index c3f9951..8e86ce2 100644
+index 301bc1d..ac7532f 100644
 --- a/main.lua
 +++ b/main.lua
-@@ -104,6 +104,12 @@ local function queueTransitionAction(key, delay, action, direction)
+@@ -105,6 +105,12 @@ local function queueTransitionAction(key, delay, action, direction)
  end
  
  function love.load(args)
@@ -43,7 +43,7 @@ index c3f9951..8e86ce2 100644
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -2347,6 +2353,9 @@ function love.draw()
+@@ -2348,6 +2354,9 @@ function love.draw()
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
@@ -53,7 +53,7 @@ index c3f9951..8e86ce2 100644
      if button == 1 then
          -- Customization tab click
          if _G.appState == "THEME_SELECT" then
-@@ -2481,6 +2490,18 @@ function love.wheelmoved(x, y)
+@@ -2482,6 +2491,18 @@ function love.wheelmoved(x, y)
      end
  end
  
