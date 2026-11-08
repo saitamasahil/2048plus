@@ -3040,6 +3040,10 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
         love.graphics.rectangle("fill", origin_x, 0, console_w, console_h)
     end
 
+    local in_crt_transition = renderer.isCrtTransitionActive and renderer.isCrtTransitionActive()
+    local apply_crt = _G.crt_filter or in_crt_transition
+    local crt = apply_crt and getCrtShader()
+
     if transition_dir == 1 then
         -- Console to Fullscreen
         local fs_fade = math.min(1.0, t * 1.5)
@@ -3047,7 +3051,16 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
         android_console.drawFullscreen(game_draw_fn, dt, t, true)
 
         love.graphics.setColor(1, 1, 1, fs_fade)
+        if crt then
+            pcall(function()
+                crt:send("screen_size", {vw, vh})
+                love.graphics.setShader(crt)
+            end)
+        end
         love.graphics.draw(fs_canvas, origin_x, settle_y, 0, scale_fs_x, scale_fs_y)
+        if crt then
+            love.graphics.setShader()
+        end
 
         if t < 0.65 then
             local chassis_p = t / 0.65
@@ -3069,7 +3082,16 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
             android_console.drawFullscreen(game_draw_fn, dt, fs_p, true)
 
             love.graphics.setColor(1, 1, 1, fade_out)
+            if crt then
+                pcall(function()
+                    crt:send("screen_size", {vw, vh})
+                    love.graphics.setShader(crt)
+                end)
+            end
             love.graphics.draw(fs_canvas, origin_x, fs_slide_y, 0, scale_fs_x, scale_fs_y)
+            if crt then
+                love.graphics.setShader()
+            end
         end
     end
 end
