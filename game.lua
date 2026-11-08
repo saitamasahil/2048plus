@@ -709,7 +709,7 @@ function Game:move(direction)
             won = pendingUndoWon,
             gameState = pendingUndoGameState
         }
-        if _G.undo_mode == "unlimited" then
+        if _G.undo_mode == "unlimited" or self.mode == "plus" then
             table.insert(self.undoHistory, pending)
             if #self.undoHistory > 100 then
                 table.remove(self.undoHistory, 1)
@@ -768,10 +768,14 @@ function Game:move(direction)
             local sound = require("sound")
             sound.playGameOver()
         end
+    else
+        self.grid:restoreState(pendingUndoState)
+        self.score = pendingUndoScore
+        self.moved = false
+        return false
     end
 
     self.moved = moved
-    self:saveGameState()
     return moved
 end
 
@@ -880,7 +884,10 @@ function Game:undo()
     end
 
     local state = table.remove(self.undoHistory)
-    if _G.undo_mode == "classic" or #self.undoHistory == 0 then
+    if (_G.undo_mode == "classic" and self.mode ~= "plus") or #self.undoHistory == 0 then
+        self.canUndo = false
+    end
+    if self.mode == "plus" and self.powerups.undo <= 0 then
         self.canUndo = false
     end
 
@@ -922,6 +929,7 @@ function Game:undo()
         if tile then
             tile.isNew = false
             tile.isMerged = false
+            tile.previousPosition = nil
             tile.undoSourcePosition = nil
         end
     end)
@@ -931,20 +939,23 @@ function Game:undo()
         for y = 1, self.size do
             local c_tile = current_cells[x][y]
             if c_tile then
-                if c_tile.isMerged and c_tile.mergedFrom then
+                if c_tile.mergedFrom and c_tile.mergedFrom[1] and c_tile.mergedFrom[2] then
                     local t1 = c_tile.mergedFrom[1]
                     local t2 = c_tile.mergedFrom[2]
-                    if t1 and t1.previousPosition then
-                        local r_t1 = self.grid:cellContent(t1.previousPosition.x, t1.previousPosition.y)
+                    local p1 = t1.previousPosition or (t1.x and t1.y and {x = t1.x, y = t1.y})
+                    local p2 = t2.previousPosition or (t2.x and t2.y and {x = t2.x, y = t2.y})
+                    if p1 then
+                        local r_t1 = self.grid:cellContent(p1.x, p1.y)
                         if r_t1 then r_t1.undoSourcePosition = {x = x, y = y} end
                     end
-                    if t2 and t2.previousPosition then
-                        local r_t2 = self.grid:cellContent(t2.previousPosition.x, t2.previousPosition.y)
+                    if p2 then
+                        local r_t2 = self.grid:cellContent(p2.x, p2.y)
                         if r_t2 then r_t2.undoSourcePosition = {x = x, y = y} end
                     end
                 elseif not c_tile.isNew then
-                    if c_tile.previousPosition then
-                        local r_t = self.grid:cellContent(c_tile.previousPosition.x, c_tile.previousPosition.y)
+                    local p = c_tile.previousPosition or (c_tile.x and c_tile.y and {x = c_tile.x, y = c_tile.y})
+                    if p then
+                        local r_t = self.grid:cellContent(p.x, p.y)
                         if r_t then r_t.undoSourcePosition = {x = x, y = y} end
                     end
                 end
@@ -1115,7 +1126,7 @@ function Game:confirmTarget()
                 score = self.score,
                 rng = love.math.getRandomState()
             }
-            if _G.undo_mode == "unlimited" then
+            if _G.undo_mode == "unlimited" or self.mode == "plus" then
                 table.insert(self.undoHistory, pending)
                 if #self.undoHistory > 100 then
                     table.remove(self.undoHistory, 1)
@@ -1173,7 +1184,7 @@ function Game:confirmTarget()
                 score = self.score,
                 rng = love.math.getRandomState()
             }
-            if _G.undo_mode == "unlimited" then
+            if _G.undo_mode == "unlimited" or self.mode == "plus" then
                 table.insert(self.undoHistory, pending)
                 if #self.undoHistory > 100 then
                     table.remove(self.undoHistory, 1)
