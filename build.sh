@@ -117,7 +117,7 @@ build_muos() {
     echo "Building muOS Package..."
     
     APP_NAME="2048 Plus"
-    OUTPUT="$BUILD_DIR/${APP_NAME}_${TAG}.muxapp"
+    OUTPUT="$BUILD_DIR/2048plus.muxapp"
     WORKDIR="$BUILD_DIR/pkg_${MAJOR}${MINOR}${PATCH}"
 
     rm -rf "$WORKDIR" "$OUTPUT"
@@ -160,7 +160,7 @@ build_muos() {
     rm -rf "$WORKDIR"
 
     MUX_SIZE=$(du -h "$OUTPUT" | cut -f1)
-    echo "[OK] muOS package created: build/${APP_NAME}_${TAG}.muxapp ($MUX_SIZE)"
+    echo "[OK] muOS package created: build/2048plus.muxapp ($MUX_SIZE)"
 }
 
 # ------------------------------------------------------------------------------
@@ -275,9 +275,9 @@ build_linux() {
             rm -f squashfs-root/love.svg squashfs-root/share/pixmaps/love.svg
         fi
 
-        OUTPUT_APPIMAGE="$BUILD_DIR/2048_Plus-x86_64.AppImage"
+        OUTPUT_APPIMAGE="$BUILD_DIR/2048plus-x86_64.AppImage"
         ARCH=x86_64 ./appimagetool-x86_64.AppImage -n squashfs-root "$OUTPUT_APPIMAGE" >/dev/null 2>&1
-        echo "[OK] Linux AppImage created: build/2048_Plus-x86_64.AppImage ($(du -h "$OUTPUT_APPIMAGE" | cut -f1))"
+        echo "[OK] Linux AppImage created: build/2048plus-x86_64.AppImage ($(du -h "$OUTPUT_APPIMAGE" | cut -f1))"
     )
 
     rm -rf "$WORKSPACE_DIR"
@@ -301,7 +301,7 @@ build_windows() {
     (
         cd "$WORKSPACE_DIR"
         unzip -q "$CACHE_DIR/love-11.5-win64.zip" -d win_extract
-        WIN_DIST_DIR="$WORKSPACE_DIR/2048_Plus-win64"
+        WIN_DIST_DIR="$WORKSPACE_DIR/2048plus-win64"
         mkdir -p "$WIN_DIST_DIR"
 
         # Fuse Windows binary
@@ -322,9 +322,9 @@ build_windows() {
         [ -f "$PROJECT_ROOT/LICENSE" ] && cp "$PROJECT_ROOT/LICENSE" "$WIN_DIST_DIR/LICENSE"
         [ -d "$PROJECT_ROOT/licenses" ] && cp -r "$PROJECT_ROOT/licenses" "$WIN_DIST_DIR/"
 
-        OUTPUT_WIN_ZIP="$BUILD_DIR/2048_Plus-win64.zip"
-        (cd "$WORKSPACE_DIR" && zip -9 -q -r "$OUTPUT_WIN_ZIP" "2048_Plus-win64")
-        echo "[OK] Windows package created: build/2048_Plus-win64.zip ($(du -h "$OUTPUT_WIN_ZIP" | cut -f1))"
+        OUTPUT_WIN_ZIP="$BUILD_DIR/2048plus-win64.zip"
+        (cd "$WORKSPACE_DIR" && zip -9 -q -r "$OUTPUT_WIN_ZIP" "2048plus-win64")
+        echo "[OK] Windows package created: build/2048plus-win64.zip ($(du -h "$OUTPUT_WIN_ZIP" | cut -f1))"
     )
 
     rm -rf "$WORKSPACE_DIR"

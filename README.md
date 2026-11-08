@@ -41,12 +41,12 @@ This project is inspired by and references the popular open-source [2048](https:
 4. PortMaster will automatically detect the `.zip` file and complete the installation.
 
 ### Linux
-Download `2048_Plus-x86_64.AppImage` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](#building-from-source) instructions. Make it executable (`chmod +x 2048_Plus-x86_64.AppImage`), and run it.
+Download `2048plus-x86_64.AppImage` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](#building-from-source) instructions. Make it executable (`chmod +x 2048plus-x86_64.AppImage`), and run it.
 
 Saves are stored in: `~/.local/share/2048plus/`
 
 ### Windows
-Download and extract `2048_Plus-win64.zip` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](#building-from-source) instructions, then run `2048 Plus.exe`.
+Download and extract `2048plus-win64.zip` from the [Releases](https://github.com/saitamasahil/2048plus/releases) page or build your own following the [Building from Source](#building-from-source) instructions, then run `2048 Plus.exe`.
 
 Saves are stored in: `%APPDATA%\2048plus\`
 
