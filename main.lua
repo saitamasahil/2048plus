@@ -1831,6 +1831,9 @@ function love.update(dt)
         if renderer.isGameStartTransitionActive and renderer.isGameStartTransitionActive() then
             return
         end
+        if renderer.isPauseClosing and renderer.isPauseClosing() then
+            return
+        end
 
         if game.state == Game.STATE_TARGETING_BOMB or game.state == Game.STATE_TARGETING_SWAP_1 or game.state == Game.STATE_TARGETING_SWAP_2 then
             if event == input.events.UP then
@@ -1921,6 +1924,9 @@ function love.update(dt)
             -- Pause menu hotkey
             elseif event == input.events.START then
                 queueTransitionAction(event, 0.08, function()
+                    if renderer.openPause then
+                        renderer.openPause()
+                    end
                     game:togglePause()
                 end)
             -- Coin notification hotkey
@@ -1930,12 +1936,24 @@ function love.update(dt)
                 end
             end
         elseif game.state == Game.STATE_PAUSED then
+            if renderer.isPauseClosing and renderer.isPauseClosing() then
+                return
+            end
             if event == input.events.START or event == input.events.BACK or event == input.events.SELECT then
                 queueTransitionAction(event, 0.08, function()
-                    game:cancelPause()
+                    if renderer.closePause then
+                        renderer.closePause(function()
+                            game:cancelPause()
+                        end)
+                    else
+                        game:cancelPause()
+                    end
                 end)
             elseif event == input.events.CONFIRM then
                 queueTransitionAction(event, 0.08, function()
+                    if renderer.resetPauseAnim then
+                        renderer.resetPauseAnim()
+                    end
                     game:restart()
                     if renderer.triggerGameStartTransition then
                         renderer.triggerGameStartTransition(game.mode, false)
@@ -1943,10 +1961,14 @@ function love.update(dt)
                 end)
             elseif event == input.events.L1 or event == input.events.R1 then
                 if sound.isBgmEnabled() then
+                    sound.playMenuSelect()
                     sound.playNextBgm()
                 end
             elseif event == input.events.X then
                 queueTransitionAction(event, 0.08, function()
+                    if renderer.resetPauseAnim then
+                        renderer.resetPauseAnim()
+                    end
                     local is_arcade = game and (game.mode == "timeattack" or game.mode == "huge" or game.mode == "nomercy" or game.mode == "goose")
                     local arcade_idx = 1
                     if game then

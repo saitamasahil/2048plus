@@ -49,6 +49,23 @@ local jukebox_modal_duration_open = 0.22
 local jukebox_modal_duration_close = 0.18
 local jukebox_modal_close_cb = nil
 local prev_jukebox_web_modal = false
+
+-- Pause and overlay transition state
+local pause_trans = {
+    modal_state = "closed",
+    modal_timer = 0,
+    modal_anim = 0,
+    dur_open = 0.20,
+    dur_close = 0.16,
+    close_cb = nil,
+    track_prev = nil,
+    track_timer = 0,
+    track_dur = 0.35,
+    last_track_path = nil,
+    current_track_saved = nil,
+    game_over_timer = 0,
+    game_over_dur = 0.35,
+}
 local item_icons = {}
 local icon_shader = nil
 local font_bgm = nil
@@ -6009,6 +6026,12 @@ end
 function renderer.drawOverlay(game)
     if game:isPlaying() then
         win_timer = 0
+        pause_trans.game_over_timer = 0
+        return
+    end
+    if game.state == Game.STATE_TARGETING_BOMB or game.state == Game.STATE_TARGETING_SWAP_1 or game.state == Game.STATE_TARGETING_SWAP_2 or game.state == Game.STATE_TARGETING_SHIELD then
+        win_timer = 0
+        pause_trans.game_over_timer = 0
         return
     end
     if game:isAnimating() and game.state ~= Game.STATE_PAUSED then return end
@@ -6018,10 +6041,13 @@ function renderer.drawOverlay(game)
     local dt = love.timer.getDelta()
 
     if game.state == Game.STATE_WON then
-        win_timer = win_timer + dt
+        if not _G.screen_transitions then
+            win_timer = 0.8
+        else
+            win_timer = win_timer + dt
+        end
         local fade_t = math.min(win_timer / 0.8, 1.0)
-        -- Smooth ease out
-        local ease_t = 1 - math.pow(1 - fade_t, 3)
+        local ease_t = not _G.screen_transitions and 1.0 or (1 - math.pow(1 - fade_t, 3))
 
         love.graphics.setColor(overlay_win[1], overlay_win[2], overlay_win[3], 0.6 * ease_t)
         roundedRect("fill", bx, by, bs, bs, layout.corner_radius * 2)
@@ -6058,35 +6084,22 @@ function renderer.drawOverlay(game)
         win_timer = 0
 
         if game.state == Game.STATE_PAUSED then
-            love.graphics.setColor(0, 0, 0, 0.65)
-        elseif game.mode == "timeattack" and game.timesUp then
-            -- Urgent orange overlay for Time's Up
-            love.graphics.setColor(0.85, 0.35, 0.1, 0.6)
-        else
-            love.graphics.setColor(overlay_lose[1], overlay_lose[2], overlay_lose[3], 0.5)
-        end
-        roundedRect("fill", bx, by, bs, bs, layout.corner_radius * 2)
+            pause_trans.game_over_timer = 0
+            local pause_t = _G.screen_transitions and pause_trans.modal_anim or 1.0
+            love.graphics.setColor(0, 0, 0, 0.65 * pause_t)
+            roundedRect("fill", bx, by, bs, bs, layout.corner_radius * 2)
 
-        local msg
-        if game.state == Game.STATE_PAUSED then
-            msg = "Paused"
-        elseif game.mode == "timeattack" and game.timesUp then
-            msg = "Time's Up!"
-        else
-            msg = "Game Over!"
-        end
-        love.graphics.setFont(font_message)
-        if game.state == Game.STATE_PAUSED then
-            love.graphics.setColor(light_text)
-        elseif game.mode == "timeattack" and game.timesUp then
-            love.graphics.setColor(1.0, 0.95, 0.7, 1.0)   -- warm cream text
-        else
-            love.graphics.setColor(ui_text)
-        end
+            local pause_scale = _G.screen_transitions and (0.95 + 0.05 * pause_t) or 1.0
+            love.graphics.push()
+            love.graphics.translate(bx + bs / 2, by + bs / 2)
+            love.graphics.scale(pause_scale, pause_scale)
+            love.graphics.translate(-(bx + bs / 2), -(by + bs / 2))
 
-        local tw = font_message:getWidth(msg)
-        local th = font_message:getHeight()
-        if game.state == Game.STATE_PAUSED then
+            local msg = "Paused"
+            love.graphics.setFont(font_message)
+            local tw = font_message:getWidth(msg)
+            local th = font_message:getHeight()
+
             local sound = require("sound")
             local track = sound.getCurrentTrack()
 
@@ -6128,15 +6141,16 @@ function renderer.drawOverlay(game)
             local total_content_h = th + mode_gap + mode_h + track_h + coins_h + perks_h
             local pause_y = by + math.floor((bs - total_content_h) / 2)
 
-            -- Draw "Paused" title
+            -- Draw Paused title
             love.graphics.setFont(font_message)
-            love.graphics.setColor(light_text)
+            local text_alpha = (light_text[4] or 1.0) * pause_t
+            love.graphics.setColor(light_text[1], light_text[2], light_text[3], text_alpha)
             love.graphics.print(msg, bx + (bs - tw) / 2, pause_y)
 
-            -- Draw game mode name centered below "Paused"
+            -- Draw game mode name centered below Paused
             local next_y = pause_y + th + mode_gap
             love.graphics.setFont(font_help_label)
-            love.graphics.setColor(light_text[1], light_text[2], light_text[3], 0.8)
+            love.graphics.setColor(light_text[1], light_text[2], light_text[3], 0.8 * pause_t)
             love.graphics.print(mode_name, bx + math.floor((bs - tw_mode) / 2), next_y)
             next_y = next_y + font_h + math.floor(6 * scale)
 
@@ -6144,9 +6158,34 @@ function renderer.drawOverlay(game)
             if has_track then
                 local track_lbl = track.title .. " - " .. track.artist
                 love.graphics.setFont(font_help_label)
-                local tw_track = font_help_label:getWidth(track_lbl)
-                love.graphics.setColor(0.65, 0.65, 0.65, 0.9)
-                love.graphics.print(track_lbl, bx + (bs - tw_track) / 2, next_y)
+                local track_base_a = 0.9 * pause_t
+
+                if _G.screen_transitions and pause_trans.track_timer > 0 and pause_trans.track_prev then
+                    local p = math.max(0, math.min(1, 1 - (pause_trans.track_timer / pause_trans.track_dur)))
+                    local p_ease = p * p * (3 - 2 * p)
+                    local slide_dist = math.floor(12 * scale)
+
+                    -- Fade and slide out old track
+                    local old_lbl = pause_trans.track_prev.title .. " - " .. pause_trans.track_prev.artist
+                    local old_alpha = math.max(0, 1 - p * 1.5) * track_base_a
+                    if old_alpha > 0 then
+                        local tw_old = font_help_label:getWidth(old_lbl)
+                        local old_y = next_y - math.floor(p * slide_dist)
+                        love.graphics.setColor(0.65, 0.65, 0.65, old_alpha)
+                        love.graphics.print(old_lbl, bx + math.floor((bs - tw_old) / 2), old_y)
+                    end
+
+                    -- Fade and slide in new track
+                    local new_alpha = math.min(1, p * 1.5) * track_base_a
+                    local tw_new = font_help_label:getWidth(track_lbl)
+                    local new_y = next_y + math.floor((1 - p_ease) * slide_dist)
+                    love.graphics.setColor(0.65, 0.65, 0.65, new_alpha)
+                    love.graphics.print(track_lbl, bx + math.floor((bs - tw_new) / 2), new_y)
+                else
+                    local tw_track = font_help_label:getWidth(track_lbl)
+                    love.graphics.setColor(0.65, 0.65, 0.65, track_base_a)
+                    love.graphics.print(track_lbl, bx + (bs - tw_track) / 2, next_y)
+                end
                 next_y = next_y + font_h + math.floor(6 * scale)
             end
 
@@ -6165,27 +6204,27 @@ function renderer.drawOverlay(game)
             local icon_y = coin_y + math.floor((row_h - c_icon_sz) / 2)
 
             if coin_icon then
-                love.graphics.setColor(1.0, 0.82, 0.25, 0.95)
+                love.graphics.setColor(1.0, 0.82, 0.25, 0.95 * pause_t)
                 love.graphics.setShader(icon_shader)
                 local sw = c_icon_sz / coin_icon:getWidth()
                 local sh = c_icon_sz / coin_icon:getHeight()
                 love.graphics.draw(coin_icon, coin_start_x, icon_y, 0, sw, sh)
                 love.graphics.setShader()
-                love.graphics.setColor(0.9, 0.9, 0.9, 0.95)
+                love.graphics.setColor(0.9, 0.9, 0.9, 0.95 * pause_t)
                 love.graphics.print(coin_str, coin_start_x + c_icon_sz + c_gap, text_y)
             else
-                love.graphics.setColor(0.9, 0.9, 0.9, 0.95)
+                love.graphics.setColor(0.9, 0.9, 0.9, 0.95 * pause_t)
                 love.graphics.print(coin_str .. " Coins", coin_start_x, text_y)
             end
             next_y = next_y + font_h + math.floor(12 * scale)
 
-            -- Active Perks: Static white icons with icon_shader, centered row
+            -- Active Perks: Static white icons with icon shader, centered row
             if has_perks then
                 local total_w = #active_perks * icon_sz + (#active_perks - 1) * icon_gap
                 local start_x = bx + math.floor((bs - total_w) / 2)
                 local row_y = next_y
 
-                love.graphics.setColor(1, 1, 1, 0.95)
+                love.graphics.setColor(1, 1, 1, 0.95 * pause_t)
                 love.graphics.setShader(icon_shader)
                 for idx, icon in ipairs(active_perks) do
                     local ix = start_x + (idx - 1) * (icon_sz + icon_gap)
@@ -6195,13 +6234,45 @@ function renderer.drawOverlay(game)
                 end
                 love.graphics.setShader()
             end
+
+            love.graphics.pop()
         else
+            -- Game Over or Time Up overlay
+            if not _G.screen_transitions then
+                pause_trans.game_over_timer = pause_trans.game_over_dur
+            else
+                pause_trans.game_over_timer = math.min(pause_trans.game_over_dur, pause_trans.game_over_timer + dt)
+            end
+            local gt = math.min(1.0, pause_trans.game_over_timer / pause_trans.game_over_dur)
+            local ease_gt = not _G.screen_transitions and 1.0 or (gt * gt * (3 - 2 * gt))
+
             if game.mode == "timeattack" and game.timesUp then
-                -- In Time Attack when time is up, "Time's Up!" is self-explanatory
+                -- Urgent orange overlay for Time's Up
+                love.graphics.setColor(0.85, 0.35, 0.1, 0.6 * ease_gt)
+            else
+                love.graphics.setColor(overlay_lose[1], overlay_lose[2], overlay_lose[3], 0.5 * ease_gt)
+            end
+            roundedRect("fill", bx, by, bs, bs, layout.corner_radius * 2)
+
+            local go_scale = _G.screen_transitions and (0.92 + 0.08 * ease_gt) or 1.0
+            love.graphics.push()
+            love.graphics.translate(bx + bs / 2, by + bs / 2)
+            love.graphics.scale(go_scale, go_scale)
+            love.graphics.translate(-(bx + bs / 2), -(by + bs / 2))
+
+            if game.mode == "timeattack" and game.timesUp then
+                local msg = "Time's Up!"
                 love.graphics.setFont(font_message)
-                love.graphics.setColor(1.0, 0.95, 0.7, 1.0)
+                local tw = font_message:getWidth(msg)
+                local th = font_message:getHeight()
+                love.graphics.setColor(1.0, 0.95, 0.7, 1.0 * ease_gt)
                 love.graphics.print(msg, bx + math.floor((bs - tw) / 2), by + math.floor((bs - th) / 2))
             else
+                local msg = "Game Over!"
+                love.graphics.setFont(font_message)
+                local tw = font_message:getWidth(msg)
+                local th = font_message:getHeight()
+
                 local mode_name = renderer.getModeDisplayName(game.mode)
                 love.graphics.setFont(font_help_label)
                 local mw = font_help_label:getWidth(mode_name)
@@ -6211,16 +6282,19 @@ function renderer.drawOverlay(game)
                 local total_h = th + gap + mh
                 local start_y = by + math.floor((bs - total_h) / 2)
 
-                -- Draw "Game Over!"
+                -- Draw Game Over
                 love.graphics.setFont(font_message)
-                love.graphics.setColor(ui_text)
+                local ui_a = (ui_text[4] or 1.0) * ease_gt
+                love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], ui_a)
                 love.graphics.print(msg, bx + math.floor((bs - tw) / 2), start_y)
 
                 -- Draw Game Mode Name
                 love.graphics.setFont(font_help_label)
-                love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.75)
+                love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.75 * ease_gt)
                 love.graphics.print(mode_name, bx + math.floor((bs - mw) / 2), start_y + th + gap)
             end
+
+            love.graphics.pop()
         end
     end
 end
@@ -6506,6 +6580,116 @@ function renderer.drawCrtScreenWithTransition(source_canvas, crt_shader, vx, vy,
     end
 
     love.graphics.setColor(1, 1, 1, 1)
+end
+
+-- Update pause modal and track skip state
+local function updatePauseTransition(dt)
+    local sound = require("sound")
+    local current_track = sound.getCurrentTrack()
+
+    if _G.game and _G.game.state == Game.STATE_PAUSED then
+        if pause_trans.modal_state == "closed" then
+            if not _G.screen_transitions then
+                pause_trans.modal_state = "open"
+                pause_trans.modal_anim = 1
+                pause_trans.modal_timer = pause_trans.dur_open
+            else
+                pause_trans.modal_state = "opening"
+                pause_trans.modal_timer = 0
+                pause_trans.modal_anim = 0
+            end
+            local cur_trk = current_track
+            pause_trans.last_track_path = cur_trk and cur_trk.path or nil
+            pause_trans.current_track_saved = cur_trk
+            pause_trans.track_prev = nil
+            pause_trans.track_timer = 0
+        end
+    elseif not _G.game or _G.game.state ~= Game.STATE_PAUSED then
+        if pause_trans.modal_state ~= "closing" and pause_trans.modal_state ~= "closed" then
+            pause_trans.modal_state = "closed"
+            pause_trans.modal_anim = 0
+            pause_trans.modal_timer = 0
+            pause_trans.track_prev = nil
+            pause_trans.track_timer = 0
+        end
+    end
+
+    if not _G.screen_transitions then
+        if pause_trans.modal_state == "closing" then
+            pause_trans.modal_state = "closed"
+            pause_trans.modal_timer = 0
+            pause_trans.modal_anim = 0
+            if pause_trans.close_cb then
+                local cb = pause_trans.close_cb
+                pause_trans.close_cb = nil
+                cb()
+            end
+        elseif pause_trans.modal_state == "opening" or (_G.game and _G.game.state == Game.STATE_PAUSED) then
+            pause_trans.modal_state = "open"
+            pause_trans.modal_timer = pause_trans.dur_open
+            pause_trans.modal_anim = 1
+        else
+            pause_trans.modal_state = "closed"
+            pause_trans.modal_timer = 0
+            pause_trans.modal_anim = 0
+        end
+        pause_trans.track_timer = 0
+        pause_trans.track_prev = nil
+        pause_trans.last_track_path = current_track and current_track.path or nil
+        pause_trans.current_track_saved = current_track
+    else
+        if pause_trans.modal_state == "opening" then
+            pause_trans.modal_timer = pause_trans.modal_timer + dt
+            local p = math.min(1, pause_trans.modal_timer / pause_trans.dur_open)
+            local inv = 1 - p
+            pause_trans.modal_anim = 1 - inv * inv * inv
+            if p >= 1 then
+                pause_trans.modal_state = "open"
+                pause_trans.modal_anim = 1
+            end
+        elseif pause_trans.modal_state == "closing" then
+            pause_trans.modal_timer = pause_trans.modal_timer + dt
+            local p = math.min(1, pause_trans.modal_timer / pause_trans.dur_close)
+            local inv = 1 - p
+            pause_trans.modal_anim = inv * inv
+            if p >= 1 then
+                pause_trans.modal_state = "closed"
+                pause_trans.modal_anim = 0
+                if pause_trans.close_cb then
+                    local cb = pause_trans.close_cb
+                    pause_trans.close_cb = nil
+                    cb()
+                end
+            end
+        elseif pause_trans.modal_state == "open" then
+            pause_trans.modal_anim = 1
+        elseif pause_trans.modal_state == "closed" then
+            pause_trans.modal_anim = 0
+        end
+
+        -- Check song skip while pause screen is active
+        if _G.game and _G.game.state == Game.STATE_PAUSED and pause_trans.modal_state ~= "closed" then
+            local track_path = current_track and current_track.path or nil
+            if track_path ~= pause_trans.last_track_path then
+                if pause_trans.last_track_path ~= nil then
+                    pause_trans.track_prev = _G.jukebox_prev_track or pause_trans.current_track_saved
+                    pause_trans.track_timer = pause_trans.track_dur
+                end
+                pause_trans.last_track_path = track_path
+            end
+            pause_trans.current_track_saved = current_track
+        else
+            pause_trans.last_track_path = current_track and current_track.path or nil
+            pause_trans.current_track_saved = current_track
+        end
+
+        if pause_trans.track_timer > 0 then
+            pause_trans.track_timer = math.max(0, pause_trans.track_timer - dt)
+            if pause_trans.track_timer == 0 then
+                pause_trans.track_prev = nil
+            end
+        end
+    end
 end
 
 function renderer.updateTransition(dt)
@@ -6810,6 +6994,9 @@ function renderer.updateTransition(dt)
             jukebox_modal_anim = 0
         end
     end
+
+    -- Update pause modal transition
+    updatePauseTransition(dt)
 end
 
 function renderer.isJukeboxModalClosing()
@@ -6875,6 +7062,77 @@ function renderer.closeJukeboxModal(cb)
         jukebox_modal_timer = 0
     end
     jukebox_modal_state = "closing"
+end
+
+function renderer.isPauseClosing()
+    return pause_trans.modal_state == "closing"
+end
+
+function renderer.resetPauseAnim()
+    pause_trans.modal_state = "closed"
+    pause_trans.modal_timer = 0
+    pause_trans.modal_anim = 0
+    pause_trans.close_cb = nil
+    pause_trans.track_prev = nil
+    pause_trans.track_timer = 0
+    pause_trans.game_over_timer = 0
+end
+
+function renderer.openPause()
+    local sound = require("sound")
+    local current_track = sound.getCurrentTrack()
+    pause_trans.last_track_path = current_track and current_track.path or nil
+    pause_trans.current_track_saved = current_track
+    pause_trans.track_prev = nil
+    pause_trans.track_timer = 0
+    pause_trans.close_cb = nil
+
+    if not _G.screen_transitions then
+        pause_trans.modal_state = "open"
+        pause_trans.modal_timer = pause_trans.dur_open
+        pause_trans.modal_anim = 1
+        return
+    end
+
+    if pause_trans.modal_state == "closing" then
+        local rem = math.max(0, math.min(1, 1 - pause_trans.modal_anim))
+        local tau = 1 - (rem ^ (1/3))
+        pause_trans.modal_timer = tau * pause_trans.dur_open
+    else
+        pause_trans.modal_timer = 0
+        pause_trans.modal_anim = 0
+    end
+    pause_trans.modal_state = "opening"
+end
+
+function renderer.closePause(cb)
+    pause_trans.close_cb = cb
+    if not _G.screen_transitions then
+        pause_trans.modal_state = "closed"
+        pause_trans.modal_timer = 0
+        pause_trans.modal_anim = 0
+        if cb then
+            pause_trans.close_cb = nil
+            cb()
+        end
+        return
+    end
+
+    if pause_trans.modal_state == "closed" then
+        if cb then
+            pause_trans.close_cb = nil
+            cb()
+        end
+        return
+    end
+
+    if pause_trans.modal_state == "opening" then
+        local tau = 1 - math.sqrt(math.max(0, math.min(1, pause_trans.modal_anim)))
+        pause_trans.modal_timer = tau * pause_trans.dur_close
+    else
+        pause_trans.modal_timer = 0
+    end
+    pause_trans.modal_state = "closing"
 end
 
 function renderer.triggerNowPlayingNotification()
@@ -10206,6 +10464,9 @@ end
 function renderer.triggerGameStartTransition(mode, is_continue)
     if renderer.clearHeaderLogoMorph then
         renderer.clearHeaderLogoMorph()
+    end
+    if renderer.resetPauseAnim then
+        renderer.resetPauseAnim()
     end
     if not _G.screen_transitions then
         game_start_transition.active = false
