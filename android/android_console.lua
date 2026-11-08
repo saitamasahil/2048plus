@@ -31,6 +31,13 @@ local fs_tutorial_active = false
 local fs_tutorial_time = 0.0
 local console_swipe_count = 0
 
+-- Fullscreen bottom buttons transition state
+local fs_footer_anim_timer = 0
+local FS_FOOTER_ANIM_DURATION = 0.20
+local old_fs_buttons = nil
+local last_fs_buttons = nil
+local fs_last_footer_state = nil
+
 -- MrBreakfast animated prompts
 local assets = {
     dpad = {},
@@ -493,6 +500,10 @@ function android_console.setViewMode(mode)
     active_touches = {}
     fs_swipe_track = {}
     swipe_track = {}
+    fs_footer_anim_timer = 0
+    old_fs_buttons = nil
+    last_fs_buttons = nil
+    fs_last_footer_state = nil
 
     local is_gameplay = (_G.appState == "GAME")
     if is_gameplay then
@@ -2146,6 +2157,10 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
                 btn.y = btn_y
                 btn.w = btn_w
                 btn.h = btn_h
+                if btn.id == "theme" then
+                    _G.android_fs_theme_x = btn.x + math.floor(btn.w / 2)
+                    _G.android_fs_theme_y = btn.y + math.floor(btn.h / 2)
+                end
             end
         else
             local btn_h = 54
@@ -2160,6 +2175,10 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
                 btn.y = y_start
                 btn.w = btn_w1
                 btn.h = btn_h
+                if btn.id == "theme" then
+                    _G.android_fs_theme_x = btn.x + math.floor(btn.w / 2)
+                    _G.android_fs_theme_y = btn.y + math.floor(btn.h / 2)
+                end
             end
             local row2_count = n - 3
             local btn_w2 = math.floor((vw - 32 - (row2_count - 1) * gap) / row2_count)
@@ -2170,29 +2189,72 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
                 btn.y = y_start + btn_h + gap
                 btn.w = btn_w2
                 btn.h = btn_h
+                if btn.id == "theme" then
+                    _G.android_fs_theme_x = btn.x + math.floor(btn.w / 2)
+                    _G.android_fs_theme_y = btn.y + math.floor(btn.h / 2)
+                end
             end
         end
 
-        for _, btn in ipairs(buttons) do
-            if btn.id == "theme" then
-                _G.android_fs_theme_x = btn.x + math.floor(btn.w / 2)
-                _G.android_fs_theme_y = btn.y + math.floor(btn.h / 2)
+        local fs_cur_state = (_G.game and tostring(_G.game.state) .. (_G.game.timesUp and "_timeup" or "")) or "none"
+        if fs_last_footer_state == nil then
+            fs_last_footer_state = fs_cur_state
+            fs_footer_anim_timer = 0
+            old_fs_buttons = nil
+            last_fs_buttons = buttons
+        elseif fs_last_footer_state ~= fs_cur_state then
+            fs_last_footer_state = fs_cur_state
+            if _G.screen_transitions then
+                fs_footer_anim_timer = FS_FOOTER_ANIM_DURATION
+                old_fs_buttons = last_fs_buttons
+            else
+                fs_footer_anim_timer = 0
+                old_fs_buttons = nil
             end
+        end
+
+        if not _G.screen_transitions then
+            fs_footer_anim_timer = 0
+        elseif fs_footer_anim_timer > 0 then
+            fs_footer_anim_timer = math.max(0, fs_footer_anim_timer - (dt or 0))
+        end
+
+        local is_fs_trans = _G.screen_transitions and fs_footer_anim_timer > 0 and old_fs_buttons ~= nil
+        local t_prog = is_fs_trans and math.max(0, math.min(1, 1 - (fs_footer_anim_timer / FS_FOOTER_ANIM_DURATION))) or 0
+        local p = 1 - (1 - t_prog) ^ 3
+        local pop = 1.0 + 0.10 * math.sin(t_prog * math.pi)
+
+        if not is_fs_trans then
+            old_fs_buttons = nil
+        end
+
+        local function renderOneButton(btn, a_mult, pop_scale)
             local is_pressed = (not only_render_canvas and fs_button_pressed == btn.id)
             local press_offset = is_pressed and 2 or 0
+            local a = (a_mult or 1.0) * bottom_alpha
+
+            local cx = btn.x + btn.w / 2
+            local cy = btn.y + btn.h / 2
+
+            if pop_scale and pop_scale ~= 1.0 then
+                love.graphics.push()
+                love.graphics.translate(cx, cy)
+                love.graphics.scale(pop_scale, pop_scale)
+                love.graphics.translate(-cx, -cy)
+            end
 
             if is_pressed then
-                love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * bottom_alpha)
+                love.graphics.setColor(br * 0.82, bg * 0.82, bb * 0.82, 0.95 * a)
             else
-                love.graphics.setColor(br, bg, bb, 0.92 * bottom_alpha)
+                love.graphics.setColor(br, bg, bb, 0.92 * a)
             end
             love.graphics.rectangle("fill", btn.x, btn.y + press_offset, btn.w, btn.h, 10, 10)
 
-            love.graphics.setColor(1, 1, 1, 0.15 * bottom_alpha)
+            love.graphics.setColor(1, 1, 1, 0.15 * a)
             love.graphics.setLineWidth(1)
             love.graphics.rectangle("line", btn.x, btn.y + press_offset, btn.w, btn.h, 10, 10)
 
-            local content_alpha = (btn.disabled and not btn.badge and 0.40 or 0.95) * bottom_alpha
+            local content_alpha = (btn.disabled and not btn.badge and 0.40 or 0.95) * a
             local icon_col = {btn_content_col[1], btn_content_col[2], btn_content_col[3], content_alpha}
             drawButtonIcon(btn.icon, btn.x + btn.w / 2, btn.y + press_offset + 20, 20, icon_col)
 
@@ -2203,14 +2265,35 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
             if btn.badge then
                 local f_badge = assets.font_badge or f_lbl
                 love.graphics.setFont(f_badge)
-                love.graphics.setColor(btn_content_col[1], btn_content_col[2], btn_content_col[3], 0.95 * bottom_alpha)
+                love.graphics.setColor(btn_content_col[1], btn_content_col[2], btn_content_col[3], 0.95 * a)
                 local bw = f_badge:getWidth(btn.badge)
                 local bx = btn.x + btn.w - bw - 7
                 local by = btn.y + press_offset + 4
                 love.graphics.print(btn.badge, bx, by)
                 love.graphics.setFont(f_lbl)
             end
+
+            if pop_scale and pop_scale ~= 1.0 then
+                love.graphics.pop()
+            end
         end
+
+        if not is_fs_trans then
+            for _, btn in ipairs(buttons) do
+                renderOneButton(btn, 1.0, nil)
+            end
+        else
+            if old_fs_buttons then
+                for _, old_btn in ipairs(old_fs_buttons) do
+                    renderOneButton(old_btn, 1 - p, nil)
+                end
+            end
+            for _, btn in ipairs(buttons) do
+                renderOneButton(btn, p, pop)
+            end
+        end
+
+        last_fs_buttons = buttons
     end
 
     if not is_paused and renderer.drawNowPlayingFooter then

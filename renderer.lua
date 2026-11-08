@@ -131,6 +131,16 @@ local FOOTER_PROMPT_DURATION = 0.20
 local footer_prompt_prev_kb_mode = nil
 local last_control_hint_kb_mode = nil
 
+-- Gameplay footer transition state
+local help_trans = {
+    timer = 0,
+    old_actions = nil,
+    last_actions = nil,
+    old_dpad = nil,
+    last_dpad = nil,
+    last_state = nil,
+}
+
 -- Arcade Menu animation state
 local arcade_panel_y_offset = 9999  -- starts fully hidden off screen below
 local arcade_panel_target = 9999    -- target offset
@@ -332,6 +342,12 @@ function renderer.resetMenuAnimation()
     _G.crt_transition_timer = 0
     store_sort_transition_timer = 0
     store_sort_old_canvas = nil
+    help_trans.timer = 0
+    help_trans.old_actions = nil
+    help_trans.last_actions = nil
+    help_trans.old_dpad = nil
+    help_trans.last_dpad = nil
+    help_trans.last_state = nil
 end
 
 function renderer.captureOldTutorialSlide(page)
@@ -5378,7 +5394,7 @@ end
 -- ============================================================================
 -- Draw key badge rounded rectangle with text
 -- ============================================================================
-local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
+local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old_text, pop_override, t_prog_override)
     local scale = _G.scale
     local badge_a = alpha_override or 1.0
     local key_font = font_override or ((h < math.floor(22 * scale)) and font_help_key_small) or font_help_key
@@ -5458,10 +5474,19 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
         shadow_shrink = 0.3
     end
 
-    local is_transitioning = _G.screen_transitions and footer_prompt_anim_timer > 0 and footer_prompt_prev_kb_mode ~= nil
-    local t_prog = is_transitioning and math.max(0, math.min(1, 1 - (footer_prompt_anim_timer / FOOTER_PROMPT_DURATION))) or 0
+    local is_transitioning = _G.screen_transitions and (
+        (footer_prompt_anim_timer > 0 and footer_prompt_prev_kb_mode ~= nil) or
+        (pop_override ~= nil)
+    )
+    local t_prog = is_transitioning and (
+        t_prog_override or math.max(0, math.min(1, 1 - (footer_prompt_anim_timer / FOOTER_PROMPT_DURATION)))
+    ) or 0
     local cur_kb = renderer.isKeyboardMode and renderer.isKeyboardMode() or false
-    local old_prompt = is_transitioning and renderer.getButtonPrompt(original_text, footer_prompt_prev_kb_mode) or text
+    local old_prompt = is_transitioning and (
+        (old_text and renderer.getButtonPrompt(old_text, cur_kb)) or
+        (footer_prompt_prev_kb_mode and renderer.getButtonPrompt(original_text, footer_prompt_prev_kb_mode)) or
+        text
+    ) or text
     local new_prompt = is_transitioning and renderer.getButtonPrompt(original_text, cur_kb) or text
 
     local function drawBadgeContent(target_text, cur_badge_a)
@@ -5714,7 +5739,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.setBlendMode("alpha", "premultiplied")
     if is_transitioning then
-        local pop = 1.0 + 0.10 * math.sin(t_prog * math.pi)
+        local pop = pop_override or (1.0 + 0.10 * math.sin(t_prog * math.pi))
         local cx = x + w / 2
         local cy = y + h / 2
         love.graphics.draw(badge_canvas, badge_quad, cx, cy, 0, 0.5 * pop, 0.5 * pop, (w / 2 + pad) * 2, (h / 2 + pad) * 2)
@@ -5731,7 +5756,13 @@ renderer.drawKeyBadge = drawKeyBadge
 -- ============================================================================
 function renderer.drawHelp(game)
     local is_portrait_fs = _G.android_fullscreen and (love.graphics.getHeight() > love.graphics.getWidth())
-    if love.system.getOS() == "Web" or (is_portrait_fs and _G.hide_game_footer) then return end
+    if love.system.getOS() == "Web" or (is_portrait_fs and _G.hide_game_footer) then
+        help_trans.last_state = nil
+        help_trans.timer = 0
+        help_trans.old_actions = nil
+        help_trans.last_actions = nil
+        return
+    end
 
     local sound = require("sound")
     local w, h = love.graphics.getDimensions()
@@ -5743,30 +5774,10 @@ function renderer.drawHelp(game)
     local hh = layout.help_h
     local cr = math.floor(8 * scale)
 
-
-
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
     local item_gap = math.floor(8 * scale)
     local label_gap = math.floor(4 * scale)
-
-    if game.state ~= Game.STATE_LOST and game.state ~= Game.STATE_WON then
-        -- --- D-PAD section left side ---
-        local dpad_x = bar_x + math.floor(10 * scale)
-        local dpad_size = math.floor(24 * scale)
-
-        -- Draw unified vector D-pad icon
-        drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
-        dpad_x = dpad_x + dpad_size + math.floor(6 * scale)
-
-        -- D-pad Label
-        love.graphics.setFont(font_help_label)
-        love.graphics.setColor(ui_text)
-        love.graphics.print("Move", dpad_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
-    end
-
-    -- Action buttons right side ---
-    local right_x = bar_x + bar_w - math.floor(10 * scale)
 
     -- Determine cross-fade alphas for BGM info, Coin info, and normal help prompts
     local is_active_gameplay = (game.state ~= Game.STATE_WON and game.state ~= Game.STATE_LOST and game.state ~= Game.STATE_PAUSED and not (game.state == Game.STATE_TARGETING_BOMB or game.state == Game.STATE_TARGETING_SWAP_1 or game.state == Game.STATE_TARGETING_SWAP_2))
@@ -5880,7 +5891,68 @@ function renderer.drawHelp(game)
         end
     end
 
-    -- Draw actions right-to-left with help_alpha transparency
+    local dpad_visible = (game.state ~= Game.STATE_LOST and game.state ~= Game.STATE_WON)
+    local help_state_key = tostring(game.state) .. (game.timesUp and "_timeup" or "")
+
+    if help_trans.last_state == nil then
+        help_trans.last_state = help_state_key
+        help_trans.timer = 0
+        help_trans.old_actions = nil
+        help_trans.old_dpad = dpad_visible
+        help_trans.last_actions = actions
+        help_trans.last_dpad = dpad_visible
+    elseif help_trans.last_state ~= help_state_key then
+        help_trans.last_state = help_state_key
+        if _G.screen_transitions then
+            help_trans.timer = FOOTER_PROMPT_DURATION
+            help_trans.old_actions = help_trans.last_actions
+            help_trans.old_dpad = help_trans.last_dpad
+        else
+            help_trans.timer = 0
+            help_trans.old_actions = nil
+            help_trans.old_dpad = nil
+        end
+    end
+
+    local is_trans = _G.screen_transitions and help_trans.timer > 0 and help_trans.old_actions ~= nil
+    local t_prog = is_trans and math.max(0, math.min(1, 1 - (help_trans.timer / FOOTER_PROMPT_DURATION))) or 0
+    local p = 1 - (1 - t_prog) ^ 3
+    local pop = 1.0 + 0.10 * math.sin(t_prog * math.pi)
+
+    -- D-PAD section left side
+    local dpad_x = bar_x + math.floor(10 * scale)
+    local dpad_size = math.floor(24 * scale)
+
+    if not is_trans then
+        if dpad_visible then
+            drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
+            love.graphics.setFont(font_help_label)
+            love.graphics.setColor(ui_text)
+            love.graphics.print("Move", dpad_x + dpad_size + math.floor(6 * scale), badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        end
+    else
+        local prev_dpad = (help_trans.old_dpad ~= nil) and help_trans.old_dpad or dpad_visible
+        if dpad_visible and prev_dpad then
+            drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
+            love.graphics.setFont(font_help_label)
+            love.graphics.setColor(ui_text)
+            love.graphics.print("Move", dpad_x + dpad_size + math.floor(6 * scale), badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        elseif dpad_visible and not prev_dpad then
+            drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size, p, nil, nil, pop, t_prog)
+            love.graphics.setFont(font_help_label)
+            love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * p)
+            love.graphics.print("Move", dpad_x + dpad_size + math.floor(6 * scale), badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        elseif not dpad_visible and prev_dpad then
+            drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size, 1 - p)
+            love.graphics.setFont(font_help_label)
+            love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * (1 - p))
+            love.graphics.print("Move", dpad_x + dpad_size + math.floor(6 * scale), badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        end
+    end
+
+    -- Action buttons right side
+    local right_x = bar_x + bar_w - math.floor(10 * scale)
+
     local orig_help_key_color = help_key_color
     local orig_help_key_text = help_key_text
     local orig_ui_text = ui_text
@@ -5897,44 +5969,120 @@ function renderer.drawHelp(game)
         end
     end
 
-    for _, action in ipairs(actions) do
-        -- Label
-        love.graphics.setFont(font_help_label)
-        local lbl_w = font_help_label:getWidth(action.label)
-        right_x = right_x - lbl_w
-        love.graphics.setColor(ui_text)
-        love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+    if not is_trans then
+        for _, action in ipairs(actions) do
+            love.graphics.setFont(font_help_label)
+            local lbl_w = font_help_label:getWidth(action.label)
+            right_x = right_x - lbl_w
+            love.graphics.setColor(ui_text)
+            love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
 
-        -- Badge
-        right_x = right_x - label_gap
-        local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
-        if action.key == "DPAD" then
-            key_w = badge_h
+            right_x = right_x - label_gap
+            local key_w = renderer.getHelpBadgeWidth(action.key, font_help_key)
+            if action.key == "DPAD" then
+                key_w = badge_h
+            end
+            right_x = right_x - key_w
+            drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+
+            right_x = right_x - item_gap
         end
-        right_x = right_x - key_w
-        drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
+    else
+        local num_new = #actions
+        local num_old = #help_trans.old_actions
+        local max_items = math.max(num_new, num_old)
 
-        right_x = right_x - item_gap
+        for i = 1, max_items do
+            local new_act = actions[i]
+            local old_act = help_trans.old_actions[i]
+
+            if new_act and old_act then
+                local old_key_w = renderer.getHelpBadgeWidth(old_act.key, font_help_key)
+                local new_key_w = renderer.getHelpBadgeWidth(new_act.key, font_help_key)
+                if old_act.key == "DPAD" then old_key_w = badge_h end
+                if new_act.key == "DPAD" then new_key_w = badge_h end
+                local key_w = math.floor(old_key_w + (new_key_w - old_key_w) * p)
+
+                local old_lbl_w = font_help_label:getWidth(old_act.label)
+                local new_lbl_w = font_help_label:getWidth(new_act.label)
+                local lbl_w = math.floor(old_lbl_w + (new_lbl_w - old_lbl_w) * p)
+
+                right_x = right_x - lbl_w
+                love.graphics.setFont(font_help_label)
+                local lbl_y = badge_y + (badge_h - font_help_label:getHeight()) / 2
+
+                if old_act.label == new_act.label then
+                    love.graphics.setColor(ui_text)
+                    love.graphics.print(new_act.label, right_x, lbl_y)
+                else
+                    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * (1 - p))
+                    love.graphics.print(old_act.label, right_x + math.floor((lbl_w - old_lbl_w) / 2), lbl_y)
+                    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * p)
+                    love.graphics.print(new_act.label, right_x + math.floor((lbl_w - new_lbl_w) / 2), lbl_y)
+                end
+
+                right_x = right_x - label_gap - key_w
+                if old_act.key == new_act.key then
+                    drawKeyBadge(new_act.key, right_x, badge_y, key_w, badge_h, nil, nil, nil, pop, t_prog)
+                else
+                    drawKeyBadge(new_act.key, right_x, badge_y, key_w, badge_h, nil, nil, old_act.key, pop, t_prog)
+                end
+
+                right_x = right_x - item_gap
+
+            elseif new_act and not old_act then
+                local key_w = renderer.getHelpBadgeWidth(new_act.key, font_help_key)
+                if new_act.key == "DPAD" then key_w = badge_h end
+                local lbl_w = font_help_label:getWidth(new_act.label)
+
+                right_x = right_x - lbl_w
+                love.graphics.setFont(font_help_label)
+                love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * p)
+                love.graphics.print(new_act.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+
+                right_x = right_x - label_gap - key_w
+                drawKeyBadge(new_act.key, right_x, badge_y, key_w, badge_h, p, nil, nil, pop, t_prog)
+
+                right_x = right_x - item_gap
+
+            elseif not new_act and old_act then
+                local key_w = renderer.getHelpBadgeWidth(old_act.key, font_help_key)
+                if old_act.key == "DPAD" then key_w = badge_h end
+                local lbl_w = font_help_label:getWidth(old_act.label)
+
+                right_x = right_x - lbl_w
+                love.graphics.setFont(font_help_label)
+                love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * (1 - p))
+                love.graphics.print(old_act.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+
+                right_x = right_x - label_gap - key_w
+                drawKeyBadge(old_act.key, right_x, badge_y, key_w, badge_h, 1 - p)
+
+                right_x = right_x - item_gap
+            end
+        end
     end
+
+    help_trans.last_actions = actions
+    help_trans.last_dpad = dpad_visible
 
     -- Restore original file-scope colors
     help_key_color = orig_help_key_color
     help_key_text = orig_help_key_text
     ui_text = orig_ui_text
 
-    -- Draw Coin notification in the footer with coin_alpha transparency
+    -- Draw Coin notification in footer
     if coin_alpha > 0 and coin_toast_text and coin_toast_text ~= "" then
         love.graphics.setFont(font_help_label)
         local display_text = coin_toast_text
         local font_h = font_help_label:getHeight()
         local text_w = font_help_label:getWidth(display_text)
-        
-        -- Make coin icon prominent & match text height perfectly
+
         local c_icon_sz = math.floor(font_h * 1.25)
         local gap = math.floor(6 * scale)
         local total_w = text_w + (coin_icon and (c_icon_sz + gap) or 0)
         local start_x = bar_x + math.floor((bar_w - total_w) / 2)
-        
+
         local text_y = badge_y + math.floor((badge_h - font_h) / 2) - math.floor(1 * scale)
         local icon_y = badge_y + math.floor((badge_h - c_icon_sz) / 2)
 
@@ -5953,7 +6101,7 @@ function renderer.drawHelp(game)
         end
     end
 
-    -- Draw BGM notification in the footer with bgm_alpha transparency
+    -- Draw BGM notification in footer
     if bgm_alpha > 0 and now_playing_track then
         local bgm_right_x = bar_x + bar_w - math.floor(10 * scale)
         love.graphics.setFont(font_help_label)
@@ -6748,10 +6896,16 @@ function renderer.updateTransition(dt)
     if not _G.screen_transitions then
         footer_prompt_anim_timer = 0
         footer_prompt_prev_kb_mode = nil
-    elseif footer_prompt_anim_timer > 0 then
-        footer_prompt_anim_timer = math.max(0, footer_prompt_anim_timer - dt)
-        if footer_prompt_anim_timer == 0 then
-            footer_prompt_prev_kb_mode = nil
+        help_trans.timer = 0
+    else
+        if footer_prompt_anim_timer > 0 then
+            footer_prompt_anim_timer = math.max(0, footer_prompt_anim_timer - dt)
+            if footer_prompt_anim_timer == 0 then
+                footer_prompt_prev_kb_mode = nil
+            end
+        end
+        if help_trans.timer > 0 then
+            help_trans.timer = math.max(0, help_trans.timer - dt)
         end
     end
     if toast_timer > 0 then
