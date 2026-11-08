@@ -6887,6 +6887,98 @@ function renderer.triggerNowPlayingNotification()
     end
 end
 
+function renderer.getNowPlaying()
+    return now_playing_track, now_playing_timer
+end
+
+function renderer.drawNowPlayingFooter(center_x, center_y, max_w, alpha_mult, align)
+    if _G.game and _G.game.state == Game.STATE_PAUSED then return end
+    if not now_playing_track or now_playing_timer <= 0 then return end
+
+    local alpha = 0.0
+    if now_playing_timer > 3.8 then
+        alpha = (4.0 - now_playing_timer) / 0.2
+    elseif now_playing_timer > 0.4 then
+        alpha = 1.0
+    elseif now_playing_timer > 0.2 then
+        alpha = (now_playing_timer - 0.2) / 0.2
+    else
+        return
+    end
+
+    alpha = alpha * (alpha_mult or 1.0)
+    if alpha <= 0 then return end
+
+    local scale = _G.scale or 1.0
+    local f = font_help_label or love.graphics.getFont()
+    love.graphics.setFont(f)
+
+    local display_text = now_playing_track.title .. " - " .. now_playing_track.artist
+    local text_w = f:getWidth(display_text)
+    local font_h = f:getHeight()
+
+    local bar_w = math.max(2, math.floor(2.5 * scale))
+    local bar_gap = math.max(1, math.floor(2 * scale))
+    local bar_cr = math.max(1, math.floor(1.2 * scale))
+    local viz_w = 4 * bar_w + 3 * bar_gap
+    local text_gap = math.floor(8 * scale)
+    local total_w = text_w + viz_w + text_gap
+    local limit_w = max_w or (love.graphics.getWidth() - math.floor(32 * scale))
+
+    if total_w > limit_w then
+        local max_txt_w = limit_w - viz_w - text_gap
+        while #display_text > 4 and f:getWidth(display_text .. "...") > max_txt_w do
+            display_text = display_text:sub(1, #display_text - 1)
+        end
+        display_text = display_text .. "..."
+        text_w = f:getWidth(display_text)
+        total_w = text_w + viz_w + text_gap
+    end
+
+    local start_x
+    local text_y
+    if align == "right" then
+        start_x = center_x - total_w
+        text_y = center_y
+    else
+        start_x = math.floor(center_x - total_w / 2)
+        text_y = math.floor(center_y - font_h / 2)
+    end
+    local base_y = text_y + math.floor(font_h * 0.77)
+    local max_h = math.floor(font_h * 0.50)
+    local min_h = math.max(2, math.floor(2.5 * scale))
+
+    if type(help_key_color) == "table" then
+        love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * alpha)
+    else
+        love.graphics.setColor(1.0, 1.0, 1.0, alpha)
+    end
+
+    local t = love.timer.getTime()
+    local s1 = math.sin(t * 7.5)^2 * 0.65 + math.sin(t * 13.0 + 0.4)^2 * 0.35
+    local s2 = math.sin(t * 11.0 + 1.2)^2 * 0.60 + math.sin(t * 19.0 + 2.1)^2 * 0.40
+    local s3 = math.sin(t * 14.0 + 2.5)^2 * 0.50 + math.sin(t * 8.5 + 1.0)^2 * 0.50
+    local s4 = math.sin(t * 17.5 + 3.8)^2 * 0.65 + math.sin(t * 10.0 + 0.7)^2 * 0.35
+
+    local h1 = math.floor(min_h + (max_h - min_h) * (0.25 + 0.75 * s1))
+    local h2 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s2))
+    local h3 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s3))
+    local h4 = math.floor(min_h + (max_h - min_h) * (0.30 + 0.70 * s4))
+
+    local bars = { h1, h2, h3, h4 }
+    for idx = 1, 4 do
+        local bx = start_x + (idx - 1) * (bar_w + bar_gap)
+        love.graphics.rectangle("fill", bx, base_y - bars[idx], bar_w, bars[idx], bar_cr, bar_cr)
+    end
+
+    if type(ui_text) == "table" then
+        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * alpha)
+    else
+        love.graphics.setColor(1.0, 1.0, 1.0, alpha)
+    end
+    love.graphics.print(display_text, start_x + viz_w + text_gap, text_y)
+end
+
 local function drawToast()
     if toast_timer <= 0 or not toast_message then return end
 

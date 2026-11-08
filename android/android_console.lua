@@ -2213,6 +2213,38 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
         end
     end
 
+    if not is_paused and renderer.drawNowPlayingFooter then
+        local lowest_btn_y = 0
+        for _, btn in ipairs(buttons) do
+            if btn.y and btn.h then
+                lowest_btn_y = math.max(lowest_btn_y, btn.y + btn.h)
+            end
+        end
+        if lowest_btn_y == 0 then
+            lowest_btn_y = board_bottom
+        end
+
+        local safe_bottom = 0
+        pcall(function()
+            if love.window and love.window.getSafeArea then
+                local _, sy, _, sh = love.window.getSafeArea()
+                if sy and sh and sy + sh < real_h then
+                    safe_bottom = real_h - (sy + sh)
+                end
+            end
+        end)
+        local virt_safe_bottom = math.floor(safe_bottom / scale_fs_y)
+        local footer_bottom = vh - virt_safe_bottom
+        local footer_cy = math.floor((lowest_btn_y + footer_bottom) / 2)
+        if footer_cy < lowest_btn_y + 12 then
+            footer_cy = lowest_btn_y + 12
+        end
+        if footer_cy > footer_bottom - 12 then
+            footer_cy = footer_bottom - 12
+        end
+        renderer.drawNowPlayingFooter(math.floor(vw / 2), footer_cy, vw - 32, bottom_alpha, "center")
+    end
+
     if not only_render_canvas and renderer.isThemeTransitionActive and renderer.isThemeTransitionActive() then
         renderer.drawThemeTransitionOverlay()
     end
