@@ -98,6 +98,19 @@ if not ZIPALIGN or not APKSIGNER:
     print("Please install Android SDK build-tools or ensure zipalign/apksigner are in PATH.")
     sys.exit(1)
 
+# Ensure java runtime is in PATH for apktool
+if not shutil.which("java"):
+    candidate_java_dirs = [
+        os.path.expanduser("~/.local/bin"),
+        "/etc/alternatives",
+        "/usr/lib/jvm/java-latest-openjdk/bin",
+        "/usr/lib/jvm/java-21-temurin-jdk/bin",
+    ]
+    for j_dir in candidate_java_dirs:
+        if os.path.isfile(os.path.join(j_dir, "java")):
+            os.environ["PATH"] = j_dir + os.pathsep + os.environ.get("PATH", "")
+            break
+
 if not os.path.isfile(LOVE_PATH):
     print(f"Error: {LOVE_PATH} does not exist.")
     sys.exit(1)
