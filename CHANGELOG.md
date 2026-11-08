@@ -1,4 +1,22 @@
 # Changelog
+## [8.0.2] (TBA)
+### Added
+- Now Playing banner showing song and artist info when a new track plays in Android fullscreen
+- Button vibration toggle setting for Android virtual controls
+- Smooth screen transitions for Pause and Game Over screens
+- Animated footer controls transition on Pause and Game Over screens
+
+### Changed
+- Plus Mode now starts with zero powerups
+- Improved vertical centering for footer button prompts in Android landscape mode
+
+### Fixed
+- Fixed companion dog running animation hitching
+- Fixed store closing slide animation
+- Fixed undo animation reverse play when tapping direction keys without moves
+- Fixed audio stopping on app resume and prevented crash during background calls on Android
+- Fixed CRT shader rendering during fullscreen mode transitions on Android
+
 ## [8.0.1]
 - Minor UI Improvements
 
