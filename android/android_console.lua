@@ -2312,8 +2312,11 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
         last_fs_buttons = buttons
     end
 
-    local np_track, np_timer = (renderer.getNowPlaying and renderer.getNowPlaying() or nil), 0
-    if not is_paused and np_track and np_timer > 0 and renderer.drawNowPlayingFooter then
+    local np_track, np_timer = nil, 0
+    if renderer.getNowPlaying then
+        np_track, np_timer = renderer.getNowPlaying()
+    end
+    if not is_paused and np_track and np_timer and np_timer > 0 and renderer.drawNowPlayingFooter then
         local lowest_btn_y = 0
         for _, btn in ipairs(buttons) do
             if btn.y and btn.h then
