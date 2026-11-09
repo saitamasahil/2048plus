@@ -388,17 +388,38 @@ local function handle_client(client, sound_module)
             for _, t in ipairs(pl) do
                 local lower = t.filename:lower()
                 local is_builtin = BUILTIN_TRACKS[lower] or false
+                local is_custom = not is_builtin
                 local size = 0
                 if love and love.filesystem then
                     local info = love.filesystem.getInfo(t.path)
                     if info and info.size then size = info.size end
+                end
+                if size == 0 and io and io.open then
+                    local f = io.open(t.path, "rb")
+                    if not f then f = io.open("assets/music/" .. t.filename, "rb") end
+                    if f then
+                        size = f:seek("end") or 0
+                        f:close()
+                    end
+                end
+                local size_formatted = ""
+                if size and size > 0 then
+                    if size >= 1048576 then
+                        size_formatted = string.format("%.1f MB", size / 1048576)
+                    elseif size >= 1024 then
+                        size_formatted = string.format("%.0f KB", size / 1024)
+                    else
+                        size_formatted = string.format("%d B", size)
+                    end
                 end
                 table.insert(tracks, {
                     filename = t.filename,
                     title = t.title or t.filename,
                     artist = t.artist or "Unknown",
                     is_builtin = is_builtin,
-                    size = size
+                    is_custom = is_custom,
+                    size = size,
+                    size_formatted = size_formatted
                 })
             end
         end
