@@ -1,4 +1,13 @@
 # Changelog
+## [8.0.3]
+### Added
+- Dynamic high refresh rate support (90Hz, 120Hz, 144Hz+) for much smoother animations and touch response on supported Android devices
+
+### Fixed
+- Fixed track file sizes displaying as undefined in the Jukebox web manager
+- Fixed custom uploaded music tracks appearing locked, restoring the Edit and Delete buttons on Android
+- Fixed storage indicator incorrectly showing 0 MB Free on Android
+
 ## [8.0.2]
 ### Added
 - Now Playing banner showing song and artist info when a new track plays in Android fullscreen
