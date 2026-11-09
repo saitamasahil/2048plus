@@ -664,8 +664,9 @@ function love.update(dt)
     else
         if _G.achievements_scroll ~= _G.achievements_scroll_target then
             local diff = _G.achievements_scroll_target - _G.achievements_scroll
-            _G.achievements_scroll = _G.achievements_scroll + diff * 15 * dt
-            if math.abs(_G.achievements_scroll - _G.achievements_scroll_target) < 0.01 then
+            local factor = 1 - math.exp(-20 * dt)
+            _G.achievements_scroll = _G.achievements_scroll + diff * factor
+            if math.abs(_G.achievements_scroll - _G.achievements_scroll_target) < 0.1 then
                 _G.achievements_scroll = _G.achievements_scroll_target
             end
         end
@@ -679,8 +680,9 @@ function love.update(dt)
     else
         if _G.stats_scroll ~= _G.stats_scroll_target then
             local diff = _G.stats_scroll_target - _G.stats_scroll
-            _G.stats_scroll = _G.stats_scroll + diff * 15 * dt
-            if math.abs(_G.stats_scroll - _G.stats_scroll_target) < 0.01 then
+            local factor = 1 - math.exp(-20 * dt)
+            _G.stats_scroll = _G.stats_scroll + diff * factor
+            if math.abs(_G.stats_scroll - _G.stats_scroll_target) < 0.1 then
                 _G.stats_scroll = _G.stats_scroll_target
             end
         end
@@ -694,8 +696,9 @@ function love.update(dt)
     else
         if _G.about_scroll ~= _G.about_scroll_target then
             local diff = _G.about_scroll_target - _G.about_scroll
-            _G.about_scroll = _G.about_scroll + diff * 15 * dt
-            if math.abs(_G.about_scroll - _G.about_scroll_target) < 0.01 then
+            local factor = 1 - math.exp(-20 * dt)
+            _G.about_scroll = _G.about_scroll + diff * factor
+            if math.abs(_G.about_scroll - _G.about_scroll_target) < 0.1 then
                 _G.about_scroll = _G.about_scroll_target
             end
         end

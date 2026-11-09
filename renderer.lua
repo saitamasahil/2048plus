@@ -4555,12 +4555,18 @@ function renderer.drawTile(tile, slideProgress, popProgress)
         tileScaleX = popProgress
         tileScaleY = popProgress
     elseif tile.isMerged and popProgress < 1 then
-        if popProgress < 0.5 then
-            tileScaleX = 1 + 0.25 * (popProgress / 0.5)
+        if _G.screen_transitions then
+            local pop_bump = math.sin(popProgress * math.pi)
+            tileScaleX = 1 + 0.18 * pop_bump
             tileScaleY = tileScaleX
         else
-            tileScaleX = 1.25 - 0.25 * ((popProgress - 0.5) / 0.5)
-            tileScaleY = tileScaleX
+            if popProgress < 0.5 then
+                tileScaleX = 1 + 0.25 * (popProgress / 0.5)
+                tileScaleY = tileScaleX
+            else
+                tileScaleX = 1.25 - 0.25 * ((popProgress - 0.5) / 0.5)
+                tileScaleY = tileScaleX
+            end
         end
     end
 
@@ -4740,10 +4746,18 @@ function renderer.drawTiles(game)
         end
     else
         local p = game:getAnimationProgress()
-        slideProgress = p
-        gooseProgress = p
-        spawnProgress = p
-        mergePopProgress = p
+        if _G.screen_transitions then
+            local ease_p = p * (2 - p)
+            slideProgress = ease_p
+            gooseProgress = ease_p
+            spawnProgress = ease_p
+            mergePopProgress = p
+        else
+            slideProgress = p
+            gooseProgress = p
+            spawnProgress = p
+            mergePopProgress = p
+        end
     end
 
     local cells = game.grid.cells
@@ -7084,7 +7098,7 @@ function renderer.updateTransition(dt)
             panel_page_current = panel_page_target
         end
 
-        local sel_lerp = 1 - math.exp(-12 * dt)
+        local sel_lerp = 1 - math.exp(-20 * dt)
         if not play_select_sel_current then
             play_select_sel_current = _G.play_select_selection or 1
         else
@@ -12387,7 +12401,12 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
     if skip_transition or not _G.screen_transitions then
         _G.store_scroll = target_scroll
     else
-        _G.store_scroll = _G.store_scroll + (target_scroll - _G.store_scroll) * 0.22
+        local dt = math.min(love.timer.getDelta(), 0.05)
+        local lerp_factor = 1 - math.exp(-22 * dt)
+        _G.store_scroll = _G.store_scroll + (target_scroll - _G.store_scroll) * lerp_factor
+        if math.abs(_G.store_scroll - target_scroll) < 0.2 then
+            _G.store_scroll = target_scroll
+        end
     end
     local scroll = _G.store_scroll
 
