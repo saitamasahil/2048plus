@@ -4,6 +4,8 @@
 
 local Game = require("game")
 local save = require("save")
+local input = require("input")
+local sound = require("sound")
 
 local renderer = {}
 
@@ -4605,11 +4607,12 @@ function renderer.drawTile(tile, slideProgress, popProgress)
     local now = love.timer.getTime()
     local is_booster_active = tile.is_booster and (now - (tile.booster_spawn_t or now) < 5.0)
     local b_alpha = 0
-    local theme_gold, theme_board = renderer.getThemeHighlightColors()
-    local accent_col = help_key_color or theme_gold
-    local tile_col = getTileColor(tile.booster_val or tile.value)
+    local accent_col, tile_col
 
     if is_booster_active then
+        local theme_gold = renderer.getThemeHighlightColors()
+        accent_col = help_key_color or theme_gold
+        tile_col = getTileColor(tile.booster_val or tile.value)
         local b_age = now - (tile.booster_spawn_t or now)
         b_alpha = math.max(0.0, math.min(1.0, (5.0 - b_age) / 1.2))
 
@@ -4743,27 +4746,43 @@ function renderer.drawTiles(game)
         mergePopProgress = p
     end
 
-    game.grid:eachCell(function(x, y, tile)
-        if tile and not tile.isMerged and not tile.isNew and not tile.isSwapping then
-            if tile.value == "goose" then
-                renderer.drawTile(tile, gooseProgress, gooseProgress)
-            else
-                renderer.drawTile(tile, slideProgress, slideProgress)
+    local cells = game.grid.cells
+    local sx = game.grid.sizeX
+    local sy = game.grid.sizeY
+
+    for x = 1, sx do
+        local col = cells[x]
+        for y = 1, sy do
+            local tile = col[y]
+            if tile and not tile.isMerged and not tile.isNew and not tile.isSwapping then
+                if tile.value == "goose" then
+                    renderer.drawTile(tile, gooseProgress, gooseProgress)
+                else
+                    renderer.drawTile(tile, slideProgress, slideProgress)
+                end
             end
         end
-    end)
+    end
 
-    game.grid:eachCell(function(x, y, tile)
-        if tile and tile.isMerged and not tile.isSwapping then
-            renderer.drawTile(tile, slideProgress, mergePopProgress)
+    for x = 1, sx do
+        local col = cells[x]
+        for y = 1, sy do
+            local tile = col[y]
+            if tile and tile.isMerged and not tile.isSwapping then
+                renderer.drawTile(tile, slideProgress, mergePopProgress)
+            end
         end
-    end)
+    end
 
-    game.grid:eachCell(function(x, y, tile)
-        if tile and tile.isNew and not tile.isSwapping then
-            renderer.drawTile(tile, spawnProgress, spawnProgress)
+    for x = 1, sx do
+        local col = cells[x]
+        for y = 1, sy do
+            local tile = col[y]
+            if tile and tile.isNew and not tile.isSwapping then
+                renderer.drawTile(tile, spawnProgress, spawnProgress)
+            end
         end
-    end)
+    end
 
     if game.bombAnimation then
         local p = 1 - (game.bombAnimation.timer / game.bombAnimation.duration)
@@ -5426,36 +5445,32 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
     local is_up = false
     local is_down = false
 
-    local success, Input = pcall(require, "input")
-    if success and Input and Input.state then
+    if input and input.state then
         if original_text == "DPAD" then
-            is_left = Input.state["left"] == true
-            is_right = Input.state["right"] == true
-            is_up = Input.state["up"] == true
-            is_down = Input.state["down"] == true
+            is_left = input.state["left"] == true
+            is_right = input.state["right"] == true
+            is_up = input.state["up"] == true
+            is_down = input.state["down"] == true
             is_pressed = is_left or is_right or is_up or is_down
         elseif original_text == "L/R" then
             local l_mapped = love.system.getOS() == "Web" and "z" or "l1"
             local r_mapped = love.system.getOS() == "Web" and "x" or "r1"
-            is_pressed = (Input.state[l_mapped] == true) or (Input.state[r_mapped] == true)
+            is_pressed = (input.state[l_mapped] == true) or (input.state[r_mapped] == true)
         else
             if original_text == "START" then
-                is_pressed = (Input.state["space"] == true) or (Input.state["rshift"] == true) or (Input.state["return"] == true)
+                is_pressed = (input.state["space"] == true) or (input.state["rshift"] == true) or (input.state["return"] == true)
             elseif original_text == "DOWN" then
-                is_pressed = (Input.state["down"] == true) or (Input.state["dpdown"] == true) or (Input.state["s"] == true) or (Input.state["v"] == true) or (Input.events and Input.state[Input.events.DOWN] == true)
+                is_pressed = (input.state["down"] == true) or (input.state["dpdown"] == true) or (input.state["s"] == true) or (input.state["v"] == true) or (input.events and input.state[input.events.DOWN] == true)
             else
-                local event_map = {
-                    A = Input.events and Input.events.CONFIRM,
-                    B = Input.events and Input.events.BACK,
-                    X = Input.events and Input.events.X,
-                    Y = Input.events and Input.events.Y,
-                    L1 = Input.events and Input.events.L1,
-                    R1 = Input.events and Input.events.R1,
-                }
-                local evt = event_map[original_text]
-                if evt and (Input.state[evt] == true or Input.state[tostring(evt):lower()] == true) then
+                local evt = (original_text == "A" and input.events and input.events.CONFIRM)
+                    or (original_text == "B" and input.events and input.events.BACK)
+                    or (original_text == "X" and input.events and input.events.X)
+                    or (original_text == "Y" and input.events and input.events.Y)
+                    or (original_text == "L1" and input.events and input.events.L1)
+                    or (original_text == "R1" and input.events and input.events.R1)
+                if evt and (input.state[evt] == true or input.state[tostring(evt):lower()] == true) then
                     is_pressed = true
-                elseif Input.state[original_text] == true or Input.state[original_text:lower()] == true then
+                elseif input.state[original_text] == true or input.state[original_text:lower()] == true then
                     is_pressed = true
                 end
             end
@@ -5764,7 +5779,6 @@ function renderer.drawHelp(game)
         return
     end
 
-    local sound = require("sound")
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
     local padding = math.floor(10 * scale)
@@ -5828,66 +5842,83 @@ function renderer.drawHelp(game)
     local actions = {}
 
     if help_alpha > 0 then
-        if game.state == Game.STATE_WON then
-            table.insert(actions, 1, {key = "A", label = "Continue"})
-            table.insert(actions, 1, {key = "X", label = "Quit"})
-            table.insert(actions, 1, {key = "SELECT", label = "Restart"})
-            if game.mode ~= "timeattack" and game.mode ~= "nomercy" and game.mode ~= "goose" and game.canUndo then
-                if game.mode == "plus" and game.powerups.undo > 0 then
-                    table.insert(actions, 1, {key = "B", label = "Undo:" .. game.powerups.undo})
-                elseif game.mode ~= "plus" then
-                    table.insert(actions, 1, {key = "B", label = "Undo"})
-                end
-            end
+        local act_key = tostring(game.state) .. "_" .. tostring(game.mode) .. "_" .. (game.canUndo and "1" or "0") .. "_" .. (game.timesUp and "1" or "0")
+        if game.mode == "plus" and game.powerups then
+            act_key = act_key .. "_" .. (game.powerups.undo or 0) .. "_" .. (game.powerups.swap or 0) .. "_" .. (game.powerups.bomb or 0)
+        end
+        if game.state == Game.STATE_PAUSED then
+            act_key = act_key .. "_" .. (sound.isBgmEnabled() and "1" or "0")
         elseif game.state == Game.STATE_LOST then
-            table.insert(actions, 1, {key = "A", label = "New Game"})
-            table.insert(actions, 1, {key = "X", label = "Quit"})
-            local shield_cnt = _G.stats and (_G.stats.second_chance_count or 0) or 0
-            if shield_cnt > 0 and not game.timesUp and not (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0) then
-                table.insert(actions, 1, {key = "R1", label = "Shield:" .. shield_cnt})
-            end
-            if game.mode ~= "plus" then
-                table.insert(actions, 1, {key = "Y", label = "Switch Theme"})
-            end
-            if game.mode ~= "timeattack" and game.mode ~= "nomercy" and game.mode ~= "goose" and game.canUndo then
-                if game.mode == "plus" and game.powerups.undo > 0 then
-                    table.insert(actions, 1, {key = "B", label = "Undo:" .. game.powerups.undo})
-                elseif game.mode ~= "plus" then
-                    table.insert(actions, 1, {key = "B", label = "Undo"})
-                end
-            end
-        elseif game.state == Game.STATE_PAUSED then
-            table.insert(actions, 1, {key = "A", label = "Restart"})
-            table.insert(actions, 1, {key = "X", label = "Quit"})
-            if sound.isBgmEnabled() then
-                table.insert(actions, 1, {key = "L1", label = "Skip Track"})
-            end
-            table.insert(actions, 1, {key = "START", label = "Resume"})
-        elseif game.state == Game.STATE_TARGETING_SHIELD then
-            table.insert(actions, 1, {key = "A", label = "Clear Target"})
-            table.insert(actions, 1, {key = "B", label = "Cancel"})
-            table.insert(actions, 1, {key = "DPAD", label = "Row/Column"})
-        elseif game.state == Game.STATE_TARGETING_BOMB or game.state == Game.STATE_TARGETING_SWAP_1 or game.state == Game.STATE_TARGETING_SWAP_2 then
-            table.insert(actions, 1, {key = "A", label = "Confirm"})
-            table.insert(actions, 1, {key = "B", label = "Cancel"})
+            local sc = _G.stats and _G.stats.second_chance_count or 0
+            act_key = act_key .. "_" .. sc
+        end
+
+        if help_trans.cached_act_key == act_key and help_trans.cached_actions then
+            actions = help_trans.cached_actions
         else
-            if game.mode == "plus" then
-                table.insert(actions, 1, {key = "START", label = "Pause"})
-                table.insert(actions, 1, {key = "L1", label = "Swap:" .. game.powerups.swap})
-                table.insert(actions, 1, {key = "R1", label = "Bomb:" .. game.powerups.bomb})
-                table.insert(actions, 1, {key = "B", label = "Undo:" .. game.powerups.undo})
-            elseif game.mode == "timeattack" or game.mode == "nomercy" or game.mode == "goose" then
-                table.insert(actions, 1, {key = "START", label = "Pause"})
-                table.insert(actions, 1, {key = "SELECT", label = "Coins"})
-                table.insert(actions, 1, {key = "Y", label = "Switch Theme"})
+            if game.state == Game.STATE_WON then
+                table.insert(actions, 1, {key = "A", label = "Continue"})
+                table.insert(actions, 1, {key = "X", label = "Quit"})
+                table.insert(actions, 1, {key = "SELECT", label = "Restart"})
+                if game.mode ~= "timeattack" and game.mode ~= "nomercy" and game.mode ~= "goose" and game.canUndo then
+                    if game.mode == "plus" and game.powerups.undo > 0 then
+                        table.insert(actions, 1, {key = "B", label = "Undo:" .. game.powerups.undo})
+                    elseif game.mode ~= "plus" then
+                        table.insert(actions, 1, {key = "B", label = "Undo"})
+                    end
+                end
+            elseif game.state == Game.STATE_LOST then
+                table.insert(actions, 1, {key = "A", label = "New Game"})
+                table.insert(actions, 1, {key = "X", label = "Quit"})
+                local shield_cnt = _G.stats and (_G.stats.second_chance_count or 0) or 0
+                if shield_cnt > 0 and not game.timesUp and not (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0) then
+                    table.insert(actions, 1, {key = "R1", label = "Shield:" .. shield_cnt})
+                end
+                if game.mode ~= "plus" then
+                    table.insert(actions, 1, {key = "Y", label = "Switch Theme"})
+                end
+                if game.mode ~= "timeattack" and game.mode ~= "nomercy" and game.mode ~= "goose" and game.canUndo then
+                    if game.mode == "plus" and game.powerups.undo > 0 then
+                        table.insert(actions, 1, {key = "B", label = "Undo:" .. game.powerups.undo})
+                    elseif game.mode ~= "plus" then
+                        table.insert(actions, 1, {key = "B", label = "Undo"})
+                    end
+                end
+            elseif game.state == Game.STATE_PAUSED then
+                table.insert(actions, 1, {key = "A", label = "Restart"})
+                table.insert(actions, 1, {key = "X", label = "Quit"})
+                if sound.isBgmEnabled() then
+                    table.insert(actions, 1, {key = "L1", label = "Skip Track"})
+                end
+                table.insert(actions, 1, {key = "START", label = "Resume"})
+            elseif game.state == Game.STATE_TARGETING_SHIELD then
+                table.insert(actions, 1, {key = "A", label = "Clear Target"})
+                table.insert(actions, 1, {key = "B", label = "Cancel"})
+                table.insert(actions, 1, {key = "DPAD", label = "Row/Column"})
+            elseif game.state == Game.STATE_TARGETING_BOMB or game.state == Game.STATE_TARGETING_SWAP_1 or game.state == Game.STATE_TARGETING_SWAP_2 then
+                table.insert(actions, 1, {key = "A", label = "Confirm"})
+                table.insert(actions, 1, {key = "B", label = "Cancel"})
             else
-                table.insert(actions, 1, {key = "START", label = "Pause"})
-                table.insert(actions, 1, {key = "SELECT", label = "Coins"})
-                table.insert(actions, 1, {key = "Y", label = "Switch Theme"})
-                if game.canUndo then
-                    table.insert(actions, 1, {key = "B", label = "Undo"})
+                if game.mode == "plus" then
+                    table.insert(actions, 1, {key = "START", label = "Pause"})
+                    table.insert(actions, 1, {key = "L1", label = "Swap:" .. game.powerups.swap})
+                    table.insert(actions, 1, {key = "R1", label = "Bomb:" .. game.powerups.bomb})
+                    table.insert(actions, 1, {key = "B", label = "Undo:" .. game.powerups.undo})
+                elseif game.mode == "timeattack" or game.mode == "nomercy" or game.mode == "goose" then
+                    table.insert(actions, 1, {key = "START", label = "Pause"})
+                    table.insert(actions, 1, {key = "SELECT", label = "Coins"})
+                    table.insert(actions, 1, {key = "Y", label = "Switch Theme"})
+                else
+                    table.insert(actions, 1, {key = "START", label = "Pause"})
+                    table.insert(actions, 1, {key = "SELECT", label = "Coins"})
+                    table.insert(actions, 1, {key = "Y", label = "Switch Theme"})
+                    if game.canUndo then
+                        table.insert(actions, 1, {key = "B", label = "Undo"})
+                    end
                 end
             end
+            help_trans.cached_act_key = act_key
+            help_trans.cached_actions = actions
         end
     end
 

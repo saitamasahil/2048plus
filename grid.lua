@@ -50,7 +50,14 @@ function Grid:randomAvailableCell(rng)
 end
 
 function Grid:cellsAvailable()
-    return #self:getAvailableCells() > 0
+    for x = 1, self.sizeX do
+        for y = 1, self.sizeY do
+            if self.cells[x][y] == nil then
+                return true
+            end
+        end
+    end
+    return false
 end
 
 function Grid:cellAvailable(x, y)

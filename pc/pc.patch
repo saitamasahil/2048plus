@@ -138,10 +138,10 @@ index 6447af2..98b0cba 100644
 +    renderer.init()
 +end
 diff --git a/renderer.lua b/renderer.lua
-index 8f6bc23..07b229c 100644
+index 7ac495b..9a0e582 100644
 --- a/renderer.lua
 +++ b/renderer.lua
-@@ -352,7 +352,7 @@ end
+@@ -354,7 +354,7 @@ end
  
  function renderer.captureOldTutorialSlide(page)
      local w, h = love.graphics.getDimensions()
@@ -150,7 +150,7 @@ index 8f6bc23..07b229c 100644
          tutorial_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({tutorial_old_canvas, stencil = true})
-@@ -363,7 +363,7 @@ end
+@@ -365,7 +365,7 @@ end
  
  function renderer.captureOldAchievementsSlide(tab)
      local w, h = love.graphics.getDimensions()
@@ -159,7 +159,7 @@ index 8f6bc23..07b229c 100644
          achievements_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({achievements_old_canvas, stencil = true})
-@@ -5320,7 +5320,15 @@ end
+@@ -5339,7 +5339,15 @@ end
  -- ============================================================================
  -- Get proper text for button prompts based on OS
  -- ============================================================================
@@ -176,7 +176,7 @@ index 8f6bc23..07b229c 100644
      if love.system.getOS() == "Web" then
          local web_mapping = {
              A = "Enter",
-@@ -5334,6 +5342,20 @@ function renderer.getButtonPrompt(key)
+@@ -5353,6 +5361,20 @@ function renderer.getButtonPrompt(key)
              DPAD = "Arrows"
          }
          return web_mapping[key] or key
@@ -197,7 +197,7 @@ index 8f6bc23..07b229c 100644
      end
      return key
  end
-@@ -5349,6 +5371,16 @@ function renderer.formatText(text)
+@@ -5368,6 +5390,16 @@ function renderer.formatText(text)
          text = text:gsub("Press Y", "Press C")
          text = text:gsub("%[Y%]", "[C]")
          text = text:gsub("B button", "Esc key")
@@ -214,7 +214,7 @@ index 8f6bc23..07b229c 100644
      end
      return text
  end
-@@ -8032,7 +8064,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
+@@ -8063,7 +8095,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
  
          -- Capture the new page to tutorial_new_canvas ONCE at the start of transition
          if not _G.tutorial_slide_ready then
@@ -223,7 +223,7 @@ index 8f6bc23..07b229c 100644
                  tutorial_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({tutorial_new_canvas, stencil = true})
-@@ -8182,7 +8214,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
+@@ -8213,7 +8245,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
  
              -- Badge
              right_x = right_x - label_gap
@@ -232,7 +232,7 @@ index 8f6bc23..07b229c 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -8257,6 +8289,8 @@ function renderer.getSettingsOptions()
+@@ -8288,6 +8320,8 @@ function renderer.getSettingsOptions()
      local undo_lbl = "Undo Limit (Classic/Huge): " .. undo_val
      local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
      local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
@@ -241,7 +241,7 @@ index 8f6bc23..07b229c 100644
  
      return {
          "Audio & Haptics",
-@@ -8266,6 +8300,7 @@ function renderer.getSettingsOptions()
+@@ -8297,6 +8331,7 @@ function renderer.getSettingsOptions()
          undo_lbl,
          ta_lbl,
          crt_lbl,
@@ -249,7 +249,7 @@ index 8f6bc23..07b229c 100644
          "Back"
      }
  end
-@@ -8280,7 +8315,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
+@@ -8311,7 +8346,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
      local badge_h = math.floor(28 * scale)
      local badge_y = h - badge_h - math.floor(7 * scale)
  
@@ -258,7 +258,7 @@ index 8f6bc23..07b229c 100644
      local total_h = header_h + math.floor(12 * scale) + menu_h
      local available_h = badge_y - math.floor(10 * scale)
      local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
-@@ -8305,6 +8340,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
+@@ -8336,6 +8371,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
              "Undo Limit (Classic/Huge): Unlimited",
              "Time Attack Max Limit: 90s",
              "CRT Shader: Off",
@@ -266,7 +266,7 @@ index 8f6bc23..07b229c 100644
              "Back"
          }
      end
-@@ -8396,7 +8432,7 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
+@@ -8427,7 +8463,7 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
              love.graphics.print(action.label, right_x, layout.badge_y + (layout.badge_h - font_help_label:getHeight()) / 2)
  
              right_x = right_x - label_gap
@@ -275,7 +275,7 @@ index 8f6bc23..07b229c 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
  
-@@ -8701,7 +8737,7 @@ function renderer.drawMainMenu(selection, skip_transition)
+@@ -8732,7 +8768,7 @@ function renderer.drawMainMenu(selection, skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -284,7 +284,7 @@ index 8f6bc23..07b229c 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -9171,7 +9207,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
+@@ -9202,7 +9238,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x0, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x0 = right_x0 - label_gap
@@ -293,7 +293,7 @@ index 8f6bc23..07b229c 100644
              right_x0 = right_x0 - key_w
              drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
              right_x0 = right_x0 - item_gap
-@@ -9448,7 +9484,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
+@@ -9479,7 +9515,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x1, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x1 = right_x1 - label_gap
@@ -302,7 +302,7 @@ index 8f6bc23..07b229c 100644
              right_x1 = right_x1 - key_w
              drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
              right_x1 = right_x1 - item_gap
-@@ -9591,7 +9627,7 @@ function renderer.drawSecretMenu(selection, skip_transition)
+@@ -9622,7 +9658,7 @@ function renderer.drawSecretMenu(selection, skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -311,7 +311,7 @@ index 8f6bc23..07b229c 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10487,8 +10523,9 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
+@@ -10518,8 +10554,9 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
@@ -322,7 +322,7 @@ index 8f6bc23..07b229c 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10860,7 +10897,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -10891,7 +10928,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
          -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
          if not _G.achievements_slide_ready then
@@ -331,7 +331,7 @@ index 8f6bc23..07b229c 100644
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -11513,7 +11550,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -11544,7 +11581,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
              -- Badge
              right_x = right_x - label_gap
@@ -340,7 +340,7 @@ index 8f6bc23..07b229c 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11745,7 +11782,7 @@ function renderer.drawAbout(skip_transition)
+@@ -11776,7 +11813,7 @@ function renderer.drawAbout(skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -349,7 +349,7 @@ index 8f6bc23..07b229c 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -12689,7 +12726,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -12720,7 +12757,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
          right_x = right_x - label_gap
@@ -358,7 +358,7 @@ index 8f6bc23..07b229c 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13460,7 +13497,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -13491,7 +13528,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap
@@ -368,7 +368,7 @@ index 8f6bc23..07b229c 100644
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2
 diff --git a/save.lua b/save.lua
-index 71c75b5..e1f8321 100644
+index 94726fd..5fba16d 100644
 --- a/save.lua
 +++ b/save.lua
 @@ -68,6 +68,10 @@ local function getFilePath(filename)
@@ -382,7 +382,7 @@ index 71c75b5..e1f8321 100644
  function save.init(dir)
      if not dir or dir == "" or (love.system and love.system.getOS() == "Android") or _G.android_console then
          pcall(function()
-@@ -797,4 +801,28 @@ function save.loadFullscreenTutorialSeen()
+@@ -813,4 +817,28 @@ function save.loadFullscreenTutorialSeen()
      return false
  end
  

@@ -459,7 +459,10 @@ function save.saveAchievements(achievements)
     end
 end
 
+local cached_has_last_active_game = nil
+
 function save.saveState(state, mode)
+    cached_has_last_active_game = nil
     local path = save.getStatePath(mode)
     local file = io.open(path, "w")
     if file then
@@ -507,6 +510,7 @@ function save.loadState(mode)
 end
 
 function save.clearState(mode)
+    cached_has_last_active_game = nil
     local path = save.getStatePath(mode)
     os.remove(path)
 end
@@ -721,6 +725,7 @@ end
 local LAST_MODE_FILE = "last_mode.dat"
 
 function save.saveLastMode(mode)
+    cached_has_last_active_game = nil
     local path = getFilePath(LAST_MODE_FILE)
     local file = io.open(path, "w")
     if file then
@@ -743,12 +748,23 @@ function save.loadLastMode()
 end
 
 function save.hasLastActiveGame()
+    if cached_has_last_active_game ~= nil then
+        return cached_has_last_active_game
+    end
     local mode = save.loadLastMode()
-    if not mode then return false end
+    if not mode then
+        cached_has_last_active_game = false
+        return false
+    end
     local state = save.loadState(mode)
-    if not state or not state.gridState then return false end
+    if not state or not state.gridState then
+        cached_has_last_active_game = false
+        return false
+    end
     local s = state.state or 0
-    return s ~= 1 and s ~= 2
+    local has_game = (s ~= 1 and s ~= 2)
+    cached_has_last_active_game = has_game
+    return has_game
 end
 
 local ANDROID_VIEW_MODE_FILE = "android_view_mode.dat"

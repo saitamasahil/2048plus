@@ -579,15 +579,18 @@ function android_console.updateLayout()
     geo.real_w = real_w
     geo.real_h = real_h
 
-    -- 1. Screen Bezel & Display Cutout
     -- Query hardware safe area to clear punch-hole camera or notch
     local safe_top = 0
-    pcall(function()
-        if love.window and love.window.getSafeArea then
-            local _, sy = love.window.getSafeArea()
-            if sy and sy > 0 then safe_top = sy end
+    local safe_bottom = 0
+    if love.window and love.window.getSafeArea then
+        local ok, sx, sy, sw, sh = pcall(love.window.getSafeArea)
+        if ok and sy and sy > 0 then safe_top = sy end
+        if ok and sy and sh and real_h and (sy + sh) < real_h then
+            safe_bottom = real_h - (sy + sh)
         end
-    end)
+    end
+    geo.safe_top = safe_top
+    geo.safe_bottom = safe_bottom
 
     local bezel_margin = math.max(6, math.floor(w * 0.022))
     local bezel_w = w - bezel_margin * 2
@@ -842,31 +845,29 @@ local function getCrtShader()
     end
 end
 
+local function getCachedSafeArea()
+    if not geo.safe_top then
+        android_console.updateLayout()
+    end
+    return geo.safe_top or 0, geo.safe_bottom or 0
+end
+
+local function stubGetDimensions() return 640, 480 end
+local function stubGetWidth() return 640 end
+local function stubGetHeight() return 480 end
+
+local function sendCrtScreenSize(shader, w, h)
+    shader:send("screen_size", {w, h})
+end
+
 local function getBottomNavMargin(w, h)
-    local safe_bottom = 0
-    pcall(function()
-        if love.window and love.window.getSafeArea then
-            local _, sy, _, sh = love.window.getSafeArea()
-            local win_h = select(2, love.graphics.getDimensions())
-            if sh and sh > 0 and win_h and win_h > 0 then
-                safe_bottom = math.max(0, win_h - ((sy or 0) + sh))
-            end
-        end
-    end)
+    local _, safe_bottom = getCachedSafeArea()
     local min_gesture_margin = math.max(math.floor(h * 0.075), math.floor(54 * (w / 390)), 50)
     return math.max(safe_bottom, min_gesture_margin)
 end
 
 local function getTopStatusBarMargin(w, h)
-    local safe_top = 0
-    pcall(function()
-        if love.window and love.window.getSafeArea then
-            local _, sy = love.window.getSafeArea()
-            if sy and sy > 0 then
-                safe_top = sy
-            end
-        end
-    end)
+    local safe_top = getCachedSafeArea()
     local min_status_margin = math.max(math.floor(h * 0.05), math.floor(36 * (w / 390)), 32)
     return math.max(safe_top, min_status_margin)
 end
@@ -2032,13 +2033,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
         fs_canvas_h = vh
     end
 
-    local safe_top = 0
-    pcall(function()
-        if love.window and love.window.getSafeArea then
-            local _, sy = love.window.getSafeArea()
-            if sy and sy > 0 then safe_top = sy end
-        end
-    end)
+    local safe_top = getCachedSafeArea()
     local virt_safe_top = math.max(12, math.floor(safe_top / scale_fs_y))
 
     local board_sz = 358
@@ -2300,7 +2295,8 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
         last_fs_buttons = buttons
     end
 
-    if not is_paused and renderer.drawNowPlayingFooter then
+    local np_track, np_timer = (renderer.getNowPlaying and renderer.getNowPlaying() or nil), 0
+    if not is_paused and np_track and np_timer > 0 and renderer.drawNowPlayingFooter then
         local lowest_btn_y = 0
         for _, btn in ipairs(buttons) do
             if btn.y and btn.h then
@@ -2311,15 +2307,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
             lowest_btn_y = board_bottom
         end
 
-        local safe_bottom = 0
-        pcall(function()
-            if love.window and love.window.getSafeArea then
-                local _, sy, _, sh = love.window.getSafeArea()
-                if sy and sh and sy + sh < real_h then
-                    safe_bottom = real_h - (sy + sh)
-                end
-            end
-        end)
+        local _, safe_bottom = getCachedSafeArea()
         local virt_safe_bottom = math.floor(safe_bottom / scale_fs_y)
         local footer_bottom = vh - virt_safe_bottom
         local footer_cy = math.floor((lowest_btn_y + footer_bottom) / 2)
@@ -2404,9 +2392,9 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         local real_getWidth = love.graphics.getWidth
         local real_getHeight = love.graphics.getHeight
 
-        love.graphics.getDimensions = function() return 640, 480 end
-        love.graphics.getWidth = function() return 640 end
-        love.graphics.getHeight = function() return 480 end
+        love.graphics.getDimensions = stubGetDimensions
+        love.graphics.getWidth = stubGetWidth
+        love.graphics.getHeight = stubGetHeight
 
         game_draw_fn()
 
@@ -3173,10 +3161,8 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
 
         love.graphics.setColor(1, 1, 1, fs_fade)
         if crt then
-            pcall(function()
-                crt:send("screen_size", {vw, vh})
-                love.graphics.setShader(crt)
-            end)
+            pcall(sendCrtScreenSize, crt, vw, vh)
+            love.graphics.setShader(crt)
         end
         love.graphics.draw(fs_canvas, origin_x, settle_y, 0, scale_fs_x, scale_fs_y)
         if crt then
@@ -3204,10 +3190,8 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
 
             love.graphics.setColor(1, 1, 1, fade_out)
             if crt then
-                pcall(function()
-                    crt:send("screen_size", {vw, vh})
-                    love.graphics.setShader(crt)
-                end)
+                pcall(sendCrtScreenSize, crt, vw, vh)
+                love.graphics.setShader(crt)
             end
             love.graphics.draw(fs_canvas, origin_x, fs_slide_y, 0, scale_fs_x, scale_fs_y)
             if crt then

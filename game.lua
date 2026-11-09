@@ -256,13 +256,18 @@ function Game:saveGameState()
                 end
             end
         end
+        local stats_changed = false
         if maxVal > (_G.stats.highest_tile or 0) then
             _G.stats.highest_tile = maxVal
+            stats_changed = true
         end
         if self.score > (_G.stats.highest_score or 0) then
             _G.stats.highest_score = self.score
+            stats_changed = true
         end
-        save.saveStats(_G.stats)
+        if stats_changed then
+            save.saveStats(_G.stats)
+        end
     end
 
     local stateTable = {
@@ -1494,9 +1499,6 @@ function Game:isGameOver()
         return true
     end
     if self.mode == "timeattack" and (self.timesUp or (self.timeLeft and self.timeLeft <= 0)) then
-        return true
-    end
-    if not self.won and not self:movesAvailable() and self.state ~= Game.STATE_TARGETING_BOMB and self.state ~= Game.STATE_TARGETING_SWAP_1 and self.state ~= Game.STATE_TARGETING_SWAP_2 and self.state ~= Game.STATE_TARGETING_SHIELD then
         return true
     end
     return false
