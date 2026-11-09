@@ -138,7 +138,7 @@ index 1aed6ec..871381a 100644
 +    renderer.init()
 +end
 diff --git a/renderer.lua b/renderer.lua
-index 44c89f8..a92eba8 100644
+index 067ebc4..a92eba8 100644
 --- a/renderer.lua
 +++ b/renderer.lua
 @@ -354,7 +354,7 @@ end

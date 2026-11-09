@@ -13981,21 +13981,30 @@ function renderer.drawCatCompanion(cx, cy, scale, game)
     if not _G.active_companion or _G.active_companion ~= "cat" then return end
     if not pet_cat_idle_down_frames or #pet_cat_idle_down_frames == 0 then return end
 
-    local dt = love.timer.getDelta()
+    local dt = math.min(love.timer.getDelta(), 0.05)
     local is_won = (game and game.state == Game.STATE_WON)
     local is_excited = is_won or (_G.pet_excited_timer and _G.pet_excited_timer > 0)
 
     -- Ground ledge position
     local bs = layout.board_size or 300
     local ground_y = layout.board_y
-    if not cat_phys.x or math.abs(cat_phys.y - ground_y) > 120 * scale then
-        cat_phys.x = layout.board_x + bs * 0.5
-        cat_phys.y = ground_y
-    end
-
-    -- Physics boundary bounds
     local min_x = layout.board_x + math.floor(24 * scale)
     local max_x = layout.board_x + bs - math.floor(24 * scale)
+
+    if not cat_phys.x or cat_phys.x < min_x or cat_phys.x > max_x then
+        cat_phys.x = layout.board_x + bs * 0.5
+    end
+
+    if cat_phys.state ~= "happy" then
+        cat_phys.y = ground_y
+        cat_phys.vy = 0
+        cat_phys.is_grounded = true
+    elseif not cat_phys.y or math.abs(cat_phys.y - ground_y) > 160 * scale then
+        cat_phys.y = ground_y
+        cat_phys.vy = 0
+        cat_phys.is_grounded = true
+        cat_phys.state = "idle"
+    end
 
     -- Update cooldown timers
     if _G.pet_excited_timer and _G.pet_excited_timer > 0 then
@@ -14305,20 +14314,30 @@ function renderer.drawDogCompanion(cx, cy, scale, game)
     local breed_frames = pet_dog_breed_frames[active_breed] or pet_dog_breed_frames["roxy"]
     if not breed_frames or not breed_frames.idle1 or #breed_frames.idle1 == 0 then return end
 
-    local dt = love.timer.getDelta()
+    local dt = math.min(love.timer.getDelta(), 0.05)
     local is_won = (game and game.state == Game.STATE_WON)
     local is_excited = is_won or (_G.pet_excited_timer and _G.pet_excited_timer > 0)
 
     -- Ground ledge position
     local bs = layout.board_size or 300
     local ground_y = layout.board_y
-    if not dog_phys.x or math.abs(dog_phys.y - ground_y) > 120 * scale then
-        dog_phys.x = layout.board_x + bs * 0.5
-        dog_phys.y = ground_y
-    end
-
     local min_x = layout.board_x + math.floor(24 * scale)
     local max_x = layout.board_x + bs - math.floor(24 * scale)
+
+    if not dog_phys.x or dog_phys.x < min_x or dog_phys.x > max_x then
+        dog_phys.x = layout.board_x + bs * 0.5
+    end
+
+    if dog_phys.state ~= "jump" then
+        dog_phys.y = ground_y
+        dog_phys.vy = 0
+        dog_phys.is_grounded = true
+    elseif not dog_phys.y or math.abs(dog_phys.y - ground_y) > 160 * scale then
+        dog_phys.y = ground_y
+        dog_phys.vy = 0
+        dog_phys.is_grounded = true
+        dog_phys.state = "idle"
+    end
 
     -- Tick excited timer
     if _G.pet_excited_timer and _G.pet_excited_timer > 0 then
