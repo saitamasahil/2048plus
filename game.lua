@@ -112,9 +112,6 @@ function Game.new(mode)
         self.state = savedState.state or Game.STATE_PLAYING
         self.prevShieldState = savedState.prevShieldState
         self.won = savedState.won or false
-        if self.state == Game.STATE_PAUSED then
-            self.state = self.won and Game.STATE_ENDLESS or (self:movesAvailable() and Game.STATE_PLAYING or Game.STATE_LOST)
-        end
         self.canUndo = savedState.canUndo or false
         self.grid:restoreState(savedState.gridState)
         if savedState.undoHistory then
@@ -146,6 +143,15 @@ function Game.new(mode)
             else
                 self.timesUp = (self.timeLeft <= 0)
             end
+        end
+
+        if self.mode == "timeattack" and (self.timesUp or (self.timeLeft and self.timeLeft <= 0)) then
+            self.state = Game.STATE_LOST
+            self.timesUp = true
+        elseif self.state == Game.STATE_PAUSED then
+            self.state = self.won and Game.STATE_ENDLESS or (self:movesAvailable() and Game.STATE_PLAYING or Game.STATE_LOST)
+        elseif self.state == Game.STATE_PLAYING and not self.won and not self:movesAvailable() then
+            self.state = Game.STATE_LOST
         end
 
         local saved_undo = savedState.undo_used_this_run
@@ -1483,7 +1489,23 @@ function Game:cancelShieldTargeting()
     end
 end
 
+function Game:isGameOver()
+    if self.state == Game.STATE_LOST then
+        return true
+    end
+    if self.mode == "timeattack" and (self.timesUp or (self.timeLeft and self.timeLeft <= 0)) then
+        return true
+    end
+    if not self.won and not self:movesAvailable() and self.state ~= Game.STATE_TARGETING_BOMB and self.state ~= Game.STATE_TARGETING_SWAP_1 and self.state ~= Game.STATE_TARGETING_SWAP_2 and self.state ~= Game.STATE_TARGETING_SHIELD then
+        return true
+    end
+    return false
+end
+
 function Game:isPlaying()
+    if self:isGameOver() then
+        return false
+    end
     return self.state == Game.STATE_PLAYING or self.state == Game.STATE_ENDLESS or
            self.state == Game.STATE_TARGETING_BOMB or self.state == Game.STATE_TARGETING_SWAP_1 or
            self.state == Game.STATE_TARGETING_SWAP_2 or self.state == Game.STATE_TARGETING_SHIELD

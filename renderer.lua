@@ -6186,7 +6186,18 @@ function renderer.drawOverlay(game)
 
     local bx, by = layout.board_x, layout.board_y
     local bs = layout.board_size
-    local dt = love.timer.getDelta()
+    local raw_dt = love.timer.getDelta()
+    local dt = math.min(raw_dt, 0.05)
+    local is_transitioning = _G.screen_transition_active
+    if not is_transitioning then
+        local ac = _G.android_console or package.loaded["android.android_console"] or package.loaded["android_console"]
+        if ac and ac.isTransitionActive and ac.isTransitionActive() then
+            is_transitioning = true
+        end
+    end
+    if is_transitioning then
+        dt = 0
+    end
 
     if game.state == Game.STATE_WON then
         if not _G.screen_transitions then
@@ -10615,12 +10626,20 @@ local function drawBgmNowPlaying()
 end
 
 -- Game start transition
-function renderer.triggerGameStartTransition(mode, is_continue)
+function renderer.triggerGameStartTransition(mode, is_continue, game_obj)
+    local g = game_obj or _G.game
     if renderer.clearHeaderLogoMorph then
         renderer.clearHeaderLogoMorph()
     end
     if renderer.resetPauseAnim then
         renderer.resetPauseAnim()
+    end
+    local is_ended = g and (g.isGameOver and g:isGameOver() or g.state == Game.STATE_LOST or (g.mode == "timeattack" and (g.timesUp or (g.timeLeft and g.timeLeft <= 0))) or g.state == Game.STATE_WON)
+    if is_ended then
+        game_start_transition.active = false
+        pause_trans.game_over_timer = 0
+        win_timer = 0
+        return
     end
     if not _G.screen_transitions then
         game_start_transition.active = false
@@ -10647,6 +10666,9 @@ function renderer.isGameStartTransitionActive()
 end
 
 function renderer.dismissGameStartTransition()
+    if game_start_transition then
+        game_start_transition.active = false
+    end
 end
 
 -- ============================================================================
@@ -10662,6 +10684,11 @@ function renderer.draw(game, skip_transition)
 
     renderer.drawHeader(game)
     renderer.drawScores(game)
+
+    local is_ended = game and (game.isGameOver and game:isGameOver() or game.state == Game.STATE_LOST or (game.mode == "timeattack" and (game.timesUp or (game.timeLeft and game.timeLeft <= 0))) or game.state == Game.STATE_WON)
+    if is_ended and game_start_transition then
+        game_start_transition.active = false
+    end
 
     if _G.screen_transitions and game_start_transition and game_start_transition.active then
         local dur = (((game and game.size or 4) - 1) * 2) * 0.04 + 0.42

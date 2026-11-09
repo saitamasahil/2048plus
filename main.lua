@@ -606,6 +606,7 @@ function love.update(dt)
     if screen_transition_timer > 0 then
         screen_transition_timer = math.max(0, screen_transition_timer - dt)
     end
+    _G.screen_transition_active = screen_transition_timer > 0
 
     -- Global exit combo: MENU + START
     -- Require distinct MENU and BACK keys to avoid accidental exit
@@ -817,7 +818,7 @@ function love.update(dt)
                             game = Game.new(mode)
                             _G.game = game
                             if renderer.triggerGameStartTransition then
-                                renderer.triggerGameStartTransition(mode, true)
+                                renderer.triggerGameStartTransition(mode, true, game)
                             end
                         end
                     elseif sel == "Play Game" then
@@ -1231,14 +1232,14 @@ function love.update(dt)
                         game = Game.new("classic")
                         _G.game = game
                         if renderer.triggerGameStartTransition then
-                            renderer.triggerGameStartTransition("classic", false)
+                            renderer.triggerGameStartTransition("classic", false, game)
                         end
                     elseif _G.play_select_selection == 2 then
                         _G.appState = "GAME"
                         game = Game.new("plus")
                         _G.game = game
                         if renderer.triggerGameStartTransition then
-                            renderer.triggerGameStartTransition("plus", false)
+                            renderer.triggerGameStartTransition("plus", false, game)
                         end
                     elseif _G.play_select_selection == 3 then
                         _G.appState = "ARCADE_MENU"
@@ -1283,7 +1284,7 @@ function love.update(dt)
                     game = Game.new(mode)
                     _G.game = game
                     if renderer.triggerGameStartTransition then
-                        renderer.triggerGameStartTransition(mode, false)
+                        renderer.triggerGameStartTransition(mode, false, game)
                     end
                 end)
             elseif event == input.events.BACK then
@@ -1956,7 +1957,7 @@ function love.update(dt)
                     end
                     game:restart()
                     if renderer.triggerGameStartTransition then
-                        renderer.triggerGameStartTransition(game.mode, false)
+                        renderer.triggerGameStartTransition(game.mode, false, game)
                     end
                 end)
             elseif event == input.events.L1 or event == input.events.R1 then
@@ -2011,7 +2012,7 @@ function love.update(dt)
                 queueTransitionAction(event, 0.08, function()
                     game:restart()
                     if renderer.triggerGameStartTransition then
-                        renderer.triggerGameStartTransition(game.mode, false)
+                        renderer.triggerGameStartTransition(game.mode, false, game)
                     end
                 end)
             elseif event == input.events.X then
@@ -2043,7 +2044,7 @@ function love.update(dt)
                 queueTransitionAction(event, 0.08, function()
                     game:restart()
                     if renderer.triggerGameStartTransition then
-                        renderer.triggerGameStartTransition(game.mode, false)
+                        renderer.triggerGameStartTransition(game.mode, false, game)
                     end
                 end)
             elseif event == input.events.BACK then
@@ -2212,6 +2213,7 @@ local function draw_internal()
     local w, h = sc_w, sc_h
 
     if screen_transition_timer > 0 then
+        _G.screen_transition_active = true
         -- Ease-out transition curve
         local t_progress = 1 - (screen_transition_timer / screen_transition_duration)
         local p = 1 - math.pow(1 - t_progress, 3)
@@ -2299,6 +2301,7 @@ local function draw_internal()
 
         love.graphics.setColor(1, 1, 1, 1)
     else
+        _G.screen_transition_active = false
         _G.screen_canvas_ready = false
         drawCurrentScreen()
     end

@@ -477,6 +477,10 @@ function android_console.getViewMode()
     return android_view_mode
 end
 
+function android_console.isTransitionActive()
+    return transition_active
+end
+
 function android_console.setViewMode(mode)
     if mode ~= "fullscreen" and mode ~= "console" then return end
     if mode == android_view_mode and not transition_active then return end
@@ -2368,48 +2372,50 @@ end
 function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_alpha, skip_screen_draw)
     local w, h = love.graphics.getDimensions()
     local is_gameplay = (_G.appState == "GAME")
-
-    _G.android_fullscreen = false
-    _G.hide_game_footer = false
-    _G.android_header_y = nil
-    _G.android_board_y = nil
-    _G.android_toast_y = nil
-
-    -- 1. Render game scene into virtual 640x480 canvas
     local canvas = android_console.getCanvas()
-    love.graphics.setCanvas({canvas, stencil = true})
-    love.graphics.clear(0, 0, 0, 1)
 
-    -- Ensure directional states clear when touches are inactive
-    if next(active_touches) == nil and next(swipe_track) == nil and input and input.state and input.events then
-        if not love.keyboard or not (love.keyboard.isDown("up") or love.keyboard.isDown("down") or love.keyboard.isDown("left") or love.keyboard.isDown("right")) then
-            if input.state[input.events.UP] then releaseEvent(input.events.UP) end
-            if input.state[input.events.DOWN] then releaseEvent(input.events.DOWN) end
-            if input.state[input.events.LEFT] then releaseEvent(input.events.LEFT) end
-            if input.state[input.events.RIGHT] then releaseEvent(input.events.RIGHT) end
+    if not skip_screen_draw then
+        _G.android_fullscreen = false
+        _G.hide_game_footer = false
+        _G.android_header_y = nil
+        _G.android_board_y = nil
+        _G.android_toast_y = nil
+
+        -- 1. Render game scene into virtual 640x480 canvas
+        love.graphics.setCanvas({canvas, stencil = true})
+        love.graphics.clear(0, 0, 0, 1)
+
+        -- Ensure directional states clear when touches are inactive
+        if next(active_touches) == nil and next(swipe_track) == nil and input and input.state and input.events then
+            if not love.keyboard or not (love.keyboard.isDown("up") or love.keyboard.isDown("down") or love.keyboard.isDown("left") or love.keyboard.isDown("right")) then
+                if input.state[input.events.UP] then releaseEvent(input.events.UP) end
+                if input.state[input.events.DOWN] then releaseEvent(input.events.DOWN) end
+                if input.state[input.events.LEFT] then releaseEvent(input.events.LEFT) end
+                if input.state[input.events.RIGHT] then releaseEvent(input.events.RIGHT) end
+            end
         end
+
+        -- Force scale to 1.0 inside virtual canvas
+        _G.scale = 1.0
+        _G.sx = 1.0
+        _G.sy = 1.0
+
+        local real_getDimensions = love.graphics.getDimensions
+        local real_getWidth = love.graphics.getWidth
+        local real_getHeight = love.graphics.getHeight
+
+        love.graphics.getDimensions = function() return 640, 480 end
+        love.graphics.getWidth = function() return 640 end
+        love.graphics.getHeight = function() return 480 end
+
+        game_draw_fn()
+
+        love.graphics.getDimensions = real_getDimensions
+        love.graphics.getWidth = real_getWidth
+        love.graphics.getHeight = real_getHeight
+
+        love.graphics.setCanvas()
     end
-
-    -- Force scale to 1.0 inside virtual canvas
-    _G.scale = 1.0
-    _G.sx = 1.0
-    _G.sy = 1.0
-
-    local real_getDimensions = love.graphics.getDimensions
-    local real_getWidth = love.graphics.getWidth
-    local real_getHeight = love.graphics.getHeight
-
-    love.graphics.getDimensions = function() return 640, 480 end
-    love.graphics.getWidth = function() return 640 end
-    love.graphics.getHeight = function() return 480 end
-
-    game_draw_fn()
-
-    love.graphics.getDimensions = real_getDimensions
-    love.graphics.getWidth = real_getWidth
-    love.graphics.getHeight = real_getHeight
-
-    love.graphics.setCanvas()
 
     love.graphics.push("all")
 
@@ -3181,7 +3187,7 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
             local chassis_p = t / 0.65
             local fade_out = (1.0 - chassis_p) ^ 1.4
             local slide_y = chassis_p * 32
-            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_out, false)
+            android_console.drawConsole(game_draw_fn, dt, slide_y, fade_out, true)
         end
     else
         -- Fullscreen to Console
