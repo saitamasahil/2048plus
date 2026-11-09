@@ -44,6 +44,13 @@ local vinyl_record_img = nil
 local music_manager_icon = nil
 local dino_icon = nil
 local playlist_icon = nil
+local music_icon = nil
+local track_play_icon = nil
+local track_pause_icon = nil
+local achievement_icons = {}
+local achievementsList = nil
+local game_start_transition = nil
+local layout = nil
 local jukebox_modal_state = "closed"
 local jukebox_modal_timer = 0
 local jukebox_modal_anim = 0
@@ -3603,7 +3610,7 @@ end
 -- ============================================================================
 -- Layout
 -- ============================================================================
-local layout = {
+layout = {
     board_x = 0, board_y = 0,
     board_size = 0,
     cell_size = 0,
@@ -4510,7 +4517,7 @@ local function drawGooseTile(cx, cy, size, scale, shouldWaddle, tile, slideProgr
     love.graphics.pop()
 end
 
-local game_start_transition = {
+game_start_transition = {
     active = false,
     start_time = 0,
     duration = 0.66,
@@ -6267,6 +6274,7 @@ function renderer.drawOverlay(game)
 
     local bx, by = layout.board_x, layout.board_y
     local bs = layout.board_size
+    local scale = _G.scale or 1.0
     local raw_dt = love.timer.getDelta()
     local dt = math.min(raw_dt, 0.05)
     local is_transitioning = _G.screen_transition_active
@@ -10808,7 +10816,7 @@ end
 -- ============================================================================
 -- Achievements Screen
 -- ============================================================================
-local achievementsList = {
+achievementsList = {
     -- First Steps
     { id = "ach_first_game",       name = "First Steps",       desc = "Play your first game",                                           reward = "Ocean Theme",      coins = 20  },
 
@@ -11112,6 +11120,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
     -- Helper to format numbers with commas
     local function formatNum(n)
         local formatted = tostring(math.floor(n or 0))
+        local k = nil
         while true do
             formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
             if k == 0 then break end

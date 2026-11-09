@@ -227,8 +227,9 @@ function Game.new(mode)
     end
 
     -- Clear lingering menu coin banners on new game
-    if renderer and renderer.clearHeaderLogoMorph then
-        renderer.clearHeaderLogoMorph()
+    local rend = _G.renderer or package.loaded["renderer"]
+    if rend and rend.clearHeaderLogoMorph then
+        rend.clearHeaderLogoMorph()
     end
 
     -- Trigger First Steps achievement
@@ -1498,9 +1499,10 @@ function Game:confirmShieldTarget()
     end
 
     if sound and sound.playBomb then sound.playBomb() end
-    if renderer and renderer.showToast then
+    local rend = _G.renderer or package.loaded["renderer"]
+    if rend and rend.showToast then
         local lbl = (self.shield_mode == "row" and "Row " or "Column ") .. tostring(self.shield_index)
-        renderer.showToast("Shield Cleared " .. lbl .. "!")
+        rend.showToast("Shield Cleared " .. lbl .. "!")
     end
 
     -- Return to active gameplay

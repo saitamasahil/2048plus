@@ -679,8 +679,9 @@ function sound.exitJukebox()
         sound.stopWebServer()
     end
     _G.jukebox_web_modal = false
-    if renderer and renderer.resetJukeboxModalAnim then
-        renderer.resetJukeboxModalAnim()
+    local rend = _G.renderer or package.loaded["renderer"]
+    if rend and rend.resetJukeboxModalAnim then
+        rend.resetJukeboxModalAnim()
     end
     sound.stopBgm()
     _G.jukebox_prev_track = nil

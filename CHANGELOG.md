@@ -17,6 +17,9 @@
 - Fixed undo animation reverse play when tapping direction keys without moves
 - Fixed audio stopping on app resume and prevented crash during background calls on Android
 - Fixed CRT shader rendering during fullscreen mode transitions on Android
+- Fixed virtual button remaining in pressed state when transitions are disabled in Android console
+- Fixed companion pet floating after resuming on Android
+- Fixed board grid start cascade transition scoping and preloaded achievement icons
 
 ## [8.0.1]
 - Minor UI Improvements
