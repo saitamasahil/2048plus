@@ -4748,9 +4748,12 @@ function updateStorage() {
     .then(data => {
       if (data && data.storage) {
         const freeMb = data.storage.free_mb;
-        const text = freeMb >= 1024 
-          ? `${(freeMb / 1024).toFixed(1)} GB Free` 
-          : `${freeMb} MB Free`;
+        let text = "Storage Available";
+        if (freeMb && freeMb > 0) {
+          text = freeMb >= 1024 
+            ? `${(freeMb / 1024).toFixed(1)} GB Free` 
+            : `${freeMb} MB Free`;
+        }
         document.getElementById("storageText").textContent = text;
       }
     })
