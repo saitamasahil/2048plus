@@ -1266,6 +1266,19 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
             if touch.event then releaseEvent(touch.event) end
             fs_active_touches[id] = nil
         end
+        if active_touches[id] then
+            local touch = active_touches[id]
+            if touch.event then releaseEvent(touch.event) end
+            if touch.name then button_states[touch.name] = nil end
+            if touch.type == "dpad" then
+                button_states["dpad"] = nil
+                releaseEvent(input.events.UP)
+                releaseEvent(input.events.DOWN)
+                releaseEvent(input.events.LEFT)
+                releaseEvent(input.events.RIGHT)
+            end
+            active_touches[id] = nil
+        end
 
         local sw = fs_swipe_track[id]
         if sw and not sw.fired then
@@ -2393,13 +2406,19 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         love.graphics.setCanvas({canvas, stencil = true})
         love.graphics.clear(0, 0, 0, 1)
 
-        -- Ensure directional states clear when touches are inactive
+        -- Ensure input states clear when touches are inactive
         if next(active_touches) == nil and next(swipe_track) == nil and input and input.state and input.events then
             if not love.keyboard or not (love.keyboard.isDown("up") or love.keyboard.isDown("down") or love.keyboard.isDown("left") or love.keyboard.isDown("right")) then
                 if input.state[input.events.UP] then releaseEvent(input.events.UP) end
                 if input.state[input.events.DOWN] then releaseEvent(input.events.DOWN) end
                 if input.state[input.events.LEFT] then releaseEvent(input.events.LEFT) end
                 if input.state[input.events.RIGHT] then releaseEvent(input.events.RIGHT) end
+            end
+            if not love.keyboard or not love.keyboard.isDown("return") then
+                if input.state[input.events.CONFIRM] then releaseEvent(input.events.CONFIRM) end
+            end
+            if not love.keyboard or not (love.keyboard.isDown("escape") or love.keyboard.isDown("backspace")) then
+                if input.state[input.events.BACK] then releaseEvent(input.events.BACK) end
             end
         end
 
@@ -3209,8 +3228,60 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
     end
 end
 
+-- Reconcile active touches with hardware touch state
+local function reconcileActiveTouches()
+    if love.touch and love.touch.getTouches then
+        local raw = love.touch.getTouches()
+        local live = {}
+        for _, id in ipairs(raw) do
+            live[id] = true
+        end
+        local mouse_down = love.mouse and love.mouse.isDown and love.mouse.isDown(1)
+        for id, touch in pairs(active_touches) do
+            if id == "mouse" then
+                if not mouse_down then
+                    if touch.event then releaseEvent(touch.event) end
+                    active_touches[id] = nil
+                end
+            elseif not live[id] then
+                if touch.event then releaseEvent(touch.event) end
+                active_touches[id] = nil
+            end
+        end
+        for id, touch in pairs(fs_active_touches) do
+            if id == "mouse" then
+                if not mouse_down then
+                    if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
+                    if touch.event then releaseEvent(touch.event) end
+                    fs_active_touches[id] = nil
+                end
+            elseif not live[id] then
+                if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
+                if touch.event then releaseEvent(touch.event) end
+                fs_active_touches[id] = nil
+            end
+        end
+    end
+
+    for k in pairs(button_states) do
+        button_states[k] = nil
+    end
+    for _, touch in pairs(active_touches) do
+        if touch.name then
+            button_states[touch.name] = true
+        end
+        if touch.type == "dpad" and touch.dir then
+            button_states["dpad"] = touch.dir
+        end
+    end
+    if next(fs_active_touches) == nil and fs_button_pressed then
+        fs_button_pressed = nil
+    end
+end
+
 -- Primary draw dispatch
 function android_console.draw(game_draw_fn)
+    reconcileActiveTouches()
     local rw, rh = love.graphics.getDimensions()
     if rw > rh then
         -- Landscape mode: render native handheld display without console chassis
