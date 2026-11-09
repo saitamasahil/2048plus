@@ -856,6 +856,23 @@ local function stubGetDimensions() return 640, 480 end
 local function stubGetWidth() return 640 end
 local function stubGetHeight() return 480 end
 
+local function stubFsDimensions() return _G.android_fs_vw or 390, _G.android_fs_vh or 800 end
+local function stubFsWidth() return _G.android_fs_vw or 390 end
+local function stubFsHeight() return _G.android_fs_vh or 800 end
+
+local function drawConsoleScreenStencil()
+    love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, geo.screen_rx or 12, geo.screen_ry or 12)
+end
+
+local last_power_check_time = 0
+local cached_power_state = nil
+local cached_power_percent = 100
+
+local spk_hl_col = {0, 0, 0, 0}
+local spk_hole_col = {0, 0, 0, 0}
+local spk_dish_col = {0, 0, 0, 0}
+local spk_shadow_col = {0, 0, 0, 0}
+
 local function sendCrtScreenSize(shader, w, h)
     shader:send("screen_size", {w, h})
 end
@@ -2057,9 +2074,9 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     local real_getWidth = love.graphics.getWidth
     local real_getHeight = love.graphics.getHeight
 
-    love.graphics.getDimensions = function() return vw, vh end
-    love.graphics.getWidth = function() return vw end
-    love.graphics.getHeight = function() return vh end
+    love.graphics.getDimensions = stubFsDimensions
+    love.graphics.getWidth = stubFsWidth
+    love.graphics.getHeight = stubFsHeight
 
     game_draw_fn()
 
@@ -2482,40 +2499,25 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         dark_factor = 1.0 - u * u * (3.0 - 2.0 * u)
     end
 
-    local l_hl = {math.min(1, cr * 1.35 + 0.15), math.min(1, cg * 1.35 + 0.15), math.min(1, cb * 1.35 + 0.15), 0.60}
-    local l_hole = {cr * 0.20, cg * 0.20, cb * 0.20, 0.95}
-    local l_dish = {cr * 0.88, cg * 0.88, cb * 0.88, 0.70}
-    local l_sh = {cr * 0.68, cg * 0.68, cb * 0.68, 0.45}
+    spk_hl_col[1] = math.min(1, cr * 1.35 + 0.15) * (1 - dark_factor) + dark_factor
+    spk_hl_col[2] = math.min(1, cg * 1.35 + 0.15) * (1 - dark_factor) + dark_factor
+    spk_hl_col[3] = math.min(1, cb * 1.35 + 0.15) * (1 - dark_factor) + dark_factor
+    spk_hl_col[4] = 0.60 + (0.22 - 0.60) * dark_factor
 
-    local d_hl = {1, 1, 1, 0.22}
-    local d_hole = {0, 0, 0, 0.95}
-    local d_dish = {0, 0, 0, 0.25}
-    local d_sh = {0, 0, 0, 0.45}
+    spk_hole_col[1] = (cr * 0.20) * (1 - dark_factor)
+    spk_hole_col[2] = (cg * 0.20) * (1 - dark_factor)
+    spk_hole_col[3] = (cb * 0.20) * (1 - dark_factor)
+    spk_hole_col[4] = 0.95
 
-    local hl_col = {
-        l_hl[1] + (d_hl[1] - l_hl[1]) * dark_factor,
-        l_hl[2] + (d_hl[2] - l_hl[2]) * dark_factor,
-        l_hl[3] + (d_hl[3] - l_hl[3]) * dark_factor,
-        l_hl[4] + (d_hl[4] - l_hl[4]) * dark_factor,
-    }
-    local hole_col = {
-        l_hole[1] + (d_hole[1] - l_hole[1]) * dark_factor,
-        l_hole[2] + (d_hole[2] - l_hole[2]) * dark_factor,
-        l_hole[3] + (d_hole[3] - l_hole[3]) * dark_factor,
-        l_hole[4] + (d_hole[4] - l_hole[4]) * dark_factor,
-    }
-    local dish_col = {
-        l_dish[1] + (d_dish[1] - l_dish[1]) * dark_factor,
-        l_dish[2] + (d_dish[2] - l_dish[2]) * dark_factor,
-        l_dish[3] + (d_dish[3] - l_dish[3]) * dark_factor,
-        l_dish[4] + (d_dish[4] - l_dish[4]) * dark_factor,
-    }
-    local shadow_col = {
-        l_sh[1] + (d_sh[1] - l_sh[1]) * dark_factor,
-        l_sh[2] + (d_sh[2] - l_sh[2]) * dark_factor,
-        l_sh[3] + (d_sh[3] - l_sh[3]) * dark_factor,
-        l_sh[4] + (d_sh[4] - l_sh[4]) * dark_factor,
-    }
+    spk_dish_col[1] = (cr * 0.88) * (1 - dark_factor)
+    spk_dish_col[2] = (cg * 0.88) * (1 - dark_factor)
+    spk_dish_col[3] = (cb * 0.88) * (1 - dark_factor)
+    spk_dish_col[4] = 0.70 + (0.25 - 0.70) * dark_factor
+
+    spk_shadow_col[1] = (cr * 0.68) * (1 - dark_factor)
+    spk_shadow_col[2] = (cg * 0.68) * (1 - dark_factor)
+    spk_shadow_col[3] = (cb * 0.68) * (1 - dark_factor)
+    spk_shadow_col[4] = 0.45
 
     local dish_r = math.max(16, math.floor(20 * (w / 390)))
 
@@ -2533,15 +2535,15 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     end
 
     -- Lower highlight rim on dish
-    love.graphics.setColor(hl_col)
+    love.graphics.setColor(spk_hl_col)
     love.graphics.circle("fill", spk_x, spk_y + 1, dish_r)
 
     -- Dish recessed bed
-    love.graphics.setColor(dish_col)
+    love.graphics.setColor(spk_dish_col)
     love.graphics.circle("fill", spk_x, spk_y, dish_r)
 
     -- Inset top inner shadow
-    love.graphics.setColor(shadow_col)
+    love.graphics.setColor(spk_shadow_col)
     love.graphics.setLineWidth(1)
     love.graphics.circle("line", spk_x, spk_y, dish_r)
 
@@ -2554,9 +2556,9 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     local r_outer = dish_r * 0.78
 
     -- Center port
-    love.graphics.setColor(hl_col)
+    love.graphics.setColor(spk_hl_col)
     love.graphics.circle("fill", spk_x, spk_y + 0.9, center_r)
-    love.graphics.setColor(hole_col)
+    love.graphics.setColor(spk_hole_col)
     love.graphics.circle("fill", spk_x, spk_y, center_r)
 
     -- Inner ring ports
@@ -2565,14 +2567,14 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         local hx = spk_x + r_inner * math.cos(a_rad)
         local hy = spk_y + r_inner * math.sin(a_rad)
         if inner_glint > 0 then
-            love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], math.min(1.0, hl_col[4] + inner_glint))
+            love.graphics.setColor(spk_hl_col[1], spk_hl_col[2], spk_hl_col[3], math.min(1.0, spk_hl_col[4] + inner_glint))
             love.graphics.circle("fill", hx, hy + 0.9, inner_r)
-            love.graphics.setColor(hole_col[1] + inner_glint * 0.5, hole_col[2] + inner_glint * 0.5, hole_col[3] + inner_glint * 0.5, hole_col[4])
+            love.graphics.setColor(spk_hole_col[1] + inner_glint * 0.5, spk_hole_col[2] + inner_glint * 0.5, spk_hole_col[3] + inner_glint * 0.5, spk_hole_col[4])
             love.graphics.circle("fill", hx, hy, inner_r)
         else
-            love.graphics.setColor(hl_col)
+            love.graphics.setColor(spk_hl_col)
             love.graphics.circle("fill", hx, hy + 0.9, inner_r)
-            love.graphics.setColor(hole_col)
+            love.graphics.setColor(spk_hole_col)
             love.graphics.circle("fill", hx, hy, inner_r)
         end
     end
@@ -2583,14 +2585,14 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         local hx = spk_x + r_outer * math.cos(a_rad)
         local hy = spk_y + r_outer * math.sin(a_rad)
         if outer_glint > 0 then
-            love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], math.min(1.0, hl_col[4] + outer_glint))
+            love.graphics.setColor(spk_hl_col[1], spk_hl_col[2], spk_hl_col[3], math.min(1.0, spk_hl_col[4] + outer_glint))
             love.graphics.circle("fill", hx, hy + 0.9, outer_r)
-            love.graphics.setColor(hole_col[1] + outer_glint * 0.5, hole_col[2] + outer_glint * 0.5, hole_col[3] + outer_glint * 0.5, hole_col[4])
+            love.graphics.setColor(spk_hole_col[1] + outer_glint * 0.5, spk_hole_col[2] + outer_glint * 0.5, spk_hole_col[3] + outer_glint * 0.5, spk_hole_col[4])
             love.graphics.circle("fill", hx, hy, outer_r)
         else
-            love.graphics.setColor(hl_col)
+            love.graphics.setColor(spk_hl_col)
             love.graphics.circle("fill", hx, hy + 0.9, outer_r)
-            love.graphics.setColor(hole_col)
+            love.graphics.setColor(spk_hole_col)
             love.graphics.circle("fill", hx, hy, outer_r)
         end
     end
@@ -2622,9 +2624,7 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
             renderer.drawCrtScreenWithTransition(canvas, crt, geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, geo.screen_x, geo.screen_y, geo.scale_x, geo.scale_y, s_rx, s_ry)
         else
             love.graphics.setColor(1, 1, 1, 1)
-            love.graphics.stencil(function()
-                love.graphics.rectangle("fill", geo.screen_x, geo.screen_y, geo.screen_w, geo.screen_h, s_rx, s_ry)
-            end, "replace", 1)
+            love.graphics.stencil(drawConsoleScreenStencil, "replace", 1)
             love.graphics.setStencilTest("greater", 0)
 
             if crt then
@@ -2653,14 +2653,19 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
     local led_y = by + math.floor(pad_top / 2)
     local led_r = math.max(2.5, math.floor(3.5 * (w / 390)))
 
-    local state, percent = nil, 100
-    pcall(function()
-        if love.system and love.system.getPowerInfo then
-            local s, p = love.system.getPowerInfo()
-            if s then state = tostring(s):lower() end
-            if p and type(p) == "number" and p >= 0 then percent = p end
-        end
-    end)
+    local now_t = love.timer.getTime()
+    if not last_power_check_time or (now_t - last_power_check_time) >= 5.0 then
+        last_power_check_time = now_t
+        pcall(function()
+            if love.system and love.system.getPowerInfo then
+                local s, p = love.system.getPowerInfo()
+                if s then cached_power_state = tostring(s):lower() end
+                if p and type(p) == "number" and p >= 0 then cached_power_percent = p end
+            end
+        end)
+    end
+    local state = cached_power_state
+    local percent = cached_power_percent or 100
 
     local is_charging = (state and (state:find("charg") ~= nil or (state == "nobattery" and percent and percent > 0)))
     if _G.battery_charging_override ~= nil then

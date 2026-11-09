@@ -1,6 +1,6 @@
 diff --git a/conf.lua b/conf.lua
 index 8b3ce51..94814dd 100644
---- a/conf.lua
+--- a/conf.lua	
 +++ b/conf.lua
 @@ -8,7 +8,9 @@ function love.conf(t)
      t.window.width = 640
@@ -24,7 +24,7 @@ index 8b3ce51..94814dd 100644
      t.modules.touch = true
 diff --git a/globals.lua b/globals.lua
 index 0e21883..184db2e 100644
---- a/globals.lua
+--- a/globals.lua	
 +++ b/globals.lua
 @@ -79,6 +79,8 @@ _G.time_attack_time = 60
  _G.vibration = true
@@ -37,7 +37,7 @@ index 0e21883..184db2e 100644
  _G.achievements = {
 diff --git a/input.lua b/input.lua
 index 46d3d37..9fd0948 100644
---- a/input.lua
+--- a/input.lua	
 +++ b/input.lua
 @@ -119,6 +119,19 @@ local function is_directional(event)
  end
@@ -74,8 +74,8 @@ index 46d3d37..9fd0948 100644
      if event then
          input.state[event] = true
 diff --git a/main.lua b/main.lua
-index e01c9ca..2e6d457 100644
---- a/main.lua
+index 1aed6ec..871381a 100644
+--- a/main.lua	
 +++ b/main.lua
 @@ -105,6 +105,9 @@ local function queueTransitionAction(key, delay, action, direction)
  end
@@ -127,7 +127,7 @@ index e01c9ca..2e6d457 100644
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2576,3 +2592,9 @@ function love.visible(v)
+@@ -2588,3 +2604,9 @@ function love.visible(v)
          end
      end
  end
@@ -139,7 +139,7 @@ index e01c9ca..2e6d457 100644
 +end
 diff --git a/renderer.lua b/renderer.lua
 index a95d4e7..9074fa9 100644
---- a/renderer.lua
+--- a/renderer.lua	
 +++ b/renderer.lua
 @@ -354,7 +354,7 @@ end
  
@@ -368,8 +368,8 @@ index a95d4e7..9074fa9 100644
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2
 diff --git a/save.lua b/save.lua
-index 94726fd..5fba16d 100644
---- a/save.lua
+index cc6e558..fe9c59c 100644
+--- a/save.lua	
 +++ b/save.lua
 @@ -68,6 +68,10 @@ local function getFilePath(filename)
      end
@@ -382,7 +382,7 @@ index 94726fd..5fba16d 100644
  function save.init(dir)
      if not dir or dir == "" or (love.system and love.system.getOS() == "Android") or _G.android_console then
          pcall(function()
-@@ -813,4 +817,28 @@ function save.loadFullscreenTutorialSeen()
+@@ -795,4 +799,28 @@ function save.loadFullscreenTutorialSeen()
      return false
  end
  

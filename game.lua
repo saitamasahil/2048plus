@@ -245,7 +245,13 @@ function Game.new(mode)
     return self
 end
 
-function Game:saveGameState()
+function Game:saveGameState(force)
+    if not force and self.animationTimer and self.animationTimer > 0 then
+        self.savePending = true
+        return
+    end
+    self.savePending = false
+
     if _G.stats then
         local maxVal = 0
         for x = 1, self.size do
@@ -265,9 +271,15 @@ function Game:saveGameState()
             _G.stats.highest_score = self.score
             stats_changed = true
         end
-        if stats_changed then
+        if stats_changed or self.statsDirty then
+            self.statsDirty = false
             save.saveStats(_G.stats)
         end
+    end
+
+    if self.highScoreDirty then
+        self.highScoreDirty = false
+        save.saveHighScore(self.highScore, self.mode)
     end
 
     local stateTable = {
@@ -296,6 +308,10 @@ function Game:saveGameState()
         stateTable.timesUp = self.timesUp
     end
     save.saveState(stateTable, self.mode)
+end
+
+function Game:flushSaveState()
+    self:saveGameState(true)
 end
 
 function Game:addStartTiles()
@@ -532,7 +548,7 @@ function Game:move(direction)
                                 coins_to_add = coins_to_add * 2
                             end
                             _G.stats.coins = (_G.stats.coins or 0) + coins_to_add
-                            save.saveStats(_G.stats)
+                            self.statsDirty = true
                             -- Coin Hoarder achievement: accumulate 10,000 coins
                             if _G.stats.coins >= 10000 and _G.unlockAchievement then
                                 _G.unlockAchievement("ach_coin_hoarder")
@@ -542,7 +558,7 @@ function Game:move(direction)
                     end
                     if self.score > self.highScore then
                         self.highScore = self.score
-                        save.saveHighScore(self.highScore, self.mode)
+                        self.highScoreDirty = true
                     end
 
                     -- Check powerup milestone unlocks
@@ -583,6 +599,7 @@ function Game:move(direction)
                         self.state = Game.STATE_WON
                         local sound = require("sound")
                         sound.playVictory()
+                        self:flushSaveState()
                     end
 
                     if self.mode == "classic" and merged.value >= 2048 and _G.unlockAchievement then
@@ -772,12 +789,13 @@ function Game:move(direction)
             if self.score >= 100000 then _G.unlockAchievement("ach_score_100k") end
             if self.score >= 250000 then _G.unlockAchievement("ach_score_250k") end
         end
-        self:saveGameState()
-        -- Check for loss
         if not self:movesAvailable() then
             self.state = Game.STATE_LOST
             local sound = require("sound")
             sound.playGameOver()
+            self:flushSaveState()
+        else
+            self.savePending = true
         end
     else
         self.grid:restoreState(pendingUndoState)
@@ -1078,6 +1096,7 @@ function Game:togglePause()
     if self.state == Game.STATE_PLAYING or self.state == Game.STATE_ENDLESS then
         self.prevState = self.state
         self.state = Game.STATE_PAUSED
+        self:flushSaveState()
     elseif self.state == Game.STATE_PAUSED then
         self.state = self.prevState or (self.won and Game.STATE_ENDLESS or Game.STATE_PLAYING)
     else
@@ -1275,8 +1294,11 @@ function Game:update(dt)
 
     if self.animationTimer > 0 then
         self.animationTimer = self.animationTimer - dt
-        if self.animationTimer < 0 then
+        if self.animationTimer <= 0 then
             self.animationTimer = 0
+            if self.savePending then
+                self:flushSaveState()
+            end
         end
     end
 

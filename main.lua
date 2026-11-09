@@ -2531,7 +2531,11 @@ function love.quit()
         pcall(sound.stopWebServer)
     end
     if game then
-        pcall(function() game:saveGameState() end)
+        if game.flushSaveState then
+            pcall(function() game:flushSaveState() end)
+        elseif game.saveGameState then
+            pcall(function() game:saveGameState(true) end)
+        end
     end
     pcall(function() love.audio.stop() end)
     if love.joystick then
@@ -2552,8 +2556,12 @@ function love.focus(f)
         if sound and sound.onPause then
             pcall(sound.onPause)
         end
-        if game and game.saveGameState then
-            pcall(function() game:saveGameState() end)
+        if game then
+            if game.flushSaveState then
+                pcall(function() game:flushSaveState() end)
+            elseif game.saveGameState then
+                pcall(function() game:saveGameState(true) end)
+            end
         end
     else
         if sound and sound.onResume then
@@ -2567,8 +2575,12 @@ function love.visible(v)
         if sound and sound.onPause then
             pcall(sound.onPause)
         end
-        if game and game.saveGameState then
-            pcall(function() game:saveGameState() end)
+        if game then
+            if game.flushSaveState then
+                pcall(function() game:flushSaveState() end)
+            elseif game.saveGameState then
+                pcall(function() game:saveGameState(true) end)
+            end
         end
     else
         if sound and sound.onResume then
