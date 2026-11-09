@@ -5,10 +5,13 @@
 - Button vibration toggle setting for Android virtual controls
 - Smooth screen transitions for Pause and Game Over screens
 - Animated footer controls transition on Pause and Game Over screens
+- Smooth pause screen song change transition with non-overlapping crossfade and ease-out curves
+- Smooth tile movement easing and framerate-independent menu scrolling
 
 ### Changed
 - Plus Mode now starts with zero powerups
 - Improved vertical centering for footer button prompts in Android landscape mode
+- Optimized gameplay and menu rendering performance by eliminating merge stutter and deferring disk writes
 
 ### Fixed
 - Fixed companion dog running animation hitching

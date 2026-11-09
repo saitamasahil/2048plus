@@ -6213,6 +6213,42 @@ function renderer.drawHelp(game)
     end
 end
 
+-- Format track title and artist
+local function getPauseTrackLabel(t)
+    if not t then return "" end
+    local title = t.title or ""
+    local artist = t.artist or ""
+    if title ~= "" and artist ~= "" then
+        return title .. " - " .. artist
+    elseif title ~= "" then
+        return title
+    end
+    return artist
+end
+
+-- Synchronize pause track transition
+local function syncPauseTrackTransition(current_track)
+    if not (_G.game and _G.game.state == Game.STATE_PAUSED and pause_trans.modal_state ~= "closed") then
+        pause_trans.last_track_path = current_track and current_track.path or nil
+        pause_trans.current_track_saved = current_track
+        return
+    end
+
+    local track_path = current_track and current_track.path or nil
+    if track_path ~= pause_trans.last_track_path then
+        if pause_trans.last_track_path ~= nil then
+            if pause_trans.track_timer > 0 and pause_trans.track_timer > pause_trans.track_dur * 0.45 then
+                -- Keep earlier track reference during rapid skips
+            else
+                pause_trans.track_prev = _G.jukebox_prev_track or pause_trans.current_track_saved
+            end
+            pause_trans.track_timer = pause_trans.track_dur
+        end
+        pause_trans.last_track_path = track_path
+    end
+    pause_trans.current_track_saved = current_track
+end
+
 -- ============================================================================
 -- Draw game over / win / confirm restart overlay
 -- ============================================================================
@@ -6360,35 +6396,49 @@ function renderer.drawOverlay(game)
 
             -- Draw track details centered below
             if has_track then
-                local track_lbl = track.title .. " - " .. track.artist
+                syncPauseTrackTransition(track)
+                local track_lbl = getPauseTrackLabel(track)
                 love.graphics.setFont(font_help_label)
-                local track_base_a = 0.9 * pause_t
+                local tr_r = light_text[1] or 0.75
+                local tr_g = light_text[2] or 0.75
+                local tr_b = light_text[3] or 0.75
+                local track_base_a = 0.78 * pause_t
+
+                if pause_trans.track_prev and track and pause_trans.track_prev.path == track.path then
+                    pause_trans.track_prev = nil
+                    pause_trans.track_timer = 0
+                end
 
                 if _G.screen_transitions and pause_trans.track_timer > 0 and pause_trans.track_prev then
                     local p = math.max(0, math.min(1, 1 - (pause_trans.track_timer / pause_trans.track_dur)))
-                    local p_ease = p * p * (3 - 2 * p)
-                    local slide_dist = math.floor(12 * scale)
+                    local slide_dist = math.floor(7 * scale)
 
-                    -- Fade and slide out old track
-                    local old_lbl = pause_trans.track_prev.title .. " - " .. pause_trans.track_prev.artist
-                    local old_alpha = math.max(0, 1 - p * 1.5) * track_base_a
-                    if old_alpha > 0 then
+                    -- Fade out old track
+                    local p_out = math.min(1, p / 0.42)
+                    local ease_out = 1 - (1 - p_out) * (1 - p_out)
+                    local old_alpha = (1 - p_out) * (1 - p_out) * track_base_a
+                    if old_alpha > 0.005 then
+                        local old_lbl = getPauseTrackLabel(pause_trans.track_prev)
                         local tw_old = font_help_label:getWidth(old_lbl)
-                        local old_y = next_y - math.floor(p * slide_dist)
-                        love.graphics.setColor(0.65, 0.65, 0.65, old_alpha)
+                        local old_y = next_y - ease_out * slide_dist
+                        love.graphics.setColor(tr_r, tr_g, tr_b, old_alpha)
                         love.graphics.print(old_lbl, bx + math.floor((bs - tw_old) / 2), old_y)
                     end
 
-                    -- Fade and slide in new track
-                    local new_alpha = math.min(1, p * 1.5) * track_base_a
-                    local tw_new = font_help_label:getWidth(track_lbl)
-                    local new_y = next_y + math.floor((1 - p_ease) * slide_dist)
-                    love.graphics.setColor(0.65, 0.65, 0.65, new_alpha)
-                    love.graphics.print(track_lbl, bx + math.floor((bs - tw_new) / 2), new_y)
+                    -- Fade in new track
+                    local p_in = math.max(0, math.min(1, (p - 0.22) / 0.78))
+                    local ease_in = 1 - (1 - p_in) * (1 - p_in) * (1 - p_in)
+                    local new_alpha = (1 - (1 - p_in) * (1 - p_in)) * track_base_a
+                    if new_alpha > 0.005 then
+                        local tw_new = font_help_label:getWidth(track_lbl)
+                        local new_y = next_y + (1 - ease_in) * slide_dist
+                        love.graphics.setColor(tr_r, tr_g, tr_b, new_alpha)
+                        love.graphics.print(track_lbl, bx + math.floor((bs - tw_new) / 2), new_y)
+                    end
                 else
                     local tw_track = font_help_label:getWidth(track_lbl)
-                    love.graphics.setColor(0.65, 0.65, 0.65, track_base_a)
-                    love.graphics.print(track_lbl, bx + (bs - tw_track) / 2, next_y)
+                    love.graphics.setColor(tr_r, tr_g, tr_b, track_base_a)
+                    love.graphics.print(track_lbl, bx + math.floor((bs - tw_track) / 2), next_y)
                 end
                 next_y = next_y + font_h + math.floor(6 * scale)
             end
@@ -6872,20 +6922,7 @@ local function updatePauseTransition(dt)
         end
 
         -- Check song skip while pause screen is active
-        if _G.game and _G.game.state == Game.STATE_PAUSED and pause_trans.modal_state ~= "closed" then
-            local track_path = current_track and current_track.path or nil
-            if track_path ~= pause_trans.last_track_path then
-                if pause_trans.last_track_path ~= nil then
-                    pause_trans.track_prev = _G.jukebox_prev_track or pause_trans.current_track_saved
-                    pause_trans.track_timer = pause_trans.track_dur
-                end
-                pause_trans.last_track_path = track_path
-            end
-            pause_trans.current_track_saved = current_track
-        else
-            pause_trans.last_track_path = current_track and current_track.path or nil
-            pause_trans.current_track_saved = current_track
-        end
+        syncPauseTrackTransition(current_track)
 
         if pause_trans.track_timer > 0 then
             pause_trans.track_timer = math.max(0, pause_trans.track_timer - dt)
