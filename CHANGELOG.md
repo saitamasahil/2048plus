@@ -1,12 +1,10 @@
 # Changelog
-## [8.0.2] (TBA)
+## [8.0.2]
 ### Added
 - Now Playing banner showing song and artist info when a new track plays in Android fullscreen
 - Button vibration toggle setting for Android virtual controls
 - Smooth screen transitions for Pause and Game Over screens
 - Animated footer controls transition on Pause and Game Over screens
-- Smooth pause screen song change transition with non-overlapping crossfade and ease-out curves
-- Smooth tile movement easing and framerate-independent menu scrolling
 
 ### Changed
 - Plus Mode now starts with zero powerups
