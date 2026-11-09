@@ -192,8 +192,18 @@ manifest = manifest.replace(
     'android:configChanges="density|fontScale|keyboard|keyboardHidden|layoutDirection|locale|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|touchscreen"'
 )
 
+# Add game app category for system game mode optimizations
+manifest = manifest.replace('<application ', '<application android:appCategory="game" ')
+
 with open(manifest_path, "w", encoding="utf-8") as f:
     f.write(manifest)
+
+# Copy helper to request highest display refresh rate
+refresh_helper_src = os.path.join(PROJECT_ROOT, "android/RefreshRateHelper.smali")
+refresh_helper_dst = os.path.join(decomp_dir, "smali/org/libsdl/app/RefreshRateHelper.smali")
+os.makedirs(os.path.dirname(refresh_helper_dst), exist_ok=True)
+if os.path.isfile(refresh_helper_src):
+    shutil.copyfile(refresh_helper_src, refresh_helper_dst)
 
 # Neutralize setOrientation in SDLActivity so runtime calls do not override manifest user orientation
 sdl_smali = os.path.join(decomp_dir, "smali/org/libsdl/app/SDLActivity.smali")
@@ -219,8 +229,18 @@ if os.path.isfile(sdl_smali):
 .end method"""
     if old_target in smali_src:
         smali_src = smali_src.replace(old_target, new_replacement)
-        with open(sdl_smali, "w", encoding="utf-8") as f:
-            f.write(smali_src)
+
+    # Hook max refresh rate helper into activity lifecycle
+    t_create = "invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V"
+    if t_create in smali_src:
+        smali_src = smali_src.replace(t_create, t_create + "\n\n    invoke-static {p0}, Lorg/libsdl/app/RefreshRateHelper;->applyMaxRefreshRate(Landroid/app/Activity;)V")
+
+    t_resume = "invoke-super {p0}, Landroid/app/Activity;->onResume()V"
+    if t_resume in smali_src:
+        smali_src = smali_src.replace(t_resume, t_resume + "\n\n    invoke-static {p0}, Lorg/libsdl/app/RefreshRateHelper;->applyMaxRefreshRate(Landroid/app/Activity;)V")
+
+    with open(sdl_smali, "w", encoding="utf-8") as f:
+        f.write(smali_src)
 
 # 6. Copy game.love into assets
 assets_dir = os.path.join(decomp_dir, "assets")
