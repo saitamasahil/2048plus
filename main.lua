@@ -2026,6 +2026,8 @@ function love.update(dt)
                     if game.mode == "nomercy" then modeName = "No Mercy"
                     elseif game.mode == "goose" then modeName = "Goose Mode" end
                     renderer.showToast("No Undo in " .. modeName .. "!")
+                elseif game.mode == "plus" and game.powerups.undo <= 0 then
+                    renderer.showToast("No Undo Powerup!")
                 else
                     queueTransitionAction(event, 0.08, function()
                         game:undo()
@@ -2076,6 +2078,8 @@ function love.update(dt)
                     if game.mode == "nomercy" then modeName = "No Mercy"
                     elseif game.mode == "goose" then modeName = "Goose Mode" end
                     renderer.showToast("No Undo in " .. modeName .. "!")
+                elseif game.mode == "plus" and game.powerups.undo <= 0 then
+                    renderer.showToast("No Undo Powerup!")
                 else
                     queueTransitionAction(event, 0.08, function()
                         game:undo()
