@@ -5900,7 +5900,7 @@ function renderer.drawHelp(game)
         if game.state == Game.STATE_PAUSED then
             act_key = act_key .. "_" .. (sound.isBgmEnabled() and "1" or "0")
         elseif game.state == Game.STATE_LOST then
-            local sc = _G.stats and _G.stats.second_chance_count or 0
+            local sc = (game and game.second_chance_count) or 0
             act_key = act_key .. "_" .. sc
         end
 
@@ -5921,7 +5921,7 @@ function renderer.drawHelp(game)
             elseif game.state == Game.STATE_LOST then
                 table.insert(actions, 1, {key = "A", label = "New Game"})
                 table.insert(actions, 1, {key = "X", label = "Quit"})
-                local shield_cnt = _G.stats and (_G.stats.second_chance_count or 0) or 0
+                local shield_cnt = (game and game.second_chance_count) or 0
                 if shield_cnt > 0 and not game.timesUp and not (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0) then
                     table.insert(actions, 1, {key = "R1", label = "Shield:" .. shield_cnt})
                 end
@@ -6392,7 +6392,7 @@ function renderer.drawOverlay(game)
             if game.start_booster_val and item_icons and item_icons[tostring(game.start_booster_val)] then
                 table.insert(active_perks, item_icons[tostring(game.start_booster_val)])
             end
-            local has_shield = (_G.stats and (_G.stats.second_chance_count or 0) > 0) or game.hasShield
+            local has_shield = ((game and (game.second_chance_count or 0) > 0) or game.hasShield)
             if not has_shield and game.grid then
                 game.grid:eachCell(function(gx, gy, tile)
                     if tile and tile.shielded then has_shield = true end
@@ -12238,14 +12238,14 @@ function renderer.getStoreItems()
         {id="coin_multiplier",category="upgrade",  cost=1200,name="2x Coin Multiplier",    desc="Permanently double all earned Coins"},
 
         -- Boosters & Powerups
-        {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",             desc="+1 Undo charge for Plus Mode", consumable=true, ckey="powerup_undo_count"},
-        {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",             desc="+1 Swap charge for Plus Mode", consumable=true, ckey="powerup_swap_count"},
-        {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",             desc="+1 Bomb charge for Plus Mode", consumable=true, ckey="powerup_bomb_count"},
+        {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",             desc="+1 Undo charge in your next Plus Mode game", consumable=true, ckey="powerup_undo_count"},
+        {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",             desc="+1 Swap charge in your next Plus Mode game", consumable=true, ckey="powerup_swap_count"},
+        {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",             desc="+1 Bomb charge in your next Plus Mode game", consumable=true, ckey="powerup_bomb_count"},
         {id="start_128",     category="booster",   cost=60,   name="128 High-Tile Booster (x" .. booster_128 .. " owned)", desc="Next game starts with a 128 tile", consumable=true, ckey="start_128_count"},
         {id="start_256",     category="booster",   cost=120,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
         {id="start_512",     category="booster",   cost=250,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
         {id="coin_rush",     category="booster",   cost=100,  name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles all Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
-        {id="second_chance", category="booster",   cost=200,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col on demand", consumable=true, ckey="second_chance_count"},
+        {id="second_chance", category="booster",   cost=200,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col in your next game", consumable=true, ckey="second_chance_count"},
 
         -- Board Grid Skins
         {id="skin_wood",     category="skin",      cost=100,  name="Wood Board",           desc="Classic arcade cabinet wooden grid texture"},

@@ -61,6 +61,7 @@ function Game.new(mode)
     self.timerFlashTimer = 0
     self.timerPopTimer = 0
     self.lastCountdownSecond = nil
+    self.second_chance_count = (_G.stats and _G.stats.second_chance_count) or 0
 
     -- Plus Mode state
     local initial_powerups = _G.cheat_max_powerups and 99 or 0
@@ -171,6 +172,7 @@ function Game.new(mode)
         end
 
         self.coin_rush_active = savedState.coin_rush_active or false
+        self.second_chance_count = savedState.second_chance_count or 0
         self.start_booster_val = savedState.start_booster_val
         self.runTime = savedState.runTime or 0
         self.powerups_used_this_run = savedState.powerups_used_this_run or 0
@@ -302,6 +304,7 @@ function Game:saveGameState(force)
         swap_used_this_run = self.swap_used_this_run,
         powerups_used_this_run = self.powerups_used_this_run,
         coin_rush_active = self.coin_rush_active or false,
+        second_chance_count = self.second_chance_count or 0,
         start_booster_val = self.start_booster_val
     }
 
@@ -1092,6 +1095,7 @@ function Game:restart()
         self.timerPopTimer = 0
         self.lastCountdownSecond = nil
     end
+    self.second_chance_count = (_G.stats and _G.stats.second_chance_count) or 0
     self.start_booster_val = nil
     self:addStartTiles()
     -- Consume Coin Rush Ticket if owned
@@ -1458,12 +1462,12 @@ function Game:startShieldTargeting()
         end
         return
     end
-    local count = _G.stats and (_G.stats.second_chance_count or 0) or 0
+    local count = self.second_chance_count or 0
     if count <= 0 then
         local sound = require("sound")
         local renderer = require("renderer")
         if renderer and renderer.showToast then
-            renderer.showToast("No Second Chance Shield! Buy in Store.")
+            renderer.showToast("No Second Chance Shield for this game!")
         end
         return
     end
@@ -1512,7 +1516,7 @@ end
 
 function Game:confirmShieldTarget()
     if self.state ~= Game.STATE_TARGETING_SHIELD then return end
-    local count = _G.stats and (_G.stats.second_chance_count or 0) or 0
+    local count = self.second_chance_count or 0
     if count <= 0 then
         self:cancelShieldTargeting()
         return
@@ -1557,8 +1561,11 @@ function Game:confirmShieldTarget()
     end
 
     -- Deduct 1 charge
-    _G.stats.second_chance_count = math.max(0, count - 1)
-    if save and save.saveStats then save.saveStats(_G.stats) end
+    self.second_chance_count = math.max(0, count - 1)
+    if _G.stats then
+        _G.stats.second_chance_count = math.max(0, (_G.stats.second_chance_count or 0) - 1)
+        if save and save.saveStats then save.saveStats(_G.stats) end
+    end
 
     if _G.unlockAchievement then
         _G.unlockAchievement("ach_first_shield")

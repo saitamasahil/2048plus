@@ -1047,11 +1047,6 @@ function love.update(dt)
                             if _G.stats.total_spent_coins >= 5000 and _G.unlockAchievement then
                                 _G.unlockAchievement("ach_big_spender")
                             end
-                            if sel_item.id == "coin_rush" and game and not game.coin_rush_active then
-                                game.coin_rush_active = true
-                                _G.stats[stat_key] = math.max(0, (_G.stats[stat_key] or 1) - 1)
-                                if game.saveGameState then game:saveGameState() end
-                            end
                             save.saveStats(_G.stats)
                             renderer.showToast("Purchased!")
                         else
@@ -2106,13 +2101,13 @@ function love.update(dt)
                 if game and (game.timesUp or (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0)) then
                     renderer.showToast("Cannot use Shield when time is up!")
                 else
-                    local shield_cnt = _G.stats and (_G.stats.second_chance_count or 0) or 0
+                    local shield_cnt = (game and game.second_chance_count) or 0
                     if shield_cnt > 0 then
                         queueTransitionAction(event, 0.08, function()
                             game:startShieldTargeting()
                         end)
                     else
-                        renderer.showToast("No Second Chance Shield! Buy in Store.")
+                        renderer.showToast("No Second Chance Shield for this game!")
                     end
                 end
             elseif event == input.events.X then
