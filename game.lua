@@ -59,6 +59,8 @@ function Game.new(mode)
     self.timeAttackBonus = 0  -- accumulated bonus time for this move
     self.timePopups = {}
     self.timerFlashTimer = 0
+    self.timerPopTimer = 0
+    self.lastCountdownSecond = nil
 
     -- Plus Mode state
     local initial_powerups = _G.cheat_max_powerups and 99 or 0
@@ -720,6 +722,9 @@ function Game:move(direction)
             local merged_2048 = self.timeAttackBonus >= 50
             local bonus = merged_2048 and self.timeAttackBonus or math.min(self.timeAttackBonus, cap)
             self.timeLeft = math.min(self.totalTime, self.timeLeft + bonus)
+            if self.timeLeft > 3.0 then
+                self.lastCountdownSecond = nil
+            end
 
             -- Show floating bonus text and flash timer
             self.timePopups = self.timePopups or {}
@@ -1048,6 +1053,8 @@ function Game:restart()
         self.timesUp = false
         self.timePopups = {}
         self.timerFlashTimer = 0
+        self.timerPopTimer = 0
+        self.lastCountdownSecond = nil
     end
     self.start_booster_val = nil
     self:addStartTiles()
@@ -1312,10 +1319,22 @@ function Game:update(dt)
                 self.shownUrgentWarning = true
                 -- Toast is shown by renderer's pulse; no explicit toast here to avoid spam
             end
+            if self.timeLeft > 0 and self.timeLeft <= 3.0 then
+                local sec = math.ceil(self.timeLeft)
+                if sec >= 1 and sec <= 3 and sec ~= self.lastCountdownSecond then
+                    self.lastCountdownSecond = sec
+                    self.timerPopTimer = 0.25
+                    local snd = require("sound")
+                    if snd and snd.playCountdown then
+                        snd.playCountdown(sec)
+                    end
+                end
+            end
             if self.timeLeft <= 0 then
                 self.timeLeft = 0
                 self.state = Game.STATE_LOST
                 self.timesUp = true  -- flag for renderer to show "Time's Up!"
+                self.lastCountdownSecond = nil
                 local sound = require("sound")
                 sound.playGameOver()
                 self:saveGameState()  -- saves high score only, saveGameState returns early for timeattack
@@ -1357,6 +1376,12 @@ function Game:update(dt)
         self.timerFlashTimer = self.timerFlashTimer - dt
         if self.timerFlashTimer < 0 then
             self.timerFlashTimer = 0
+        end
+    end
+    if self.timerPopTimer and self.timerPopTimer > 0 then
+        self.timerPopTimer = self.timerPopTimer - dt
+        if self.timerPopTimer < 0 then
+            self.timerPopTimer = 0
         end
     end
 

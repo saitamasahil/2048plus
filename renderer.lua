@@ -5104,7 +5104,7 @@ function renderer.drawScores(game)
 
     if game.mode == "timeattack" and game.timeLeft ~= nil then
         -- Timer box replaces best score in Time Attack
-        local t = math.max(0, game.timeLeft)
+        local t = math.max(0, math.ceil(game.timeLeft))
         local mins = math.floor(t / 60)
         local secs = math.floor(t % 60)
         local timer_str = string.format("%d:%02d", mins, secs)
@@ -5172,7 +5172,19 @@ function renderer.drawScores(game)
         else
             love.graphics.setColor(score_value)
         end
-        love.graphics.printf(timer_str, best_x, score_y, box_w, "center")
+        if game.timerPopTimer and game.timerPopTimer > 0 then
+            local pop = 1.0 + 0.18 * (game.timerPopTimer / 0.25)
+            local cx = best_x + math.floor(box_w / 2)
+            local cy = score_y + math.floor(font_score:getHeight() / 2)
+            love.graphics.push()
+            love.graphics.translate(cx, cy)
+            love.graphics.scale(pop, pop)
+            love.graphics.translate(-cx, -cy)
+            love.graphics.printf(timer_str, best_x, score_y, box_w, "center")
+            love.graphics.pop()
+        else
+            love.graphics.printf(timer_str, best_x, score_y, box_w, "center")
+        end
 
         -- Draw floating time attack popups
         if game.timePopups then
