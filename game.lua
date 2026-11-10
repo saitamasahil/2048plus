@@ -737,12 +737,39 @@ function Game:move(direction)
 
             self.timeAttackBonus = 0
         end
+        local undoTransitions = {}
+        for x = 1, self.size do
+            for y = 1, self.size do
+                local c_tile = self.grid.cells[x][y]
+                if c_tile then
+                    if c_tile.mergedFrom and c_tile.mergedFrom[1] and c_tile.mergedFrom[2] then
+                        local t1 = c_tile.mergedFrom[1]
+                        local t2 = c_tile.mergedFrom[2]
+                        local p1 = t1.previousPosition or (t1.x and t1.y and {x = t1.x, y = t1.y})
+                        local p2 = t2.previousPosition or (t2.x and t2.y and {x = t2.x, y = t2.y})
+                        if p1 then
+                            table.insert(undoTransitions, {px = p1.x, py = p1.y, sx = x, sy = y})
+                        end
+                        if p2 then
+                            table.insert(undoTransitions, {px = p2.x, py = p2.y, sx = x, sy = y})
+                        end
+                    elseif not c_tile.isNew then
+                        local p = c_tile.previousPosition or (c_tile.x and c_tile.y and {x = c_tile.x, y = c_tile.y})
+                        if p and (p.x ~= x or p.y ~= y) then
+                            table.insert(undoTransitions, {px = p.x, py = p.y, sx = x, sy = y})
+                        end
+                    end
+                end
+            end
+        end
+
         local pending = {
             gridState = pendingUndoState,
             score = pendingUndoScore,
             rng = pendingUndoRNG,
             won = pendingUndoWon,
-            gameState = pendingUndoGameState
+            gameState = pendingUndoGameState,
+            undoTransitions = undoTransitions
         }
         if _G.undo_mode == "unlimited" or self.mode == "plus" then
             table.insert(self.undoHistory, pending)
@@ -970,29 +997,38 @@ function Game:undo()
         end
     end)
 
-    -- Apply reverse animation data using the restored tiles' history
-    for x = 1, self.size do
-        for y = 1, self.size do
-            local c_tile = current_cells[x][y]
-            if c_tile then
-                if c_tile.mergedFrom and c_tile.mergedFrom[1] and c_tile.mergedFrom[2] then
-                    local t1 = c_tile.mergedFrom[1]
-                    local t2 = c_tile.mergedFrom[2]
-                    local p1 = t1.previousPosition or (t1.x and t1.y and {x = t1.x, y = t1.y})
-                    local p2 = t2.previousPosition or (t2.x and t2.y and {x = t2.x, y = t2.y})
-                    if p1 then
-                        local r_t1 = self.grid:cellContent(p1.x, p1.y)
-                        if r_t1 then r_t1.undoSourcePosition = {x = x, y = y} end
-                    end
-                    if p2 then
-                        local r_t2 = self.grid:cellContent(p2.x, p2.y)
-                        if r_t2 then r_t2.undoSourcePosition = {x = x, y = y} end
-                    end
-                elseif not c_tile.isNew then
-                    local p = c_tile.previousPosition or (c_tile.x and c_tile.y and {x = c_tile.x, y = c_tile.y})
-                    if p then
-                        local r_t = self.grid:cellContent(p.x, p.y)
-                        if r_t then r_t.undoSourcePosition = {x = x, y = y} end
+    -- Apply reverse animation transitions
+    if state.undoTransitions and #state.undoTransitions > 0 then
+        for _, trans in ipairs(state.undoTransitions) do
+            local r_t = self.grid:cellContent(trans.px, trans.py)
+            if r_t then
+                r_t.undoSourcePosition = {x = trans.sx, y = trans.sy}
+            end
+        end
+    else
+        for x = 1, self.size do
+            for y = 1, self.size do
+                local c_tile = current_cells[x][y]
+                if c_tile then
+                    if c_tile.mergedFrom and c_tile.mergedFrom[1] and c_tile.mergedFrom[2] then
+                        local t1 = c_tile.mergedFrom[1]
+                        local t2 = c_tile.mergedFrom[2]
+                        local p1 = t1.previousPosition or (t1.x and t1.y and {x = t1.x, y = t1.y})
+                        local p2 = t2.previousPosition or (t2.x and t2.y and {x = t2.x, y = t2.y})
+                        if p1 then
+                            local r_t1 = self.grid:cellContent(p1.x, p1.y)
+                            if r_t1 then r_t1.undoSourcePosition = {x = x, y = y} end
+                        end
+                        if p2 then
+                            local r_t2 = self.grid:cellContent(p2.x, p2.y)
+                            if r_t2 then r_t2.undoSourcePosition = {x = x, y = y} end
+                        end
+                    elseif not c_tile.isNew then
+                        local p = c_tile.previousPosition or (c_tile.x and c_tile.y and {x = c_tile.x, y = c_tile.y})
+                        if p then
+                            local r_t = self.grid:cellContent(p.x, p.y)
+                            if r_t then r_t.undoSourcePosition = {x = x, y = y} end
+                        end
                     end
                 end
             end
@@ -1221,7 +1257,11 @@ function Game:confirmTarget()
             local pending = {
                 gridState = self.grid:saveState(),
                 score = self.score,
-                rng = love.math.getRandomState()
+                rng = love.math.getRandomState(),
+                undoTransitions = {
+                    {px = self.swapTarget.x, py = self.swapTarget.y, sx = cx, sy = cy},
+                    {px = cx, py = cy, sx = self.swapTarget.x, sy = self.swapTarget.y}
+                }
             }
             if _G.undo_mode == "unlimited" or self.mode == "plus" then
                 table.insert(self.undoHistory, pending)
