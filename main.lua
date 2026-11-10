@@ -505,6 +505,9 @@ function love.load(args)
     if (_G.stats.total_coins_earned or 0) >= 10000 and _G.unlockAchievement then
         _G.unlockAchievement("ach_coin_hoarder")
     end
+    if (_G.stats.total_spent_coins or 0) >= 5000 and _G.unlockAchievement then
+        _G.unlockAchievement("ach_big_spender")
+    end
     if _G.recordDogBreedPlayed then
         _G.recordDogBreedPlayed(_G.active_dog_breed)
     end
@@ -989,6 +992,9 @@ function love.update(dt)
                             _G.stats.coins = _G.stats.coins - sel_item.cost
                             _G.stats.purchased_items["mascot_cat"] = 1
                             _G.stats.total_spent_coins = (_G.stats.total_spent_coins or 0) + sel_item.cost
+                            if _G.stats.total_spent_coins >= 5000 and _G.unlockAchievement then
+                                _G.unlockAchievement("ach_big_spender")
+                            end
                             save.saveStats(_G.stats)
                             _G.active_companion = "cat"
                             if save and save.saveCompanion then save.saveCompanion("cat") end
@@ -1015,6 +1021,9 @@ function love.update(dt)
                             _G.stats.coins = _G.stats.coins - sel_item.cost
                             _G.stats.purchased_items["mascot_dog"] = 1
                             _G.stats.total_spent_coins = (_G.stats.total_spent_coins or 0) + sel_item.cost
+                            if _G.stats.total_spent_coins >= 5000 and _G.unlockAchievement then
+                                _G.unlockAchievement("ach_big_spender")
+                            end
                             save.saveStats(_G.stats)
                             _G.active_companion = "dog"
                             if save and save.saveCompanion then save.saveCompanion("dog") end
