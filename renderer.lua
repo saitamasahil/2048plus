@@ -10871,7 +10871,7 @@ achievementsList = {
     -- Challenges & Secrets
     { id = "ach_untouchable",      name = "Untouchable",       desc = "Create a 1024 tile without using undos or powerups",             reward = "Peach Theme",      coins = 200 },
     { id = "ach_untouchable_2048", name = "Zen Master",        desc = "Create a 2048 tile without using undos or powerups",             reward = "Matcha Theme",     coins = 400 },
-    { id = "ach_speedrun_2048",    name = "Speed Demon",       desc = "Create a 2048 tile in under 5 minutes",                          reward = "Retro Gold Theme", coins = 400 },
+    { id = "ach_speedrun_2048",    name = "Speed Demon",       desc = "Create a 2048 tile in under 7 minutes",                          reward = "Retro Gold Theme", coins = 400 },
     { id = "ach_hardcore_2048",    name = "Hardcore Gamer",    desc = "Create 2048 in Plus Mode without powerups or undos",             reward = "Spectrum Theme",   coins = 500 },
     { id = "ach_secret_menu",      name = "Secret Discovery",  desc = "Access the Secret Menu for the first time",                      reward = "Matrix Theme",     coins = 100 },
 
@@ -10881,7 +10881,7 @@ achievementsList = {
     { id = "ach_first_shield",     name = "Second Chance",     desc = "Use a Second Chance Shield to clear a row or column",            reward = "Sapphire Theme",   coins = 200 },
 
     -- Companions & Economy
-    { id = "ach_coin_hoarder",     name = "Coin Hoarder",      desc = "Accumulate 10,000 coins at once",                                reward = "Pastel Theme",     coins = 250 },
+    { id = "ach_coin_hoarder",     name = "Coin Hoarder",      desc = "Earn 10,000 total coins",                                        reward = "Pastel Theme",     coins = 250 },
     { id = "ach_best_friend",      name = "Best Friend",       desc = "Play with all 4 dog pals",                                       reward = "Pawprint Theme",   coins = 200 },
     { id = "ach_purrfect_run",     name = "Purrfect Run",      desc = "Create a 2048 tile with the cat companion active",               reward = "Neko Night Theme", coins = 250 }
 }

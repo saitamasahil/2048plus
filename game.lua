@@ -549,9 +549,10 @@ function Game:move(direction)
                                 coins_to_add = coins_to_add * 2
                             end
                             _G.stats.coins = (_G.stats.coins or 0) + coins_to_add
+                            _G.stats.total_coins_earned = (_G.stats.total_coins_earned or 0) + coins_to_add
                             self.statsDirty = true
-                            -- Coin Hoarder achievement: accumulate 10,000 coins
-                            if _G.stats.coins >= 10000 and _G.unlockAchievement then
+                            -- Coin Hoarder achievement unlocks at 10000 total lifetime coins
+                            if (_G.stats.total_coins_earned or 0) >= 10000 and _G.unlockAchievement then
                                 _G.unlockAchievement("ach_coin_hoarder")
                             end
                         end
@@ -654,7 +655,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_merge_8192")
                     end
 
-                    if merged.value >= 2048 and self.runTime and self.runTime <= 300 and _G.unlockAchievement and self.mode ~= "huge" then
+                    if merged.value >= 2048 and self.runTime and self.runTime <= 420 and _G.unlockAchievement and self.mode ~= "huge" then
                         _G.unlockAchievement("ach_speedrun_2048")
                     end
 

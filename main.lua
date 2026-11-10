@@ -340,9 +340,13 @@ function love.load(args)
                 end
                 _G.stats = _G.stats or {}
                 _G.stats.coins = (_G.stats.coins or 0) + coin_reward
+                _G.stats.total_coins_earned = (_G.stats.total_coins_earned or 0) + coin_reward
                 _G.stats.claimed_achievements = _G.stats.claimed_achievements or {}
                 _G.stats.claimed_achievements[id] = true
                 save.saveStats(_G.stats)
+                if (_G.stats.total_coins_earned or 0) >= 10000 and _G.unlockAchievement then
+                    _G.unlockAchievement("ach_coin_hoarder")
+                end
             end
             renderer.showToast("Unlocked: " .. (names[id] or id) .. "!", 2.2, id)
             if coin_reward > 0 and renderer and renderer.queueHeaderLogoMorph then
@@ -491,13 +495,14 @@ function love.load(args)
         _G.stats.merge_coins = nil
     end
     _G.stats.coins = _G.stats.coins or 0
+    _G.stats.total_coins_earned = _G.stats.total_coins_earned or math.max(_G.stats.coins, (_G.stats.coins or 0) + (_G.stats.total_spent_coins or 0))
     _G.stats.purchased_items = _G.stats.purchased_items or {}
     _G.stats.claimed_achievements = _G.stats.claimed_achievements or {}
     _G.store_sort_mode = _G.stats.store_sort_mode or 0
     if _G.store_sort_mode > 9 then _G.store_sort_mode = 0 end
 
-    -- Check Coin Hoarder & Best Friend on startup
-    if _G.stats.coins >= 10000 and _G.unlockAchievement then
+    -- Check Coin Hoarder and Best Friend on startup
+    if (_G.stats.total_coins_earned or 0) >= 10000 and _G.unlockAchievement then
         _G.unlockAchievement("ach_coin_hoarder")
     end
     if _G.recordDogBreedPlayed then
@@ -510,13 +515,18 @@ function love.load(args)
         local awarded_retroactive = false
         for _, ach in ipairs(all_achievements) do
             if _G.achievements[ach.id] and not _G.stats.claimed_achievements[ach.id] then
-                _G.stats.coins = _G.stats.coins + (ach.coins or 0)
+                local rew = ach.coins or 0
+                _G.stats.coins = _G.stats.coins + rew
+                _G.stats.total_coins_earned = (_G.stats.total_coins_earned or 0) + rew
                 _G.stats.claimed_achievements[ach.id] = true
                 awarded_retroactive = true
             end
         end
         if awarded_retroactive then
             save.saveStats(_G.stats)
+            if (_G.stats.total_coins_earned or 0) >= 10000 and _G.unlockAchievement then
+                _G.unlockAchievement("ach_coin_hoarder")
+            end
         end
     end
 
@@ -1491,9 +1501,10 @@ function love.update(dt)
                 elseif _G.cheats_selection == 4 then
                     _G.stats = _G.stats or {}
                     _G.stats.coins = (_G.stats.coins or 0) + 9999
+                    _G.stats.total_coins_earned = (_G.stats.total_coins_earned or 0) + 9999
                     save.saveStats(_G.stats)
                     renderer.showToast("Added 9999 Coins! Total: " .. _G.stats.coins)
-                    if _G.stats.coins >= 10000 and _G.unlockAchievement then
+                    if (_G.stats.total_coins_earned or 0) >= 10000 and _G.unlockAchievement then
                         _G.unlockAchievement("ach_coin_hoarder")
                     end
                 elseif _G.cheats_selection == 5 then
