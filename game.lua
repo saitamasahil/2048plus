@@ -1531,11 +1531,18 @@ function Game:confirmShieldTarget()
         score = self.score,
         rng = love.math.getRandomState()
     }
-    if _G.undo_mode == "unlimited" then
+    if _G.undo_mode == "unlimited" or self.mode == "plus" then
         table.insert(self.undoHistory, pending)
-        if #self.undoHistory > 100 then table.remove(self.undoHistory, 1) end
+        if #self.undoHistory > 100 then
+            table.remove(self.undoHistory, 1)
+        end
+        self.canUndo = true
+    elseif _G.undo_mode == "classic" then
+        self.undoHistory = { pending }
+        self.canUndo = true
     else
-        self.previousState = pending
+        self.undoHistory = {}
+        self.canUndo = false
     end
 
     -- Clear chosen row or column
@@ -1543,7 +1550,8 @@ function Game:confirmShieldTarget()
     if self.shield_mode == "row" then
         local y = self.shield_index
         for x = 1, self.size do
-            if self.grid.cells[x] and self.grid.cells[x][y] then
+            local cell = self.grid.cells[x] and self.grid.cells[x][y]
+            if cell and cell.value ~= "goose" then
                 self.grid.cells[x][y] = nil
                 cleared = cleared + 1
             end
@@ -1552,7 +1560,8 @@ function Game:confirmShieldTarget()
         local x = self.shield_index
         if self.grid.cells[x] then
             for y = 1, self.size do
-                if self.grid.cells[x][y] then
+                local cell = self.grid.cells[x][y]
+                if cell and cell.value ~= "goose" then
                     self.grid.cells[x][y] = nil
                     cleared = cleared + 1
                 end
