@@ -10859,7 +10859,7 @@ achievementsList = {
     -- Plus Mode
     { id = "ach_first_bomb",       name = "Boom!",             desc = "Use your first bomb in Plus Mode",                               reward = "Eclipse Theme",    coins = 20  },
     { id = "ach_demolition",       name = "Demolition Expert", desc = "Use 10 bombs in total in Plus Mode",                             reward = "Retro Theme",      coins = 75  },
-    { id = "ach_tactician",        name = "Tactician",         desc = "Use 5 Undos and 5 Swaps in a single Plus Mode game",             reward = "Steel Theme",      coins = 150 },
+    { id = "ach_tactician",        name = "Tactician",         desc = "Use 3 Undos and 3 Swaps in a single Plus Mode game",             reward = "Steel Theme",      coins = 150 },
     { id = "ach_2048_plus",        name = "Plus Mode Master",  desc = "Create a 2048 tile in Plus Mode",                                reward = "Cyberpunk Theme",  coins = 250 },
 
     -- Arcade Modes

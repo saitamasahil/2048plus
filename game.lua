@@ -899,7 +899,7 @@ function Game:undo()
             _G.stats.powerup_undo_count = _G.stats.powerup_undo_count - 1
         end
         self.undo_used_this_run = (self.undo_used_this_run or 0) + 1
-        if self.undo_used_this_run >= 5 and self.swap_used_this_run >= 5 and _G.unlockAchievement then
+        if (self.undo_used_this_run or 0) >= 3 and (self.swap_used_this_run or 0) >= 3 and _G.unlockAchievement then
             _G.unlockAchievement("ach_tactician")
         end
     end
@@ -1255,7 +1255,7 @@ function Game:confirmTarget()
 
             self.powerups.swap = self.powerups.swap - 1
             self.swap_used_this_run = (self.swap_used_this_run or 0) + 1
-            if self.undo_used_this_run >= 5 and self.swap_used_this_run >= 5 and _G.unlockAchievement then
+            if (self.undo_used_this_run or 0) >= 3 and (self.swap_used_this_run or 0) >= 3 and _G.unlockAchievement then
                 _G.unlockAchievement("ach_tactician")
             end
             if _G.stats then
