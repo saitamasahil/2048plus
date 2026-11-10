@@ -387,13 +387,31 @@ function renderer.captureOldStoreScreen()
         store_sort_transition_timer = 0
         return
     end
-    local w, h = love.graphics.getDimensions()
+    local is_console = _G.is_console_active and _G.is_console_active() and not _G.android_fullscreen
+    local w = is_console and 640 or love.graphics.getWidth()
+    local h = is_console and 480 or love.graphics.getHeight()
     if not store_sort_old_canvas or store_sort_old_canvas:getWidth() ~= w or store_sort_old_canvas:getHeight() ~= h then
         store_sort_old_canvas = love.graphics.newCanvas(w, h)
     end
     love.graphics.setCanvas(store_sort_old_canvas)
     love.graphics.clear(0, 0, 0, 0)
-    renderer.drawStoreMenu(_G.store_selection or 1, true, true)
+    if is_console then
+        local real_getDims = love.graphics.getDimensions
+        local real_getW = love.graphics.getWidth
+        local real_getH = love.graphics.getHeight
+        love.graphics.getDimensions = function() return 640, 480 end
+        love.graphics.getWidth = function() return 640 end
+        love.graphics.getHeight = function() return 480 end
+        local prev_scale = _G.scale
+        _G.scale = 1.0
+        renderer.drawStoreMenu(_G.store_selection or 1, true, true)
+        _G.scale = prev_scale
+        love.graphics.getDimensions = real_getDims
+        love.graphics.getWidth = real_getW
+        love.graphics.getHeight = real_getH
+    else
+        renderer.drawStoreMenu(_G.store_selection or 1, true, true)
+    end
     love.graphics.setCanvas()
     store_sort_transition_timer = STORE_SORT_TRANSITION_DURATION
 end
@@ -12296,8 +12314,10 @@ function renderer.getStoreItems()
 end
 
 function renderer.drawStoreMenu(selection, skip_transition, content_only)
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
+    local is_console = _G.is_console_active and _G.is_console_active() and not _G.android_fullscreen
+    local w = is_console and 640 or love.graphics.getWidth()
+    local h = is_console and 480 or love.graphics.getHeight()
+    local scale = is_console and 1.0 or (_G.scale or 1)
     local padding = math.floor(20 * scale)
     local title_y = math.floor(18 * scale)
     local coins = _G.stats and _G.stats.coins or 0
@@ -12460,12 +12480,18 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
     love.graphics.setScissor(0, list_y - math.floor(4 * scale), w, avail_h + math.floor(8 * scale))
 
     if not content_only and not skip_transition and _G.screen_transitions and store_sort_transition_timer > 0 and store_sort_old_canvas then
-        local sort_prog = math.max(0, math.min(1, 1 - (store_sort_transition_timer / STORE_SORT_TRANSITION_DURATION)))
-        local old_alpha = math.max(0, 1 - sort_prog * 2.2)
-        if old_alpha > 0 then
-            local old_drift_y = -math.floor(14 * scale * sort_prog)
-            love.graphics.setColor(1, 1, 1, old_alpha)
-            love.graphics.draw(store_sort_old_canvas, 0, old_drift_y)
+        if store_sort_old_canvas:getWidth() ~= w or store_sort_old_canvas:getHeight() ~= h then
+            store_sort_transition_timer = 0
+        else
+            local sort_prog = math.max(0, math.min(1, 1 - (store_sort_transition_timer / STORE_SORT_TRANSITION_DURATION)))
+            local old_alpha = math.max(0, 1 - sort_prog * 2.2)
+            if old_alpha > 0.005 then
+                local old_drift_y = -math.floor(14 * scale * sort_prog)
+                love.graphics.setColor(old_alpha, old_alpha, old_alpha, old_alpha)
+                love.graphics.setBlendMode("alpha", "premultiplied")
+                love.graphics.draw(store_sort_old_canvas, 0, old_drift_y)
+                love.graphics.setBlendMode("alpha", "alphamultiply")
+            end
         end
     end
 
@@ -12474,7 +12500,8 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
         local empty_alpha = 0.5
         if not content_only and not skip_transition and _G.screen_transitions and store_sort_transition_timer > 0 then
             local sort_prog = math.max(0, math.min(1, 1 - (store_sort_transition_timer / STORE_SORT_TRANSITION_DURATION)))
-            local ease = 1 - math.pow(1 - sort_prog, 3)
+            local inv = 1 - sort_prog
+            local ease = 1 - inv * inv * inv
             empty_alpha = 0.5 * ease
         end
         love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], empty_alpha)
@@ -12491,7 +12518,8 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
             local card_delay = (i - 1) * 0.024
             local card_dur = 0.18
             local card_t = math.max(0, math.min(1, (t_elapsed - card_delay) / card_dur))
-            local card_ease = 1 - math.pow(1 - card_t, 3)
+            local inv = 1 - card_t
+            local card_ease = 1 - inv * inv * inv
             card_offset_y = math.floor((1 - card_ease) * 22 * scale)
             card_alpha = card_ease
         end

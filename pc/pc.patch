@@ -154,7 +154,7 @@ diff --git a/renderer.lua b/renderer.lua
          achievements_old_canvas = love.graphics.newCanvas(w, h)
      end
      love.graphics.setCanvas({achievements_old_canvas, stencil = true})
-@@ -5360,7 +5360,15 @@
+@@ -5378,7 +5378,15 @@
  -- ============================================================================
  -- Get proper text for button prompts based on OS
  -- ============================================================================
@@ -171,7 +171,7 @@ diff --git a/renderer.lua b/renderer.lua
      if love.system.getOS() == "Web" then
          local web_mapping = {
              A = "Enter",
-@@ -5374,6 +5382,20 @@
+@@ -5392,6 +5400,20 @@
              DPAD = "Arrows"
          }
          return web_mapping[key] or key
@@ -192,7 +192,7 @@ diff --git a/renderer.lua b/renderer.lua
      end
      return key
  end
-@@ -5389,6 +5411,16 @@
+@@ -5407,6 +5429,16 @@
          text = text:gsub("Press Y", "Press C")
          text = text:gsub("%[Y%]", "[C]")
          text = text:gsub("B button", "Esc key")
@@ -209,7 +209,7 @@ diff --git a/renderer.lua b/renderer.lua
      end
      return text
  end
-@@ -8122,7 +8154,7 @@
+@@ -8140,7 +8172,7 @@
  
          -- Capture the new page to tutorial_new_canvas ONCE at the start of transition
          if not _G.tutorial_slide_ready then
@@ -218,7 +218,7 @@ diff --git a/renderer.lua b/renderer.lua
                  tutorial_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({tutorial_new_canvas, stencil = true})
-@@ -8272,7 +8304,7 @@
+@@ -8290,7 +8322,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -227,7 +227,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -8347,6 +8379,8 @@
+@@ -8365,6 +8397,8 @@
      local undo_lbl = "Undo Limit (Classic/Huge): " .. undo_val
      local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
      local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
@@ -236,7 +236,7 @@ diff --git a/renderer.lua b/renderer.lua
  
      return {
          "Audio & Haptics",
-@@ -8356,6 +8390,7 @@
+@@ -8374,6 +8408,7 @@
          undo_lbl,
          ta_lbl,
          crt_lbl,
@@ -244,7 +244,7 @@ diff --git a/renderer.lua b/renderer.lua
          "Back"
      }
  end
-@@ -8370,7 +8405,7 @@
+@@ -8388,7 +8423,7 @@
      local badge_h = math.floor(28 * scale)
      local badge_y = h - badge_h - math.floor(7 * scale)
  
@@ -253,7 +253,7 @@ diff --git a/renderer.lua b/renderer.lua
      local total_h = header_h + math.floor(12 * scale) + menu_h
      local available_h = badge_y - math.floor(10 * scale)
      local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
-@@ -8395,6 +8430,7 @@
+@@ -8413,6 +8448,7 @@
              "Undo Limit (Classic/Huge): Unlimited",
              "Time Attack Max Limit: 90s",
              "CRT Shader: Off",
@@ -261,7 +261,7 @@ diff --git a/renderer.lua b/renderer.lua
              "Back"
          }
      end
-@@ -8486,7 +8522,7 @@
+@@ -8504,7 +8540,7 @@
              love.graphics.print(action.label, right_x, layout.badge_y + (layout.badge_h - font_help_label:getHeight()) / 2)
  
              right_x = right_x - label_gap
@@ -270,7 +270,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
  
-@@ -8791,7 +8827,7 @@
+@@ -8809,7 +8845,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -279,7 +279,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -9261,7 +9297,7 @@
+@@ -9279,7 +9315,7 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x0, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x0 = right_x0 - label_gap
@@ -288,7 +288,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x0 = right_x0 - key_w
              drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
              right_x0 = right_x0 - item_gap
-@@ -9538,7 +9574,7 @@
+@@ -9556,7 +9592,7 @@
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x1, badge_y_foot + (badge_h_foot - font_help_label:getHeight()) / 2)
              right_x1 = right_x1 - label_gap
@@ -297,7 +297,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x1 = right_x1 - key_w
              drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
              right_x1 = right_x1 - item_gap
-@@ -9681,7 +9717,7 @@
+@@ -9699,7 +9735,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -306,7 +306,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10577,8 +10613,9 @@
+@@ -10595,8 +10631,9 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
@@ -317,7 +317,7 @@ diff --git a/renderer.lua b/renderer.lua
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10950,7 +10987,7 @@
+@@ -10968,7 +11005,7 @@
  
          -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
          if not _G.achievements_slide_ready then
@@ -326,7 +326,7 @@ diff --git a/renderer.lua b/renderer.lua
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -11604,7 +11641,7 @@
+@@ -11622,7 +11659,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -335,7 +335,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11836,7 +11873,7 @@
+@@ -11854,7 +11891,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -344,7 +344,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -12785,7 +12822,7 @@
+@@ -12813,7 +12850,7 @@
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
          right_x = right_x - label_gap
@@ -353,7 +353,7 @@ diff --git a/renderer.lua b/renderer.lua
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13556,7 +13593,7 @@
+@@ -13584,7 +13621,7 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap
