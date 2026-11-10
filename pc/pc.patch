@@ -138,7 +138,7 @@ index fe62bb0..cfbbd42 100644
 +    renderer.init()
 +end
 diff --git a/renderer.lua b/renderer.lua
-index 0defcb7..6d789a0 100644
+index b824384..fcecf9e 100644
 --- a/renderer.lua
 +++ b/renderer.lua
 @@ -361,7 +361,7 @@ end
@@ -331,7 +331,7 @@ index 0defcb7..6d789a0 100644
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -11622,7 +11659,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -11630,7 +11667,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
              -- Badge
              right_x = right_x - label_gap
@@ -340,7 +340,7 @@ index 0defcb7..6d789a0 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11854,7 +11891,7 @@ function renderer.drawAbout(skip_transition)
+@@ -11862,7 +11899,7 @@ function renderer.drawAbout(skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -349,7 +349,7 @@ index 0defcb7..6d789a0 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -12813,7 +12850,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -12821,7 +12858,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
  
          right_x = right_x - label_gap
@@ -358,7 +358,7 @@ index 0defcb7..6d789a0 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13584,7 +13621,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -13592,7 +13629,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap

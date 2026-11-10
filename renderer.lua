@@ -10936,7 +10936,7 @@ function renderer.getStatsMaxScroll()
     local sec_h = math.floor(26 * scale)
     local stat_step = card_h + card_gap
 
-    local total_stats_height = sec_h + (4 * (card_h + card_gap)) + math.floor(10 * scale)
+    local total_stats_height = sec_h + (5 * (card_h + card_gap)) + math.floor(10 * scale)
         + sec_h + (3 * (card_h + card_gap)) + math.floor(16 * scale)
 
     return math.max(0, math.ceil((total_stats_height - avail_h) / stat_step))
@@ -11464,7 +11464,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         local bombs = s.bombs_used or 0
         local swaps = s.swaps_used or 0
 
-        local total_stats_height = sec_h + (4 * (card_h + card_gap)) + math.floor(10 * scale)
+        local total_stats_height = sec_h + (5 * (card_h + card_gap)) + math.floor(10 * scale)
             + sec_h + (3 * (card_h + card_gap)) + math.floor(16 * scale)
 
         _G.stats_max_scroll = math.max(0, math.ceil((total_stats_height - avail_h) / stat_step))
@@ -11549,6 +11549,14 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
 
         drawStatCard(x1, cursor_y, col_w, card_h, "POWERUPS USED", powerups_val)
         drawStatCard(x2, cursor_y, col_w, card_h, "UNDOS TRIGGERED", formatNum(s.undos_used or 0))
+        cursor_y = cursor_y + card_h + card_gap
+
+        local cur_coins = s.coins or 0
+        local total_spent = s.total_spent_coins or 0
+        local total_earned = math.max(s.total_coins_earned or 0, cur_coins + total_spent)
+        local spent_sub = (total_spent > 0) and string.format("Spent: %s", formatNum(total_spent)) or nil
+        drawStatCard(x1, cursor_y, col_w, card_h, "CURRENT COINS", formatNum(cur_coins), spent_sub)
+        drawStatCard(x2, cursor_y, col_w, card_h, "TOTAL COINS EARNED", formatNum(total_earned))
         cursor_y = cursor_y + card_h + card_gap + math.floor(10 * scale)
 
         -- Mode High Scores Section
