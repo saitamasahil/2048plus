@@ -5,6 +5,7 @@
 ]]
 
 local dino_game = {}
+local save = require("save")
 
 local SCREEN_W, SCREEN_H = 640, 480
 local GROUND_MARGIN_BOTTOM = 100
@@ -107,15 +108,33 @@ local function newQuad(x, y, w, h)
 end
 
 local function loadHiscore()
-    if love.filesystem.getInfo(HISCORE_FILE) then
-        local contents = love.filesystem.read(HISCORE_FILE)
-        return tonumber(contents) or 0
+    if save and save.loadHighScore then
+        local s = save.loadHighScore("dino")
+        if s and s > 0 then
+            return s
+        end
+    end
+    if love.filesystem and love.filesystem.getInfo and love.filesystem.getInfo(HISCORE_FILE) then
+        local ok, contents = pcall(love.filesystem.read, HISCORE_FILE)
+        if ok and contents then
+            local s = tonumber(contents) or 0
+            if s > 0 and save and save.saveHighScore then
+                save.saveHighScore(s, "dino")
+            end
+            return s
+        end
     end
     return 0
 end
 
 local function saveHiscore(score)
-    love.filesystem.write(HISCORE_FILE, tostring(math.floor(score)))
+    if save and save.saveHighScore then
+        save.saveHighScore(score, "dino")
+        return
+    end
+    if love.filesystem and love.filesystem.write then
+        love.filesystem.write(HISCORE_FILE, tostring(math.floor(score)))
+    end
 end
 
 local function buildQuads()

@@ -101,6 +101,8 @@ function save.getPath(mode)
         file = "highscore_nomercy.dat"
     elseif mode == "goose" then
         file = "highscore_goose.dat"
+    elseif mode == "dino" then
+        file = "dino_hiscore.dat"
     else
         file = SAVE_FILE  -- classic
     end
@@ -413,6 +415,14 @@ function save.saveHighScore(score, mode)
         file:write(tostring(math.floor(score)))
         file:close()
     end
+end
+
+function save.loadDinoHighScore()
+    return save.loadHighScore("dino")
+end
+
+function save.saveDinoHighScore(score)
+    save.saveHighScore(score, "dino")
 end
 
 function save.loadAchievements()
