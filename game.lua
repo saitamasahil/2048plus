@@ -926,7 +926,7 @@ function Game:movesAvailable()
 end
 
 function Game:undo()
-    if _G.undo_mode == "disabled" then return end
+    if _G.undo_mode == "disabled" and self.mode ~= "plus" then return end
     if not self.canUndo or #self.undoHistory == 0 then return end
 
     if self.mode == "plus" then
