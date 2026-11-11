@@ -2455,7 +2455,7 @@ function love.mousereleased(x, y, button, istouch, presses)
             end
         end
         -- Achievements tab and shoulder button click
-        if _G.appState == "ACHIEVEMENTS" then
+        if _G.appState == "ACHIEVEMENTS" and not (_G.is_console_active and _G.is_console_active()) then
             if _G.achievements_l1_bounds then
                 local b = _G.achievements_l1_bounds
                 if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
