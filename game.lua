@@ -174,6 +174,7 @@ function Game.new(mode)
         self.coin_rush_active = savedState.coin_rush_active or false
         self.second_chance_count = savedState.second_chance_count or 0
         self.start_booster_val = savedState.start_booster_val
+        self.used_booster_this_run = savedState.used_booster_this_run or ((savedState.start_booster_val or 0) > 0) or false
         self.runTime = savedState.runTime or 0
         self.powerups_used_this_run = savedState.powerups_used_this_run or 0
         if _G.achievements then
@@ -181,8 +182,18 @@ function Game.new(mode)
         end
     else
         -- Start a fresh game if no save state exists
-        self:addStartTiles()
+        self.powerups_used_this_run = 0
+        if _G.achievements then
+            _G.achievements.powerups_used_this_run = 0
+            save.saveAchievements(_G.achievements)
+        end
 
+        self.used_booster_this_run = false
+        self.runTime = 0
+        self.undo_used_this_run = 0
+        self.swap_used_this_run = 0
+
+        self:addStartTiles()
 
         if _G.stats then
             _G.stats.games_played = (_G.stats.games_played or 0) + 1
@@ -218,16 +229,6 @@ function Game.new(mode)
         if _G.active_companion == "dog" and _G.recordDogBreedPlayed and self.mode ~= "huge" then
             _G.recordDogBreedPlayed(_G.active_dog_breed)
         end
-
-        self.powerups_used_this_run = 0
-        if _G.achievements then
-            _G.achievements.powerups_used_this_run = 0
-            save.saveAchievements(_G.achievements)
-        end
-
-        self.runTime = 0
-        self.undo_used_this_run = 0
-        self.swap_used_this_run = 0
     end
 
     -- Clear lingering menu coin banners on new game
@@ -305,7 +306,8 @@ function Game:saveGameState(force)
         powerups_used_this_run = self.powerups_used_this_run,
         coin_rush_active = self.coin_rush_active or false,
         second_chance_count = self.second_chance_count or 0,
-        start_booster_val = self.start_booster_val
+        start_booster_val = self.start_booster_val,
+        used_booster_this_run = self.used_booster_this_run
     }
 
     if self.mode == "timeattack" then
@@ -416,6 +418,12 @@ function Game:addStartTiles()
                 tile.booster_spawn_t = love.timer.getTime()
                 self.grid:insertTile(tile)
                 self.start_booster_val = booster_val
+                self.used_booster_this_run = true
+                self.powerups_used_this_run = (self.powerups_used_this_run or 0) + 1
+                if _G.achievements then
+                    _G.achievements.powerups_used_this_run = self.powerups_used_this_run
+                    save.saveAchievements(_G.achievements)
+                end
                 _G.stats[booster_key] = (_G.stats[booster_key] or 1) - 1
                 if save and save.saveStats then save.saveStats(_G.stats) end
             end
@@ -631,7 +639,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_4096")
                     end
 
-                    if merged.value >= 1024 and (self.powerups_used_this_run or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
+                    if merged.value >= 1024 and (self.powerups_used_this_run or 0) == 0 and not self.used_booster_this_run and (self.start_booster_val or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
                         _G.unlockAchievement("ach_untouchable")
                     end
 
@@ -639,7 +647,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_2048_plus")
                     end
 
-                    if merged.value >= 2048 and (self.powerups_used_this_run or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
+                    if merged.value >= 2048 and (self.powerups_used_this_run or 0) == 0 and not self.used_booster_this_run and (self.start_booster_val or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
                         _G.unlockAchievement("ach_untouchable_2048")
                     end
 
@@ -662,7 +670,7 @@ function Game:move(direction)
                         _G.unlockAchievement("ach_merge_8192")
                     end
 
-                    if merged.value >= 2048 and self.runTime and self.runTime <= 420 and _G.unlockAchievement and self.mode ~= "huge" then
+                    if merged.value >= 2048 and self.runTime and self.runTime <= 420 and not self.used_booster_this_run and (self.start_booster_val or 0) == 0 and _G.unlockAchievement and self.mode ~= "huge" then
                         _G.unlockAchievement("ach_speedrun_2048")
                     end
 
@@ -1097,6 +1105,15 @@ function Game:restart()
         self.timerPopTimer = 0
         self.lastCountdownSecond = nil
     end
+    self.powerups_used_this_run = 0
+    if _G.achievements then
+        _G.achievements.powerups_used_this_run = 0
+        save.saveAchievements(_G.achievements)
+    end
+    self.used_booster_this_run = false
+    self.runTime = 0
+    self.undo_used_this_run = 0
+    self.swap_used_this_run = 0
     self.second_chance_count = (_G.stats and _G.stats.second_chance_count) or 0
     self.start_booster_val = nil
     self:addStartTiles()
@@ -1132,14 +1149,6 @@ function Game:restart()
         end
         save.saveStats(_G.stats)
     end
-    self.powerups_used_this_run = 0
-    if _G.achievements then
-        _G.achievements.powerups_used_this_run = 0
-        save.saveAchievements(_G.achievements)
-    end
-    self.runTime = 0
-    self.undo_used_this_run = 0
-    self.swap_used_this_run = 0
     self:saveGameState()
 end
 
