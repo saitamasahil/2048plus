@@ -5188,16 +5188,32 @@ function renderer.drawScores(game)
 
         -- Draw floating time attack popups
         if game.timePopups then
+            local r_bg = (bg_color and bg_color[1]) or 1
+            local g_bg = (bg_color and bg_color[2]) or 1
+            local b_bg = (bg_color and bg_color[3]) or 1
+            local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
+            local is_light_theme = is_light_bg or (bg_lum > 0.45)
+            local shadow_off = math.max(1, math.floor(1.2 * (scale or 1)))
+
             love.graphics.setFont(font_help_label)
             for _, p in ipairs(game.timePopups) do
                 local p_str = p.text
                 local p_w = font_help_label:getWidth(p_str)
                 local px = best_x + (box_w - p_w) / 2
                 local py = box_y + math.floor(box_h * 0.4) + p.y_offset
+                local p_alpha = p.alpha or 1.0
 
-                -- Main text
-                love.graphics.setColor(0.18, 0.85, 0.45, p.alpha)
-                love.graphics.print(p_str, px, py)
+                if is_light_theme then
+                    love.graphics.setColor(0, 0, 0, p_alpha * 0.35)
+                    love.graphics.print(p_str, px + shadow_off, py + shadow_off)
+                    love.graphics.setColor(0.04, 0.48, 0.20, p_alpha)
+                    love.graphics.print(p_str, px, py)
+                else
+                    love.graphics.setColor(0, 0, 0, p_alpha * 0.85)
+                    love.graphics.print(p_str, px + shadow_off, py + shadow_off)
+                    love.graphics.setColor(0.18, 0.92, 0.48, p_alpha)
+                    love.graphics.print(p_str, px, py)
+                end
             end
         end
     else

@@ -27,6 +27,7 @@
 - Fixed store sorting canvas resolution and glitched sorting animation
 - Fixed ghost Move D-pad prompt remaining visible for split second during Game Over transitions
 - Fixed potential crash in Time Attack floating bonus text when display scale was uninitialized
+- Fixed floating bonus time text contrast across all light and dark themes in Time Attack
 
 ## [8.0.3]
 ### Added
