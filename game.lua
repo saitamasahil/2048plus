@@ -392,7 +392,7 @@ function Game:addStartTiles()
     local b128 = _G.stats and (_G.stats.start_128_count or 0) or 0
     local booster_val = 0
     local booster_key = nil
-    if self.mode == "classic" or self.mode == "plus" then
+    if self.mode == "classic" then
         if b512 > 0 then
             booster_val = 512
             booster_key = "start_512_count"
@@ -1457,6 +1457,13 @@ function Game:isAnimating()
 end
 
 function Game:startShieldTargeting()
+    if self.mode == "nomercy" then
+        local renderer = require("renderer")
+        if renderer and renderer.showToast then
+            renderer.showToast("No Shield in No Mercy!")
+        end
+        return
+    end
     if self.timesUp or (self.mode == "timeattack" and self.timeLeft and self.timeLeft <= 0) then
         local renderer = require("renderer")
         if renderer and renderer.showToast then

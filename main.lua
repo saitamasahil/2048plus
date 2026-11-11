@@ -2100,6 +2100,8 @@ function love.update(dt)
             elseif event == input.events.R1 or event == input.events.L1 then
                 if game and (game.timesUp or (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0)) then
                     renderer.showToast("Cannot use Shield when time is up!")
+                elseif game and game.mode == "nomercy" then
+                    renderer.showToast("No Shield in No Mercy!")
                 else
                     local shield_cnt = (game and game.second_chance_count) or 0
                     if shield_cnt > 0 then

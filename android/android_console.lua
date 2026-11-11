@@ -2001,7 +2001,7 @@ local function getFullscreenButtons(game)
     elseif game.state == Game.STATE_LOST then
         table.insert(buttons, {id = "restart", label = "New Game", icon = "restart", event = input.events.CONFIRM})
         local shield_cnt = (game and game.second_chance_count) or 0
-        if shield_cnt > 0 and not game.timesUp and not (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0) then
+        if shield_cnt > 0 and game.mode ~= "nomercy" and not game.timesUp and not (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0) then
             table.insert(buttons, {id = "shield", label = "Shield", badge = tostring(shield_cnt), icon = "shield", event = input.events.R1})
         end
         if game.mode ~= "timeattack" and game.mode ~= "nomercy" and game.mode ~= "goose" and game.canUndo then
