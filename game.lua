@@ -1407,9 +1407,10 @@ function Game:update(dt)
 
     -- Update floating time popups
     if self.timePopups then
+        local scale = _G.scale or 1
         for i = #self.timePopups, 1, -1 do
             local p = self.timePopups[i]
-            p.y_offset = p.y_offset - dt * 35 * _G.scale
+            p.y_offset = p.y_offset - dt * 35 * scale
             p.alpha = p.alpha - dt * 1.8
             if p.alpha <= 0 then
                 table.remove(self.timePopups, i)
