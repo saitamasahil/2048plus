@@ -11314,35 +11314,6 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
                 -- Name & Desc
                 local text_x = icon_x + icon_s + math.floor(15 * scale)
                 local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
-                
-                if isUnlocked then
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
-                else
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.92)
-                end
-                love.graphics.setFont(font_label)
-                love.graphics.print(ach.name, text_x, current_y + math.floor(12 * scale))
- 
-                love.graphics.setFont(font_help_label)
-                if isUnlocked then
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
-                else
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.80)
-                end
-                love.graphics.print(ach.desc, text_x, current_y + math.floor(42 * scale))
-
-                -- Reward Tag
-                love.graphics.setFont(font_help_label)
-                local rew_text = (isUnlocked and "Unlocked: " or "Unlocks: ") .. ach.reward
-                local font_h = font_help_label:getHeight()
-                local c_str = (ach.coins and ach.coins > 0) and tostring(ach.coins) or nil
-                local std_pill_w = math.floor(95 * scale)
-                local c_icon_sz = math.floor(15 * scale)
-                local rw = font_help_label:getWidth(rew_text)
-                local font_h = font_help_label:getHeight()
-                local tag_h = font_h + math.floor(8 * scale)
-                local tag_box_y = current_y + math.floor(9 * scale)
-                local text_y = tag_box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
 
                 local tag_text_color = base_text_col
                 if isUnlocked then
@@ -11358,25 +11329,147 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
                     end
                 end
 
-                -- Calculate rightmost positioning
-                local rew_pill_w = math.max(std_pill_w, rw + math.floor(16 * scale))
-                local rew_box_x, coin_box_x
+                love.graphics.setFont(font_help_label)
+                local font_h = font_help_label:getHeight()
+                local c_icon_sz = math.floor(15 * scale)
 
-                if c_str then
-                    local c_str_w = font_help_label:getWidth(c_str)
-                    local c_content_w = c_str_w + (coin_icon and (c_icon_sz + 4 * scale) or 0)
-                    local coin_pill_w = math.max(std_pill_w, c_content_w + math.floor(16 * scale))
+                local has_reward = (ach.reward and ach.reward ~= "")
+                local rew_text = has_reward and ((isUnlocked and "Unlocked: " or "Unlocks: ") .. ach.reward) or nil
+                local rw = rew_text and font_help_label:getWidth(rew_text) or 0
 
-                    coin_box_x = w - padding - coin_pill_w - math.floor(15 * scale)
-                    rew_box_x = coin_box_x - rew_pill_w - math.floor(10 * scale)
+                local c_str = (ach.coins and ach.coins > 0) and tostring(ach.coins) or nil
+                local has_coins = (c_str ~= nil)
+                local c_str_w = c_str and font_help_label:getWidth(c_str) or 0
+                local c_content_w = c_str_w + (coin_icon and (c_icon_sz + math.floor(4 * scale)) or 0)
 
-                    -- Draw Coin Tag
+                local right_margin = w - padding - math.floor(14 * scale)
+                local rew_pill_w = rw + math.floor(16 * scale)
+                local coin_pill_w = math.max(math.floor(52 * scale), c_content_w + math.floor(14 * scale))
+
+                local rew_box_x = right_margin - rew_pill_w
+                local coin_box_x = right_margin - coin_pill_w
+
+                local rew_box_y, coin_box_y, tag_h
+                if has_reward and has_coins then
+                    tag_h = font_h + math.floor(5 * scale)
+                    local gap = math.floor(5 * scale)
+                    local total_stack_h = tag_h * 2 + gap
+                    local stack_y = current_y + math.floor((card_h - total_stack_h) / 2)
+                    rew_box_y = stack_y
+                    coin_box_y = stack_y + tag_h + gap
+                else
+                    tag_h = font_h + math.floor(7 * scale)
+                    local center_y = current_y + math.floor((card_h - tag_h) / 2)
+                    rew_box_y = center_y
+                    coin_box_y = center_y
+                end
+
+                local max_title_w = (has_reward and rew_box_x or right_margin) - text_x - math.floor(10 * scale)
+                local display_name = ach.name
+                love.graphics.setFont(font_label)
+                if max_title_w > 0 and font_label:getWidth(display_name) > max_title_w then
+                    while #display_name > 1 and font_label:getWidth(display_name .. "...") > max_title_w do
+                        local last = display_name:byte(#display_name)
+                        while #display_name > 1 and last >= 128 and last < 192 do
+                            display_name = display_name:sub(1, -2)
+                            last = display_name:byte(#display_name)
+                        end
+                        display_name = display_name:sub(1, -2)
+                    end
+                    display_name = display_name .. "..."
+                end
+
+                if isUnlocked then
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
+                else
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.92)
+                end
+                love.graphics.print(display_name, text_x, current_y + math.floor(12 * scale))
+
+                local desc_limit_x = (has_coins and coin_box_x) or (has_reward and rew_box_x) or right_margin
+                local max_desc_w = desc_limit_x - text_x - math.floor(10 * scale)
+                local display_desc = ach.desc
+
+                love.graphics.setFont(font_help_label)
+                if isUnlocked then
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
+                else
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.80)
+                end
+
+                local desc_w = font_help_label:getWidth(display_desc)
+                local desc_y = current_y + math.floor(41 * scale)
+
+                if max_desc_w > 0 and desc_w > max_desc_w then
+                    local overflow = desc_w - max_desc_w
+                    local speed = math.max(1, math.floor(30 * scale))
+                    local scroll_dur = overflow / speed
+                    local pause_dur = 1.6
+                    local return_dur = math.min(1.2, scroll_dur * 0.6)
+                    local cycle = pause_dur * 2 + scroll_dur + return_dur
+                    local ct = love.timer.getTime() % cycle
+
+                    local offset_x = 0
+                    if ct > pause_dur and ct <= pause_dur + scroll_dur then
+                        local p = (ct - pause_dur) / scroll_dur
+                        local ease_p = p * p * (3 - 2 * p)
+                        offset_x = math.floor(overflow * ease_p)
+                    elseif ct > pause_dur + scroll_dur and ct <= pause_dur * 2 + scroll_dur then
+                        offset_x = overflow
+                    elseif ct > pause_dur * 2 + scroll_dur then
+                        local p = (ct - (pause_dur * 2 + scroll_dur)) / return_dur
+                        local ease_p = p * p * (3 - 2 * p)
+                        offset_x = math.floor(overflow * (1 - ease_p))
+                    end
+
+                    local prev_sc_x, prev_sc_y, prev_sc_w, prev_sc_h = love.graphics.getScissor()
+                    local clip_x = math.floor(text_x)
+                    local clip_y = math.floor(desc_y - 2 * scale)
+                    local clip_w = math.floor(max_desc_w)
+                    local clip_h = math.floor(font_h + 4 * scale)
+
+                    if prev_sc_x then
+                        love.graphics.intersectScissor(clip_x, clip_y, clip_w, clip_h)
+                    else
+                        love.graphics.setScissor(clip_x, clip_y, clip_w, clip_h)
+                    end
+
+                    love.graphics.print(display_desc, text_x - offset_x, desc_y)
+
+                    if prev_sc_x then
+                        love.graphics.setScissor(prev_sc_x, prev_sc_y, prev_sc_w, prev_sc_h)
+                    else
+                        love.graphics.setScissor()
+                    end
+                else
+                    love.graphics.print(display_desc, text_x, desc_y)
+                end
+
+                if has_reward then
                     if isUnlocked then
                         love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 0.25)
                     else
                         love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.22)
                     end
-                    roundedRect("fill", coin_box_x, tag_box_y, coin_pill_w, tag_h, math.floor(6 * scale))
+                    roundedRect("fill", rew_box_x, rew_box_y, rew_pill_w, tag_h, math.floor(5 * scale))
+
+                    if isUnlocked then
+                        love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0)
+                    else
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
+                    end
+                    local rew_text_x = rew_box_x + math.floor((rew_pill_w - rw) / 2)
+                    local rew_text_y = rew_box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
+                    love.graphics.print(rew_text, rew_text_x, rew_text_y)
+                end
+
+                if has_coins then
+                    if isUnlocked then
+                        love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 0.25)
+                    else
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.22)
+                    end
+                    roundedRect("fill", coin_box_x, coin_box_y, coin_pill_w, tag_h, math.floor(5 * scale))
 
                     if isUnlocked then
                         love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0)
@@ -11385,35 +11478,18 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
                     end
 
                     local c_content_x = coin_box_x + math.floor((coin_pill_w - c_content_w) / 2)
-                    local icon_y = tag_box_y + math.floor((tag_h - c_icon_sz) / 2) + 0.5 * scale
-                    love.graphics.print(c_str, c_content_x, text_y)
+                    local coin_text_y = coin_box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
+                    local coin_icon_y = coin_box_y + math.floor((tag_h - c_icon_sz) / 2) + 0.5 * scale
+                    love.graphics.print(c_str, c_content_x, coin_text_y)
 
                     if coin_icon then
                         love.graphics.setShader(icon_shader)
                         local sw = c_icon_sz / coin_icon:getWidth()
                         local sh = c_icon_sz / coin_icon:getHeight()
-                        love.graphics.draw(coin_icon, c_content_x + c_str_w + 4 * scale, icon_y, 0, sw, sh)
+                        love.graphics.draw(coin_icon, c_content_x + c_str_w + math.floor(4 * scale), coin_icon_y, 0, sw, sh)
                         love.graphics.setShader()
                     end
-                else
-                    rew_box_x = w - padding - rew_pill_w - math.floor(15 * scale)
                 end
-
-                -- Draw Reward / Unlock Tag
-                if isUnlocked then
-                    love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 0.25)
-                else
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.22)
-                end
-                roundedRect("fill", rew_box_x, tag_box_y, rew_pill_w, tag_h, math.floor(6 * scale))
-
-                if isUnlocked then
-                    love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0)
-                else
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
-                end
-                local rew_text_x = rew_box_x + math.floor((rew_pill_w - rw) / 2)
-                love.graphics.print(rew_text, rew_text_x, text_y)
 
                 current_y = current_y + item_h
             end
