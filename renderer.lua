@@ -13490,7 +13490,7 @@ function renderer.drawJukebox(selection, skip_transition)
             local b_font = font_bgm or font_help_label
             local custom_w = b_font:getWidth("CUSTOM") + math.floor(10 * scale)
             local custom_h = math.floor(17 * scale)
-            local custom_y = ry + math.floor((row_inner_h - custom_h) / 2)
+            local custom_y = ry + math.floor((row_inner_h - custom_h) / 2) + 1 * scale
 
             local right_limit = card_x + card_w - math.floor(12 * scale)
             if badge_p > 0.005 then
