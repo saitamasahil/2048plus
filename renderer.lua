@@ -5469,7 +5469,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
     local badge_a = alpha_override or 1.0
     local key_font = font_override or ((h < math.floor(22 * scale)) and font_help_key_small) or font_help_key
     local is_small = (key_font == font_help_key_small) or (h < math.floor(22 * scale))
-    local visual_offset_y = is_small and -math.max(0, math.floor(0.5 * scale)) or -math.max(1, math.floor(scale))
+    local visual_offset_y = is_small and -0.5 * scale or -1.0 * scale
     local original_text = text
     text = renderer.getButtonPrompt(text)
     local letter_offset_y = visual_offset_y
@@ -5631,6 +5631,8 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
         if target_text == "A" or target_text == "B" or target_text == "X" or target_text == "Y" then
             local cx, cy = x + w/2, y + h/2
             local r = h * 0.45
+            local btn_offset_x = (target_text == "B") and (0.65 * scale) or (0.5 * scale)
+            local btn_offset_y = cur_offset_y + press_shift_y
 
             if _G.theme == "matrix" then
                 -- Black background circle
@@ -5647,7 +5649,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
                 love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
                 local tw = key_font:getWidth(target_text)
                 local th = key_font:getHeight()
-                love.graphics.print(target_text, cx - tw/2, cy - th/2 + cur_offset_y + press_shift_y)
+                love.graphics.print(target_text, cx - tw/2 + btn_offset_x, cy - th/2 + btn_offset_y)
                 return
             end
 
@@ -5670,7 +5672,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
             love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
             local tw = key_font:getWidth(target_text)
             local th = key_font:getHeight()
-            love.graphics.print(target_text, cx - tw/2, cy - th/2 + cur_offset_y + press_shift_y)
+            love.graphics.print(target_text, cx - tw/2 + btn_offset_x, cy - th/2 + btn_offset_y)
             return
         end
 
