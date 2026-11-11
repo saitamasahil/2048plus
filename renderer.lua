@@ -11385,7 +11385,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
                     end
 
                     local c_content_x = coin_box_x + math.floor((coin_pill_w - c_content_w) / 2)
-                    local icon_y = tag_box_y + math.floor((tag_h - c_icon_sz) / 2)
+                    local icon_y = tag_box_y + math.floor((tag_h - c_icon_sz) / 2) + 0.5 * scale
                     love.graphics.print(c_str, c_content_x, text_y)
 
                     if coin_icon then
@@ -12750,7 +12750,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
 
                     local content_x = box_x + math.floor((pill_w - content_w) / 2)
                     local text_y = box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
-                    local icon_y = box_y + math.floor((tag_h - c_icon_sz) / 2)
+                    local icon_y = box_y + math.floor((tag_h - c_icon_sz) / 2) + 0.5 * scale
 
                     local can_afford = (coins >= item.cost)
                     if can_afford then
