@@ -382,7 +382,7 @@ index 4cf96fb..db41afc 100644
  function save.init(dir)
      if not dir or dir == "" or (love.system and love.system.getOS() == "Android") or _G.android_console then
          pcall(function()
-@@ -779,4 +783,28 @@ function save.loadFullscreenTutorialSeen()
+@@ -789,4 +793,28 @@ function save.loadFullscreenTutorialSeen()
      return false
  end
  

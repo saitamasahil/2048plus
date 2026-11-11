@@ -383,10 +383,20 @@ function save.loadHighScore(mode)
 end
 
 function save.saveHighScore(score, mode)
+    local new_score = math.floor(tonumber(score) or 0)
+    if new_score <= 0 then
+        return
+    end
+
+    local current_score = save.loadHighScore(mode) or 0
+    if new_score <= current_score then
+        return
+    end
+
     local path = save.getPath(mode)
     local file = io.open(path, "w")
     if file then
-        file:write(tostring(math.floor(score)))
+        file:write(tostring(new_score))
         file:close()
     end
 end
