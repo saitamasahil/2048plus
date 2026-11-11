@@ -1,4 +1,33 @@
 # Changelog
+## [8.0.4]
+### Added
+- Added 3-second audio countdown beeps and haptic rumble when time is running low in Time Attack
+- Added variable jump height to the secret minigame based on jump button hold duration
+- Added Current Coins and Total Coins Earned to the Statistics screen
+- Added automatic marquee scrolling for long achievement descriptions to prevent cutoff text
+
+### Changed
+- Purchased boosters and powerups now activate in your next game instead of altering an ongoing session
+- Restricted high-tile starting boosters to Classic mode to preserve balance across plus and arcade modes
+- Disqualified high-tile booster runs from purity achievements (Untouchable, Zen Master, and Speed Demon)
+- Disabled Second Chance Shield in No Mercy mode to maintain its challenge
+- Stacked reward and coin pills vertically in achievement cards for a cleaner layout and more room for titles
+- Lowered Tactician achievement requirement from 5 to 3 Undos and 3 Swaps
+- Adjusted Speed Demon achievement target to 7 minutes
+- Adjusted Coin Hoarder achievement to track lifetime coins
+- Optically centered circular footer help buttons (A, B, X, Y) and coin icons
+
+### Fixed
+- Fixed reverse undo animation for consecutive undos by pre-recording tile movement transitions
+- Fixed Second Chance Shield accidentally clearing the Goose obstacle tile in Goose Mode
+- Fixed Plus Mode undo powerups being blocked when global undo was disabled in settings
+- Fixed minigame sounds continuing to play when audio was turned off in settings
+- Fixed minigame high scores to safely use the main game save system and prevented lower scores from overwriting saved high scores
+- Fixed Big Spender achievement not unlocking when purchasing companion mascots in the store
+- Fixed store sorting canvas resolution and glitched sorting animation
+- Fixed ghost Move D-pad prompt remaining visible for split second during Game Over transitions
+- Fixed potential crash in Time Attack floating bonus text when display scale was uninitialized
+
 ## [8.0.3]
 ### Added
 - Dynamic high refresh rate support (90Hz, 120Hz, 144Hz+) for much smoother animations and touch response on supported Android devices
