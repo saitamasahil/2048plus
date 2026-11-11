@@ -392,15 +392,17 @@ function Game:addStartTiles()
     local b128 = _G.stats and (_G.stats.start_128_count or 0) or 0
     local booster_val = 0
     local booster_key = nil
-    if b512 > 0 then
-        booster_val = 512
-        booster_key = "start_512_count"
-    elseif b256 > 0 then
-        booster_val = 256
-        booster_key = "start_256_count"
-    elseif b128 > 0 then
-        booster_val = 128
-        booster_key = "start_128_count"
+    if self.mode == "classic" or self.mode == "plus" then
+        if b512 > 0 then
+            booster_val = 512
+            booster_key = "start_512_count"
+        elseif b256 > 0 then
+            booster_val = 256
+            booster_key = "start_256_count"
+        elseif b128 > 0 then
+            booster_val = 128
+            booster_key = "start_128_count"
+        end
     end
 
     if booster_val > 0 and booster_key then

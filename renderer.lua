@@ -12241,9 +12241,9 @@ function renderer.getStoreItems()
         {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",             desc="+1 Undo charge in your next Plus Mode game", consumable=true, ckey="powerup_undo_count"},
         {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",             desc="+1 Swap charge in your next Plus Mode game", consumable=true, ckey="powerup_swap_count"},
         {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",             desc="+1 Bomb charge in your next Plus Mode game", consumable=true, ckey="powerup_bomb_count"},
-        {id="start_128",     category="booster",   cost=60,   name="128 High-Tile Booster (x" .. booster_128 .. " owned)", desc="Next game starts with a 128 tile", consumable=true, ckey="start_128_count"},
-        {id="start_256",     category="booster",   cost=120,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
-        {id="start_512",     category="booster",   cost=250,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
+        {id="start_128",     category="booster",   cost=60,   name="128 High-Tile Booster (x" .. booster_128 .. " owned)", desc="Classic & Plus only. Next game starts with a 128 tile", consumable=true, ckey="start_128_count"},
+        {id="start_256",     category="booster",   cost=120,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Classic & Plus only. Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
+        {id="start_512",     category="booster",   cost=250,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Classic & Plus only. Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
         {id="coin_rush",     category="booster",   cost=100,  name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles all Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
         {id="second_chance", category="booster",   cost=200,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col in your next game", consumable=true, ckey="second_chance_count"},
 
