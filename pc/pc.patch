@@ -358,7 +358,7 @@ index 245e0e9..00a8849 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13693,7 +13730,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -13751,7 +13788,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
          right_x = right_x - label_gap

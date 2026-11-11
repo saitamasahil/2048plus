@@ -16,6 +16,9 @@
 - Adjusted Speed Demon achievement target to 7 minutes
 - Adjusted Coin Hoarder achievement to track lifetime coins
 - Optically centered circular footer help buttons (A, B, X, Y) and coin icons
+- Redesigned Pawprint theme with a warm cozy mocha and espresso palette
+- Refined Matcha theme with serene Japanese tea ink typography and bamboo ceramic palette
+- Fixed track text readability in Jukebox when playing songs are highlighted across all themes
 
 ### Fixed
 - Fixed reverse undo animation for consecutive undos by pre-recording tile movement transitions

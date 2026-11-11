@@ -1151,7 +1151,7 @@ local themes = {
     },
     matcha = {
         tile_colors = {
-            [0]    = {hex("#d7ccc8")},
+            [0]    = {hex("#dbe7d9")},
             [2]    = {hex("#fff8e1")},
             [4]    = {hex("#ffecb3")},
             [8]    = {hex("#dce775")},
@@ -1165,19 +1165,19 @@ local themes = {
             [2048] = {hex("#5d4037")},
         },
         super_tile_color = {hex("#5d4037")},
-        dark_text        = {hex("#1b3a1f")},   -- deep forest green
-        light_text       = {hex("#f9fbe7")},   -- pale lime white
-        ui_text          = {hex("#2e7d32")},   -- deep green
-        bg_color         = {hex("#efebe9")},
-        board_color      = {hex("#bcaaa4")},
-        score_bg_color   = {hex("#bcaaa4")},
-        score_label      = {hex("#4e342e")},   -- warm brown label
-        score_value      = {hex("#1b5e20")},   -- deep green value
-        overlay_win      = {hex("#558b2f")},
-        overlay_lose     = {hex("#bcaaa4")},
-        help_bg_color    = {hex("#bcaaa4")},
-        help_key_color   = {hex("#8bc34a")},
-        help_key_text    = {hex("#1b3a1f")},   -- consistent dark green
+        dark_text        = {hex("#1c3822")},
+        light_text       = {hex("#f4f9f2")},
+        ui_text          = {hex("#1c3822")},
+        bg_color         = {hex("#f4f7f2")},
+        board_color      = {hex("#7b9a78")},
+        score_bg_color   = {hex("#7b9a78")},
+        score_label      = {hex("#eef5ed")},
+        score_value      = {hex("#ffffff")},
+        overlay_win      = {hex("#4a7c59")},
+        overlay_lose     = {hex("#7b9a78")},
+        help_bg_color    = {hex("#7b9a78")},
+        help_key_color   = {hex("#4a7c59")},
+        help_key_text    = {hex("#ffffff")},
     },
     aurora = {
         -- Deep-space Northern Lights: pitch-black void, tiles shift from
@@ -1733,8 +1733,8 @@ local themes = {
     },
     pawprint = {
         tile_colors = {
-            [0]    = {hex("#e0d4cc")},
-            [2]    = {hex("#f7ede2")},
+            [0]    = {hex("#ebdcd0")},
+            [2]    = {hex("#fdf8f5")},
             [4]    = {hex("#f5cac3")},
             [8]    = {hex("#f28482")},
             [16]   = {hex("#e07a5f")},
@@ -1747,18 +1747,18 @@ local themes = {
             [2048] = {hex("#582f0e")},
         },
         super_tile_color = {hex("#3a1700")},
-        dark_text        = {hex("#582f0e")},
-        light_text       = {hex("#fdf8f5")},
-        ui_text          = {hex("#582f0e")},
-        bg_color         = {hex("#fdf8f5")},
-        board_color      = {hex("#8d5b4c")},
-        score_bg_color   = {hex("#8d5b4c")},
-        score_label      = {hex("#fdf8f5")},
+        dark_text        = {hex("#3d2314")},
+        light_text       = {hex("#fdfbf7")},
+        ui_text          = {hex("#3d2314")},
+        bg_color         = {hex("#faf6f0")},
+        board_color      = {hex("#5c3a28")},
+        score_bg_color   = {hex("#5c3a28")},
+        score_label      = {hex("#f5ece3")},
         score_value      = {hex("#ffffff")},
-        overlay_win      = {hex("#dda15e")},
-        overlay_lose     = {hex("#8d5b4c")},
-        help_bg_color    = {hex("#8d5b4c")},
-        help_key_color   = {hex("#d4a373")},
+        overlay_win      = {hex("#e08a42")},
+        overlay_lose     = {hex("#5c3a28")},
+        help_bg_color    = {hex("#5c3a28")},
+        help_key_color   = {hex("#e08a42")},
         help_key_text    = {hex("#ffffff")},
     },
     neko_night = {
@@ -12963,7 +12963,16 @@ function renderer.drawJukebox(selection, skip_transition)
     local is_actively_playing = sound_mod.isBgmPlaying and sound_mod.isBgmPlaying() or false
     local is_playing          = current_track ~= nil
 
-    local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
+    local row_bg_r = board_color[1] * 0.55 + bg_color[1] * 0.45
+    local row_bg_g = board_color[2] * 0.55 + bg_color[2] * 0.45
+    local row_bg_b = board_color[3] * 0.55 + bg_color[3] * 0.45
+    local row_bg_lum = 0.299 * row_bg_r + 0.587 * row_bg_g + 0.114 * row_bg_b
+    local base_text_col
+    if row_bg_lum > 0.48 then
+        base_text_col = dark_text or {0.14, 0.14, 0.16, 1}
+    else
+        base_text_col = light_text or {0.98, 0.98, 1.0, 1}
+    end
 
     -- Dynamic card layout
     local card_w  = w - math.floor(32 * scale)
@@ -13372,19 +13381,20 @@ function renderer.drawJukebox(selection, skip_transition)
         local ry = playlist_y + (track_idx - 1 - scroll_offset) * row_h
         local is_curr = (track_idx == curr_idx and curr_idx > 0)
 
+        -- Base card background for every row so density is consistent across all themes
+        love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.55)
+        roundedRect("fill", card_x, ry, card_w, row_inner_h, math.floor(6 * scale))
+
         if is_curr and not is_actively_playing then
-            -- PAUSED track row: Distinctive theme accent tint + outline stroke
+            -- Paused track row accent tint and outline
             love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.15)
             roundedRect("fill", card_x, ry, card_w, row_inner_h, math.floor(6 * scale))
             love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.45)
             love.graphics.setLineWidth(math.floor(1.5 * scale))
             roundedRect("line", card_x, ry, card_w, row_inner_h, math.floor(6 * scale))
         elseif is_curr and is_actively_playing then
-            -- Active track row fill
-            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.10)
-            roundedRect("fill", card_x, ry, card_w, row_inner_h, math.floor(6 * scale))
-        else
-            love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.55)
+            -- Active playing track row accent tint
+            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.15)
             roundedRect("fill", card_x, ry, card_w, row_inner_h, math.floor(6 * scale))
         end
     end
@@ -13607,14 +13617,67 @@ function renderer.drawJukebox(selection, skip_transition)
             end
 
             love.graphics.setFont(font_help_label)
+
+            -- Compute actual visible background behind text for this track row
+            local cur_bg_lum = row_bg_lum
             if is_sel then
-                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
-            elseif is_curr then
-                local curr_text_col = renderer.getContrastTextColor(board_color, help_key_color, dark_text)
-                love.graphics.setColor(curr_text_col[1], curr_text_col[2], curr_text_col[3], 1.0)
-            else
-                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.80)
+                local sel_r = row_bg_r * 0.78 + help_key_color[1] * 0.22
+                local sel_g = row_bg_g * 0.78 + help_key_color[2] * 0.22
+                local sel_b = row_bg_b * 0.78 + help_key_color[3] * 0.22
+                cur_bg_lum = 0.299 * sel_r + 0.587 * sel_g + 0.114 * sel_b
             end
+
+            local tx_r, tx_g, tx_b
+            if is_curr then
+                -- Playing track accent with guaranteed contrast against current row background
+                local ar, ag, ab = help_key_color[1], help_key_color[2], help_key_color[3]
+                local a_lum = 0.299 * ar + 0.587 * ag + 0.114 * ab
+                local contrast = math.abs(a_lum - cur_bg_lum)
+
+                if contrast >= 0.38 then
+                    tx_r, tx_g, tx_b = ar, ag, ab
+                elseif cur_bg_lum > 0.48 then
+                    -- Light background: darken accent while preserving hue
+                    local target = math.max(0.04, cur_bg_lum - 0.42)
+                    local factor = target / math.max(0.01, a_lum)
+                    local max_ch = math.max(ar, ag, ab, 0.001)
+                    tx_r = math.min(1.0, ar * factor)
+                    tx_g = math.min(1.0, ag * factor)
+                    tx_b = math.min(1.0, ab * factor)
+                    if math.abs(0.299 * tx_r + 0.587 * tx_g + 0.114 * tx_b - cur_bg_lum) < 0.35 then
+                        tx_r = (ar / max_ch) * target
+                        tx_g = (ag / max_ch) * target
+                        tx_b = (ab / max_ch) * target
+                    end
+                else
+                    -- Dark background: brighten accent while preserving hue
+                    local target = math.min(0.98, cur_bg_lum + 0.48)
+                    local factor = math.min(5.0, target / math.max(0.01, a_lum))
+                    tx_r = math.min(1.0, ar * factor)
+                    tx_g = math.min(1.0, ag * factor)
+                    tx_b = math.min(1.0, ab * factor)
+                    local cur_lum = 0.299 * tx_r + 0.587 * tx_g + 0.114 * tx_b
+                    if cur_lum < 0.55 then
+                        local boost = 0.55 - cur_lum
+                        tx_r = math.min(1.0, tx_r + boost)
+                        tx_g = math.min(1.0, tx_g + boost)
+                        tx_b = math.min(1.0, tx_b + boost)
+                    end
+                end
+            else
+                -- Non playing tracks use high contrast base text
+                tx_r, tx_g, tx_b = base_text_col[1], base_text_col[2], base_text_col[3]
+            end
+
+            -- Soft shadow for highlighted playing track to guarantee absolute legibility
+            if is_sel and is_curr then
+                local shadow_a = cur_bg_lum > 0.48 and 0.22 or 0.65
+                love.graphics.setColor(0, 0, 0, shadow_a)
+                love.graphics.print(display_label, text_x + 1, text_y + 1)
+            end
+
+            local text_alpha = (is_sel or is_curr) and 1.0 or 0.82
+            love.graphics.setColor(tx_r, tx_g, tx_b, text_alpha)
             love.graphics.print(display_label, text_x, text_y)
 
             -- Custom track badge positioned along with song name
@@ -13629,7 +13692,8 @@ function renderer.drawJukebox(selection, skip_transition)
                 love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.85)
                 love.graphics.setLineWidth(math.floor(1 * scale))
                 roundedRect("line", custom_x, custom_y, custom_w, custom_h, math.floor(4 * scale))
-                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.95)
+                local badge_txt_col = cur_bg_lum > 0.48 and dark_text or (light_text or {0.98, 0.98, 1.0})
+                love.graphics.setColor(badge_txt_col[1], badge_txt_col[2], badge_txt_col[3], 0.95)
                 local txt_y = custom_y + math.floor((custom_h - b_font:getHeight()) / 2)
                 love.graphics.printf(badge_txt, custom_x, txt_y, custom_w, "center")
                 love.graphics.setFont(font_help_label)
@@ -13639,13 +13703,7 @@ function renderer.drawJukebox(selection, skip_transition)
             if badge_p > 0.005 then
                 local badge_txt = "PAUSED"
                 local by2 = text_y - math.floor((1 - badge_p) * 4 * scale)
-                local badge_col = renderer.getContrastTextColor(board_color, help_key_color, dark_text)
-                love.graphics.setColor(
-                    badge_col[1],
-                    badge_col[2],
-                    badge_col[3],
-                    0.95 * badge_p
-                )
+                love.graphics.setColor(tx_r, tx_g, tx_b, 0.95 * badge_p)
                 love.graphics.print(badge_txt, pause_x, by2)
             end
         end
