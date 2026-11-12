@@ -106,7 +106,7 @@ index fe62bb0..cfbbd42 100644
      _G.merge_fx = "default"
      _G.board_skin = save.loadBoardSkin() or "default"
  
-@@ -1813,7 +1817,19 @@ function love.update(dt)
+@@ -1817,7 +1821,19 @@ function love.update(dt)
                          end
                          _G.crt_filter = new_crt
                          save.saveCrtFilter(_G.crt_filter)
@@ -127,7 +127,7 @@ index fe62bb0..cfbbd42 100644
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2609,3 +2625,9 @@ function love.visible(v)
+@@ -2671,3 +2687,9 @@ function love.visible(v)
          end
      end
  end

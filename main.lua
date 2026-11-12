@@ -601,7 +601,11 @@ function love.update(dt)
                 -- Determine direction from hierarchy depth
                 local old_depth = STATE_DEPTH[last_app_state] or 0
                 local new_depth = STATE_DEPTH[_G.appState] or 0
-                if new_depth > old_depth then
+                if last_app_state == "MENU" and _G.appState == "JUKEBOX" then
+                    transition_direction = 2
+                elseif last_app_state == "JUKEBOX" and _G.appState == "MENU" then
+                    transition_direction = -2
+                elseif new_depth > old_depth then
                     transition_direction = 1   -- deeper = slide from right
                 elseif new_depth < old_depth then
                     transition_direction = -1  -- back = slide from left
@@ -911,7 +915,7 @@ function love.update(dt)
                         if sound.enterJukebox then
                             sound.enterJukebox()
                         end
-                    end)
+                    end, 2)
                 end
             elseif event == input.events.R1 then
                 sound.playMenuSelect()
@@ -1230,7 +1234,7 @@ function love.update(dt)
                     if sound.exitJukebox then
                         sound.exitJukebox()
                     end
-                end)
+                end, -2)
             end
             return
         elseif _G.appState == "PLAY_SELECT" then
@@ -2291,6 +2295,64 @@ local function draw_internal()
             love.graphics.setBlendMode("replace", "premultiplied")
             love.graphics.draw(screen_canvas, new_x, 0)
             love.graphics.setBlendMode("alpha", "alphamultiply")
+        elseif dir == 2 then
+            -- Left side forward screen slide
+            local old_x = math.floor(0.3 * w * p)
+            local new_x = math.floor(-w * (1 - p))
+
+            -- Draw old screen
+            if old_screen_canvas then
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.setBlendMode("replace", "premultiplied")
+                love.graphics.draw(old_screen_canvas, old_x, 0)
+                love.graphics.setBlendMode("alpha", "alphamultiply")
+
+                -- Dim old screen overlay
+                love.graphics.setColor(0, 0, 0, 0.5 * p)
+                love.graphics.rectangle("fill", old_x, 0, w, h)
+            end
+
+            -- Draw shadow to the right of the new screen
+            for i = 0, shadow_w - 1 do
+                local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
+                love.graphics.setColor(0, 0, 0, alpha)
+                love.graphics.rectangle("fill", new_x + w + i, 0, 1, h)
+            end
+
+            -- Draw new screen
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("replace", "premultiplied")
+            love.graphics.draw(screen_canvas, new_x, 0)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
+        elseif dir == -2 then
+            -- Left side backward screen slide
+            local new_x = math.floor(0.3 * w * (1 - p))
+            local old_x = math.floor(-w * p)
+
+            -- Draw new screen
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("replace", "premultiplied")
+            love.graphics.draw(screen_canvas, new_x, 0)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
+
+            -- Dim overlay
+            love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
+            love.graphics.rectangle("fill", new_x, 0, w, h)
+
+            if old_screen_canvas then
+                -- Draw edge shadow
+                for i = 0, shadow_w - 1 do
+                    local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
+                    love.graphics.setColor(0, 0, 0, alpha)
+                    love.graphics.rectangle("fill", old_x + w + i, 0, 1, h)
+                end
+
+                -- Draw old screen
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.setBlendMode("replace", "premultiplied")
+                love.graphics.draw(old_screen_canvas, old_x, 0)
+                love.graphics.setBlendMode("alpha", "alphamultiply")
+            end
         else
             -- Backward screen slide
             -- Parallax shift for new screen
