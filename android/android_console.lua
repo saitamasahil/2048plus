@@ -942,14 +942,25 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
             if vx >= btn.x and vx <= btn.x + btn.w and vy >= btn.y and vy <= btn.y + btn.h then
                 if not btn.disabled then
                     fs_button_pressed = btn.id
-                    fs_active_touches[id] = {type = "fs_button", btn = btn}
-                    if btn.action == "console" then
-                        -- Dispatched on touch release
-                    elseif btn.event then
-                        emitEvent(btn.event)
-                    end
-                    triggerHaptic(0.018)
+                    fs_active_touches[id] = {
+                        type = "fs_button",
+                        btn = btn,
+                        start_x = x,
+                        start_y = y,
+                        time = love.timer.getTime(),
+                        vx = vx,
+                        vy = vy,
+                    }
                 end
+                fs_swipe_track[id] = {
+                    start_x = x,
+                    start_y = y,
+                    fired = false,
+                    time = love.timer.getTime(),
+                    vx = vx,
+                    vy = vy,
+                    from_button = true,
+                }
                 return
             end
         end
@@ -1064,6 +1075,20 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
 
     -- Fullscreen swipe tracking
     if is_gameplay and android_view_mode == "fullscreen" then
+        local btn_touch = fs_active_touches[id]
+        if btn_touch and btn_touch.type == "fs_button" then
+            local diff_x = x - btn_touch.start_x
+            local diff_y = y - btn_touch.start_y
+            local threshold = getSwipeThreshold(w, h)
+            local tap_max = math.floor(threshold * 0.45)
+            if (diff_x * diff_x + diff_y * diff_y) > (tap_max * tap_max) then
+                if fs_button_pressed == btn_touch.btn.id then
+                    fs_button_pressed = nil
+                end
+                fs_active_touches[id] = nil
+            end
+        end
+
         local sw = fs_swipe_track[id]
         if sw and not sw.fired then
             local status_margin = getTopStatusBarMargin(w, h)
@@ -1071,7 +1096,7 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
                 return
             end
             local nav_margin = getBottomNavMargin(w, h)
-            if sw.start_y >= h - nav_margin then
+            if not sw.from_button and sw.start_y >= h - nav_margin then
                 return
             end
             local diff_x = x - sw.start_x
@@ -1084,6 +1109,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             if is_horiz or is_vert then
                 sw.fired = true
                 console_has_swiped = true
+                if fs_button_pressed then
+                    fs_button_pressed = nil
+                end
+                fs_active_touches[id] = nil
                 local ev = nil
                 if is_horiz then
                     ev = (diff_x > 0) and input.events.RIGHT or input.events.LEFT
@@ -1241,9 +1270,53 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                 android_console.setViewMode("console")
                 return
             end
-            if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
-            if touch.event then releaseEvent(touch.event) end
-            fs_active_touches[id] = nil
+            if touch.type == "top_button" then
+                if touch.event then releaseEvent(touch.event) end
+                fs_active_touches[id] = nil
+                return
+            elseif touch.type == "fs_button" then
+                local dur = love.timer.getTime() - touch.time
+                local diff_x = x - touch.start_x
+                local diff_y = y - touch.start_y
+                local threshold = getSwipeThreshold(w, h)
+                local tap_max = math.floor(threshold * 0.45)
+                local dist_sq = diff_x * diff_x + diff_y * diff_y
+                local btn = touch.btn
+
+                local origin_x = geo.origin_x or 0
+                local console_w = geo.console_w or w
+                local console_h = geo.console_h or h
+                local vw = 390
+                local vh = math.floor(vw * (console_h / console_w))
+                local vx = (x - origin_x) * (vw / console_w)
+                local vy = y * (vh / console_h)
+                local inside = btn and (vx >= btn.x - 4 and vx <= btn.x + btn.w + 4 and vy >= btn.y - 4 and vy <= btn.y + btn.h + 4)
+
+                if dur < 0.35 and dist_sq <= (tap_max * tap_max) and inside and not btn.disabled then
+                    if btn.action == "console" then
+                        fs_active_touches[id] = nil
+                        android_console.setViewMode("console")
+                        return
+                    elseif btn.event then
+                        emitEvent(btn.event)
+                        triggerHaptic(0.018)
+                        pcall(function()
+                            local timer = require("timer")
+                            timer.after(0.08, function()
+                                releaseEvent(btn.event)
+                            end)
+                        end)
+                    end
+                    fs_active_touches[id] = nil
+                    fs_swipe_track[id] = nil
+                    return
+                end
+                fs_active_touches[id] = nil
+            else
+                if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
+                if touch.event then releaseEvent(touch.event) end
+                fs_active_touches[id] = nil
+            end
         end
         if active_touches[id] then
             local touch = active_touches[id]
