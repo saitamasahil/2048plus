@@ -298,8 +298,11 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
     local abs_x = math.abs(diff_x)
     local abs_y = math.abs(diff_y)
 
-    local swipe_threshold = 30 -- pixels
-    local tap_threshold = 15
+    local w, h = love.graphics.getDimensions()
+    local min_dim = math.min(w, h)
+    local scale = math.max(1.0, min_dim / 390)
+    local swipe_threshold = math.max(48, math.floor(42 * scale))
+    local tap_threshold = math.floor(swipe_threshold * 0.45)
 
     if abs_x > swipe_threshold or abs_y > swipe_threshold then
         -- D-Pad swipe gesture

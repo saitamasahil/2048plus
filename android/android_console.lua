@@ -889,6 +889,13 @@ local function getTopStatusBarMargin(w, h)
     return math.max(safe_top, min_status_margin)
 end
 
+-- Scaled swipe threshold based on screen size
+local function getSwipeThreshold(w, h)
+    local min_dim = math.min(w, h)
+    local scale = math.max(1.0, min_dim / 390)
+    return math.max(48, math.floor(42 * scale))
+end
+
 function android_console.touchpressed(id, x, y, dx, dy, pressure)
     if transition_active then
         return
@@ -1071,12 +1078,14 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             local diff_y = y - sw.start_y
             local abs_x = math.abs(diff_x)
             local abs_y = math.abs(diff_y)
-            local threshold = 24
-            if abs_x > threshold or abs_y > threshold then
+            local threshold = getSwipeThreshold(w, h)
+            local is_horiz = abs_x >= threshold and abs_x >= abs_y * 1.25
+            local is_vert = abs_y >= threshold and abs_y >= abs_x * 1.25
+            if is_horiz or is_vert then
                 sw.fired = true
                 console_has_swiped = true
                 local ev = nil
-                if abs_x > abs_y then
+                if is_horiz then
                     ev = (diff_x > 0) and input.events.RIGHT or input.events.LEFT
                 else
                     ev = (diff_y > 0) and input.events.DOWN or input.events.UP
@@ -1144,8 +1153,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
         local abs_x = math.abs(diff_x)
         local abs_y = math.abs(diff_y)
 
-        local threshold = 24
-        if abs_x > threshold or abs_y > threshold then
+        local threshold = getSwipeThreshold(w, h)
+        local is_horiz = abs_x >= threshold and abs_x >= abs_y * 1.25
+        local is_vert = abs_y >= threshold and abs_y >= abs_x * 1.25
+        if is_horiz or is_vert then
             sw.fired = true
             console_has_swiped = true
             screen_overlay_visible = false
@@ -1155,7 +1166,7 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
                 fs_tutorial_time = 0.0
             end
             local ev = nil
-            if abs_x > abs_y then
+            if is_horiz then
                 if diff_x > 0 then
                     ev = input.events.RIGHT
                 else
@@ -1251,8 +1262,14 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
         local sw = fs_swipe_track[id]
         if sw and not sw.fired then
             local dur = love.timer.getTime() - sw.time
-            local dist_sq = (x - sw.start_x) ^ 2 + (y - sw.start_y) ^ 2
-            if dur < 0.35 and dist_sq < 160 then
+            local diff_x = x - sw.start_x
+            local diff_y = y - sw.start_y
+            local abs_x = math.abs(diff_x)
+            local abs_y = math.abs(diff_y)
+            local threshold = getSwipeThreshold(w, h)
+            local tap_max = math.floor(threshold * 0.45)
+            local dist_sq = diff_x * diff_x + diff_y * diff_y
+            if dur < 0.35 and dist_sq <= (tap_max * tap_max) then
                 local renderer = require("renderer")
                 local r_layout = renderer.getLayout and renderer.getLayout()
                 if r_layout and (_G.powerup_targeting or (_G.game and (_G.game.state == Game.STATE_TARGETING_BOMB or _G.game.state == Game.STATE_TARGETING_SWAP_1 or _G.game.state == Game.STATE_TARGETING_SWAP_2 or _G.game.state == Game.STATE_TARGETING_SHIELD))) then
@@ -1272,6 +1289,26 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                             triggerHaptic(0.02)
                         end
                     end
+                end
+            elseif abs_x >= threshold or abs_y >= threshold then
+                sw.fired = true
+                console_has_swiped = true
+                local ev = nil
+                if abs_x >= abs_y then
+                    ev = (diff_x > 0) and input.events.RIGHT or input.events.LEFT
+                else
+                    ev = (diff_y > 0) and input.events.DOWN or input.events.UP
+                end
+                if ev then
+                    sw.event = ev
+                    emitEvent(ev)
+                    pcall(function()
+                        local timer = require("timer")
+                        timer.after(0.08, function()
+                            releaseEvent(ev)
+                            if sw and sw.event == ev then sw.event = nil end
+                        end)
+                    end)
                 end
             end
         end
@@ -1302,10 +1339,12 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
 
     -- Direct tap inside virtual screen
     local sw = swipe_track[id]
+    local threshold = getSwipeThreshold(w, h)
+    local tap_max = math.floor(threshold * 0.45)
     if sw and sw.in_screen and not sw.fired then
         local dur = love.timer.getTime() - sw.time
         local dist_sq = (x - sw.start_x)^2 + (y - sw.start_y)^2
-        if dur < 0.35 and dist_sq < 160 then
+        if dur < 0.35 and dist_sq <= (tap_max * tap_max) then
             local gx = (x - geo.screen_x) / geo.scale_x
             local gy = (y - geo.screen_y) / geo.scale_y
 
@@ -1447,6 +1486,41 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                     swipe_track[id] = nil
                     return
                 end
+            end
+        end
+    end
+
+    -- Release swipe fallback during gameplay
+    if sw and not sw.fired and is_gameplay then
+        local diff_x = x - sw.start_x
+        local diff_y = y - sw.start_y
+        local abs_x = math.abs(diff_x)
+        local abs_y = math.abs(diff_y)
+        if abs_x >= threshold or abs_y >= threshold then
+            sw.fired = true
+            console_has_swiped = true
+            screen_overlay_visible = false
+            console_swipe_count = console_swipe_count + 1
+            if not fs_tutorial_seen and not fs_tutorial_active and console_swipe_count >= 8 then
+                fs_tutorial_active = true
+                fs_tutorial_time = 0.0
+            end
+            local ev = nil
+            if abs_x >= abs_y then
+                if diff_x > 0 then ev = input.events.RIGHT else ev = input.events.LEFT end
+            else
+                if diff_y > 0 then ev = input.events.DOWN else ev = input.events.UP end
+            end
+            if ev then
+                sw.event = ev
+                emitEvent(ev)
+                pcall(function()
+                    local timer = require("timer")
+                    timer.after(0.08, function()
+                        releaseEvent(ev)
+                        if sw and sw.event == ev then sw.event = nil end
+                    end)
+                end)
             end
         end
     end
