@@ -1726,7 +1726,7 @@ function love.update(dt)
                         save.saveButtonVibration(_G.button_vibration)
                         sound.playMenuSelect()
                         if _G.button_vibration and love.system and love.system.vibrate then
-                            love.system.vibrate(0.015)
+                            love.system.vibrate(0.035)
                         end
                     elseif sel == "Back" then
                         sound.playMenuBack()

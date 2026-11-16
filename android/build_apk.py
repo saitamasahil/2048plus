@@ -205,6 +205,48 @@ os.makedirs(os.path.dirname(refresh_helper_dst), exist_ok=True)
 if os.path.isfile(refresh_helper_src):
     shutil.copyfile(refresh_helper_src, refresh_helper_dst)
 
+# Copy helper for modern in-game haptic vibration
+vibration_helper_src = os.path.join(PROJECT_ROOT, "android/VibrationHelper.smali")
+vibration_helper_dst = os.path.join(decomp_dir, "smali/org/libsdl/app/VibrationHelper.smali")
+os.makedirs(os.path.dirname(vibration_helper_dst), exist_ok=True)
+if os.path.isfile(vibration_helper_src):
+    shutil.copyfile(vibration_helper_src, vibration_helper_dst)
+
+# Update GameActivity.vibrate to use VibrationHelper with modern VibrationEffect and AudioAttributes
+game_activity_smali = os.path.join(decomp_dir, "smali/org/love2d/android/GameActivity.smali")
+if os.path.isfile(game_activity_smali):
+    with open(game_activity_smali, "r", encoding="utf-8") as f:
+        ga_src = f.read()
+    old_vib = """.method public static vibrate(D)V
+    .locals 3
+
+    sget-object v0, Lorg/love2d/android/GameActivity;->vibrator:Landroid/os/Vibrator;
+
+    if-eqz v0, :cond_0
+
+    const-wide v1, 0x408f400000000000L    # 1000.0
+
+    mul-double p0, p0, v1
+
+    double-to-long p0, p0
+
+    invoke-virtual {v0, p0, p1}, Landroid/os/Vibrator;->vibrate(J)V
+
+    :cond_0
+    return-void
+.end method"""
+    new_vib = """.method public static vibrate(D)V
+    .locals 0
+
+    invoke-static {p0, p1}, Lorg/libsdl/app/VibrationHelper;->vibrate(D)V
+
+    return-void
+.end method"""
+    if old_vib in ga_src:
+        ga_src = ga_src.replace(old_vib, new_vib)
+        with open(game_activity_smali, "w", encoding="utf-8") as f:
+            f.write(ga_src)
+
 # Neutralize setOrientation in SDLActivity so runtime calls do not override manifest user orientation
 sdl_smali = os.path.join(decomp_dir, "smali/org/libsdl/app/SDLActivity.smali")
 if os.path.isfile(sdl_smali):

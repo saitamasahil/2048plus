@@ -447,7 +447,7 @@ local function triggerHaptic(duration)
     if _G.button_vibration == false or _G.console_haptics == false then return end
     pcall(function()
         if love.system and love.system.vibrate then
-            love.system.vibrate(duration or 0.015)
+            love.system.vibrate(math.max(0.035, duration or 0.035))
         end
     end)
 end
