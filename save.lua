@@ -319,6 +319,33 @@ function save.loadTheme()
     return nil
 end
 
+local CUSTOM_THEMES_FILE = "custom_themes.dat"
+
+-- Custom themes persistence
+function save.saveCustomThemes(themes_data)
+    if not themes_data or type(themes_data) ~= "table" then return end
+    local path = getFilePath(CUSTOM_THEMES_FILE)
+    writeProtectedFile(path, serializeTable(themes_data))
+end
+
+function save.loadCustomThemes()
+    local path = getFilePath(CUSTOM_THEMES_FILE)
+    local plain, is_legacy = readProtectedFile(path)
+    if plain then
+        local chunk = (loadstring or load)(plain)
+        if chunk then
+            local success, result = pcall(chunk)
+            if success and type(result) == "table" then
+                if is_legacy then
+                    save.saveCustomThemes(result)
+                end
+                return result
+            end
+        end
+    end
+    return nil
+end
+
 local TEXT_SIZE_FILE = "text_size.dat"
 
 function save.saveTextSize(size)

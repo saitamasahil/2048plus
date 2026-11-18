@@ -207,8 +207,17 @@ function love.load(args)
         if _G.achievements.ach_best_friend then table.insert(_G.unlocked_themes, "pawprint") end
         if _G.achievements.ach_purrfect_run then table.insert(_G.unlocked_themes, "neko_night") end
         if _G.stats and _G.stats.purchased_items then
+            if _G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true then
+                for _, c_id in ipairs({"custom_1", "custom_2", "custom_3"}) do
+                    local found = false
+                    for _, existing in ipairs(_G.unlocked_themes) do
+                        if existing == c_id then found = true break end
+                    end
+                    if not found then table.insert(_G.unlocked_themes, c_id) end
+                end
+            end
             for item_id, purchased in pairs(_G.stats.purchased_items) do
-                if purchased and purchased ~= 0 and item_id:match("^theme_") then
+                if purchased and purchased ~= 0 and item_id:match("^theme_") and item_id ~= "theme_studio" then
                     local t_name = item_id:gsub("^theme_", "")
                     if t_name == "cherry_blossom" then t_name = "cherry" end
                     local found = false
@@ -458,6 +467,11 @@ function love.load(args)
             if save and save.saveTheme then save.saveTheme(_G.theme) end
             if game then game:saveGameState() end
         end
+    end
+
+    -- Initialize custom studio themes
+    if renderer and renderer.initCustomThemes then
+        renderer.initCustomThemes()
     end
 
     -- Load theme from dedicated file
@@ -920,6 +934,7 @@ function love.update(dt)
             elseif event == input.events.R1 then
                 sound.playMenuSelect()
                 queueTransitionAction(event, 0.08, function()
+                    _G.store_prev_state = "MENU"
                     _G.appState = "STORE"
                     _G.store_selection = 1
                     _G.store_scroll = 0  -- always open at top
@@ -972,7 +987,8 @@ function love.update(dt)
             elseif event == input.events.BACK then
                 sound.playMenuSelect()
                 queueTransitionAction(event, 0.08, function()
-                    _G.appState = "MENU"
+                    _G.appState = _G.store_prev_state or "MENU"
+                    _G.store_prev_state = nil
                 end)
             elseif event == input.events.CONFIRM then
                 sound.playMenuSelect()
@@ -1095,7 +1111,9 @@ function love.update(dt)
                         else
                             renderer.showToast("Purchased " .. sel_item.name .. "!")
                         end
-                        if sel_item.id:match("^theme_") then
+                        if sel_item.id == "theme_studio" then
+                            if _G.rebuildUnlockedThemes then _G.rebuildUnlockedThemes() end
+                        elseif sel_item.id:match("^theme_") then
                             local t_name = sel_item.id:gsub("^theme_", "")
                             if _G.rebuildUnlockedThemes then _G.rebuildUnlockedThemes() end
                             if renderer and renderer.startThemeTransition then
@@ -1542,7 +1560,7 @@ function love.update(dt)
         elseif _G.appState == "THEME_SELECT" then
             local tab = _G.customization_tab or 1
             if event == input.events.L1 then
-                local next_tab = (tab > 1) and (tab - 1) or 3
+                local next_tab = (tab > 1) and (tab - 1) or 4
                 if next_tab ~= tab then
                     sound.playMenuMove()
                     if tab == 1 then
@@ -1559,7 +1577,7 @@ function love.update(dt)
                     end
                 end
             elseif event == input.events.R1 then
-                local next_tab = (tab < 3) and (tab + 1) or 1
+                local next_tab = (tab < 4) and (tab + 1) or 1
                 if next_tab ~= tab then
                     sound.playMenuMove()
                     if tab == 1 then
@@ -1583,17 +1601,58 @@ function love.update(dt)
                     _G.appState = _G.themeSelectPrevState or "MENU"
                 end)
             elseif event == input.events.CONFIRM then
+                local function openStoreForTarget(target_id)
+                    sound.playMenuSelect()
+                    queueTransitionAction(event, 0.08, function()
+                        _G.store_prev_state = "THEME_SELECT"
+                        _G.appState = "STORE"
+                        _G.store_sort_mode = 0
+                        if _G.stats then
+                            _G.stats.store_sort_mode = 0
+                            if save and save.saveStats then save.saveStats(_G.stats) end
+                        end
+                        local target_idx = 1
+                        if target_id and renderer.getStoreItems then
+                            local s_items = renderer.getStoreItems()
+                            for idx, itm in ipairs(s_items) do
+                                if itm.id == target_id then
+                                    target_idx = idx
+                                    break
+                                end
+                            end
+                        end
+                        _G.store_selection = target_idx
+                        _G.store_scroll = nil
+                        _G.store_snap_scroll = true
+                    end)
+                end
+
                 if tab == 1 then
                     -- Theme tab: save theme and stay on screen
                     local is_unlocked = renderer.isThemeUnlocked and renderer.isThemeUnlocked(_G.theme)
                     if not is_unlocked then
-                        sound.playMenuBack()
                         local entry = renderer.getSelectedThemeEntry and renderer.getSelectedThemeEntry()
-                        if entry and entry.unlock_type == "store" then
-                            renderer.showToast("Available from Store")
+                        if entry and entry.unlock_type == "studio" then
+                            local slot = tonumber(entry.id:match("^custom_(%d+)")) or 1
+                            _G.studio_slot = slot
+                            _G.theme = _G.themeSelectInitialTheme or "light"
+                            if renderer.applyTheme then renderer.applyTheme(true) end
+                            sound.playMenuSelect()
+                            local from_tab = 1
+                            local to_tab = 4
+                            if _G.screen_transitions and renderer.startCustomizationTabTransition then
+                                renderer.startCustomizationTabTransition(from_tab, to_tab, 1)
+                            else
+                                _G.customization_tab = 4
+                            end
+                        elseif entry and entry.unlock_type == "store" then
+                            local target_id = entry.store_id or ("theme_" .. entry.id)
+                            openStoreForTarget(target_id)
                         elseif entry and entry.ach_name then
+                            sound.playMenuBack()
                             renderer.showToast("Unlock " .. entry.ach_name .. " to equip")
                         else
+                            sound.playMenuBack()
                             renderer.showToast("Theme is locked")
                         end
                     else
@@ -1624,8 +1683,7 @@ function love.update(dt)
                                 renderer.showToast("Equipped " .. skin.name)
                             end
                         else
-                            sound.playMenuBack()
-                            renderer.showToast("Available from Store")
+                            openStoreForTarget("skin_" .. skin.id)
                         end
                     end
                 elseif tab == 3 then
@@ -1660,21 +1718,61 @@ function love.update(dt)
                                 end
                             end
                         else
-                            sound.playMenuBack()
-                            renderer.showToast("Available from Store")
+                            local target_id = (pet.type == "cat") and "mascot_cat" or "mascot_dog"
+                            openStoreForTarget(target_id)
                         end
+                    end
+                elseif tab == 4 then
+                    -- Theme Studio tab: equip when unlocked or open store
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if not is_unlocked then
+                        openStoreForTarget("theme_studio")
+                    else
+                        sound.playMenuSelect()
+                        local slot = _G.studio_slot or 1
+                        renderer.saveAndEquipCustomTheme(slot)
+                        _G.themeSelectInitialTheme = _G.theme
+                        save.saveTheme(_G.theme)
+                        if game then game:saveGameState() end
+                        renderer.showToast("Equipped Custom " .. slot .. "!")
+                    end
+                end
+            elseif event == input.events.X then
+                if tab == 4 then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        sound.playMenuMove()
+                        renderer.randomizeStudioSlot()
                     end
                 end
             elseif event == input.events.Y then
-                if tab == 2 or tab == 3 then
+                if tab == 4 then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        sound.playMenuMove()
+                        renderer.scrambleStudioPreview()
+                    else
+                        if sound and sound.playMenuMove then sound.playMenuMove() end
+                        if _G.cycleTheme then _G.cycleTheme(1) end
+                        _G.themeSelectInitialTheme = _G.theme
+                        save.saveTheme(_G.theme)
+                        if game then game:saveGameState() end
+                    end
+                elseif tab == 2 or tab == 3 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if _G.cycleTheme then _G.cycleTheme(1) end
                     _G.themeSelectInitialTheme = _G.theme
                     save.saveTheme(_G.theme)
                     if game then game:saveGameState() end
                 end
-            elseif event == input.events.LEFT or event == input.events.UP then
-                if tab == 1 then
+            elseif event == input.events.UP then
+                if tab == 4 then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        sound.playMenuMove()
+                        _G.studio_cursor = ((_G.studio_cursor or 1) - 2) % 7 + 1
+                    end
+                elseif tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
                 elseif tab == 2 then
@@ -1684,8 +1782,48 @@ function love.update(dt)
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if renderer.cyclePet then renderer.cyclePet(-1) end
                 end
-            elseif event == input.events.RIGHT or event == input.events.DOWN then
-                if tab == 1 then
+            elseif event == input.events.DOWN then
+                if tab == 4 then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        sound.playMenuMove()
+                        _G.studio_cursor = ((_G.studio_cursor or 1) % 7) + 1
+                    end
+                elseif tab == 1 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
+                elseif tab == 2 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
+                elseif tab == 3 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cyclePet then renderer.cyclePet(1) end
+                end
+            elseif event == input.events.LEFT then
+                if tab == 4 then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        sound.playMenuMove()
+                        renderer.adjustStudioParameter(-1)
+                    end
+                elseif tab == 1 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
+                elseif tab == 2 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
+                elseif tab == 3 then
+                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                    if renderer.cyclePet then renderer.cyclePet(-1) end
+                end
+            elseif event == input.events.RIGHT then
+                if tab == 4 then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        sound.playMenuMove()
+                        renderer.adjustStudioParameter(1)
+                    end
+                elseif tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
                     if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
                 elseif tab == 2 then

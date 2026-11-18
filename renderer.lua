@@ -353,6 +353,8 @@ function renderer.resetMenuAnimation()
     store_sort_old_canvas = nil
     help_trans.timer = 0
     help_trans.old_actions = nil
+    _G.studio_anim_y = nil
+    _G.studio_anim_target_y = nil
     help_trans.last_actions = nil
     help_trans.old_dpad = nil
     help_trans.last_dpad = nil
@@ -1794,6 +1796,327 @@ local themes = {
 }
 themes.cherry_blossom = themes.cherry
 
+-- Custom theme slots and generation
+renderer._studio = {}
+renderer._studio.default_slots = {
+    { slot = 1, base_tone = 1, style = 1, start_hue = 200, end_hue = 330, sat = 85, board_tone = 1 },
+    { slot = 2, base_tone = 2, style = 1, start_hue = 35, end_hue = 15, sat = 80, board_tone = 2 },
+    { slot = 3, base_tone = 3, style = 3, start_hue = 145, end_hue = 275, sat = 95, board_tone = 1 }
+}
+renderer._studio.slots = nil
+
+function renderer._studio.hslToRgb(h, s, l)
+    h = (h % 360) / 360
+    s = math.max(0, math.min(1, s))
+    l = math.max(0, math.min(1, l))
+    if s == 0 then return l, l, l end
+    local function hue2rgb(p, q, t)
+        if t < 0 then t = t + 1 end
+        if t > 1 then t = t - 1 end
+        if t < 1/6 then return p + (q - p) * 6 * t end
+        if t < 1/2 then return q end
+        if t < 2/3 then return p + (q - p) * (2/3 - t) * 6 end
+        return p
+    end
+    local q = l < 0.5 and l * (1 + s) or l + s - l * s
+    local p = 2 * l - q
+    local r = hue2rgb(p, q, h + 1/3)
+    local g = hue2rgb(p, q, h)
+    local b = hue2rgb(p, q, h - 1/3)
+    return r, g, b
+end
+
+function renderer._studio.getLuminance(r, g, b)
+    return 0.299 * r + 0.587 * g + 0.114 * b
+end
+
+function renderer._studio.getHueName(h)
+    h = h % 360
+    local names = {
+        {15, "Red"}, {45, "Orange"}, {75, "Gold"}, {105, "Lime"},
+        {135, "Green"}, {165, "Emerald"}, {195, "Cyan"}, {225, "Sky Blue"},
+        {255, "Cobalt"}, {285, "Purple"}, {315, "Violet"}, {345, "Pink"},
+        {360, "Red"}
+    }
+    for _, item in ipairs(names) do
+        if h <= item[1] then return item[2] end
+    end
+    return "Red"
+end
+
+function renderer._studio.buildTheme(cfg)
+    local base_tone = cfg.base_tone or 1
+    local style = cfg.style or 1
+    local start_hue = cfg.start_hue or 200
+    local end_hue = cfg.end_hue or 330
+    local sat = (cfg.sat or 80) / 100
+    local board_tone = cfg.board_tone or 1
+
+    local ranks = {2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048}
+    local tc = {}
+
+    -- Empty cell
+    if base_tone == 2 then
+        local r, g, b = renderer._studio.hslToRgb(start_hue, 0.10, 0.82)
+        tc[0] = {r, g, b, 1.0}
+    elseif base_tone == 3 then
+        local r, g, b = renderer._studio.hslToRgb(start_hue, 0.05, 0.10)
+        tc[0] = {r, g, b, 1.0}
+    else
+        local r, g, b = renderer._studio.hslToRgb(start_hue, 0.08, 0.22)
+        tc[0] = {r, g, b, 1.0}
+    end
+
+    local diff_hue = end_hue - start_hue
+    if diff_hue > 180 then diff_hue = diff_hue - 360 end
+    if diff_hue < -180 then diff_hue = diff_hue + 360 end
+
+    for idx, rank in ipairs(ranks) do
+        local t = (idx - 1) / (#ranks - 1)
+        local h = (start_hue + diff_hue * t) % 360
+        local s = sat
+        local l = 0.50
+
+        if style == 2 then
+            h = (t < 0.5) and start_hue or end_hue
+        elseif style == 3 then
+            s = math.min(1.0, sat * 1.15)
+        elseif style == 4 then
+            s = sat * 0.60
+        end
+
+        if base_tone == 2 then
+            -- Light theme ramp
+            if style == 4 then
+                l = 0.90 - 0.25 * t
+            else
+                l = 0.88 - 0.32 * t
+            end
+        elseif base_tone == 3 then
+            -- OLED theme ramp
+            l = 0.30 + 0.36 * t
+        else
+            -- Dark theme ramp
+            l = 0.34 + 0.32 * t
+        end
+
+        local r, g, b = renderer._studio.hslToRgb(h, s, l)
+        tc[rank] = {r, g, b, 1.0}
+    end
+
+    local sup_r, sup_g, sup_b = renderer._studio.hslToRgb(end_hue, sat, base_tone == 2 and 0.22 or 0.88)
+    local dark_txt = {0.14, 0.12, 0.10, 1.0}
+    local light_txt = {0.98, 0.98, 0.98, 1.0}
+
+    local bg_r, bg_g, bg_b
+    local bd_r, bd_g, bd_b
+    local ui_txt
+
+    if base_tone == 2 then
+        local bg_s = (board_tone == 1) and 0.03 or ((board_tone == 2) and 0.16 or 0.08)
+        bg_r, bg_g, bg_b = renderer._studio.hslToRgb(start_hue, bg_s, 0.96)
+        bd_r, bd_g, bd_b = renderer._studio.hslToRgb(start_hue, bg_s * 1.2, 0.76)
+        ui_txt = {0.22, 0.20, 0.18, 1.0}
+    elseif base_tone == 3 then
+        bg_r, bg_g, bg_b = 0.0, 0.0, 0.0
+        bd_r, bd_g, bd_b = renderer._studio.hslToRgb(start_hue, 0.04, 0.08)
+        ui_txt = {0.95, 0.95, 0.95, 1.0}
+    else
+        local bg_s = (board_tone == 1) and 0.03 or ((board_tone == 2) and 0.16 or 0.08)
+        local bg_l = (board_tone == 3) and 0.04 or 0.08
+        bg_r, bg_g, bg_b = renderer._studio.hslToRgb(start_hue, bg_s, bg_l)
+        bd_r, bd_g, bd_b = renderer._studio.hslToRgb(start_hue, bg_s * 1.2, bg_l + 0.08)
+        ui_txt = {0.92, 0.92, 0.92, 1.0}
+    end
+
+    local score_val = (base_tone == 2) and dark_txt or light_txt
+    local crown_col = tc[2048] or {1.0, 0.8, 0.2, 1.0}
+    local crown_lum = renderer._studio.getLuminance(crown_col[1], crown_col[2], crown_col[3])
+    local crown_txt = (crown_lum > 0.55) and dark_txt or light_txt
+
+    return {
+        tile_colors = tc,
+        super_tile_color = {sup_r, sup_g, sup_b, 1.0},
+        dark_text = dark_txt,
+        light_text = light_txt,
+        ui_text = ui_txt,
+        bg_color = {bg_r, bg_g, bg_b, 1.0},
+        board_color = {bd_r, bd_g, bd_b, 1.0},
+        score_bg_color = {bd_r, bd_g, bd_b, 1.0},
+        score_label = {ui_txt[1], ui_txt[2], ui_txt[3], 0.70},
+        score_value = score_val,
+        overlay_win = crown_col,
+        overlay_lose = {bd_r, bd_g, bd_b, 0.90},
+        help_bg_color = {bd_r, bd_g, bd_b, 1.0},
+        help_key_color = crown_col,
+        help_key_text = crown_txt,
+    }
+end
+
+function renderer.initCustomThemes()
+    local save_mod = require("save")
+    local loaded = save_mod.loadCustomThemes and save_mod.loadCustomThemes()
+    renderer._studio.slots = {}
+    for i = 1, 3 do
+        local def = renderer._studio.default_slots[i]
+        local src = (loaded and loaded[i]) or def
+        renderer._studio.slots[i] = {
+            slot = i,
+            base_tone = src.base_tone or def.base_tone,
+            style = src.style or def.style,
+            start_hue = src.start_hue or def.start_hue,
+            end_hue = src.end_hue or def.end_hue,
+            sat = src.sat or def.sat,
+            board_tone = src.board_tone or def.board_tone
+        }
+        themes["custom_" .. i] = renderer._studio.buildTheme(renderer._studio.slots[i])
+    end
+end
+
+function renderer.getCustomSlots()
+    if not renderer._studio.slots then renderer.initCustomThemes() end
+    return renderer._studio.slots
+end
+
+function renderer.getCustomThemeTable(slot)
+    if not renderer._studio.slots then renderer.initCustomThemes() end
+    return themes["custom_" .. (slot or 1)]
+end
+
+function renderer.triggerStudioWave()
+    if _G.screen_transitions then
+        renderer._studio.wave_start_time = love.timer.getTime()
+    else
+        renderer._studio.wave_start_time = nil
+    end
+end
+
+function renderer.adjustStudioParameter(delta)
+    if not renderer._studio.slots then renderer.initCustomThemes() end
+    local slot = _G.studio_slot or 1
+    local cur = _G.studio_cursor or 1
+    local s_data = renderer._studio.slots[slot]
+    if not s_data then return end
+
+    if cur == 1 then
+        _G.studio_slot = ((slot - 1 + delta) % 3) + 1
+    elseif cur == 2 then
+        s_data.base_tone = ((s_data.base_tone - 1 + delta) % 3) + 1
+        themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+        if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+    elseif cur == 3 then
+        s_data.style = ((s_data.style - 1 + delta) % 4) + 1
+        themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+        if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+    elseif cur == 4 then
+        s_data.start_hue = (s_data.start_hue + delta * 15) % 360
+        themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+        if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+    elseif cur == 5 then
+        s_data.end_hue = (s_data.end_hue + delta * 15) % 360
+        themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+        if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+    elseif cur == 6 then
+        s_data.sat = math.max(40, math.min(100, (s_data.sat or 80) + delta * 5))
+        themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+        if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+    elseif cur == 7 then
+        s_data.board_tone = ((s_data.board_tone - 1 + delta) % 3) + 1
+        themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+        if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+    end
+
+    local save_mod = require("save")
+    if save_mod.saveCustomThemes then
+        save_mod.saveCustomThemes(renderer._studio.slots)
+    end
+end
+
+function renderer.randomizeStudioSlot()
+    if not renderer._studio.slots then renderer.initCustomThemes() end
+    local slot = _G.studio_slot or 1
+    local s_data = renderer._studio.slots[slot]
+    if not s_data then return end
+
+    s_data.base_tone = love.math.random(1, 3)
+    s_data.start_hue = love.math.random(0, 23) * 15
+    s_data.end_hue = (s_data.start_hue + love.math.random(4, 16) * 15) % 360
+    s_data.style = love.math.random(1, 4)
+    s_data.sat = love.math.random(14, 20) * 5
+    s_data.board_tone = love.math.random(1, 3)
+
+    themes["custom_" .. slot] = renderer._studio.buildTheme(s_data)
+    if _G.theme == "custom_" .. slot then renderer.applyTheme(false) end
+
+    local save_mod = require("save")
+    if save_mod.saveCustomThemes then
+        save_mod.saveCustomThemes(renderer._studio.slots)
+    end
+
+    renderer.triggerStudioWave()
+end
+
+function renderer._studio.generateRandomBoard()
+    local tiles = {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0
+    }
+
+    local positions = {}
+    for i = 1, 16 do
+        positions[i] = i
+    end
+    for i = 16, 2, -1 do
+        local j = love.math.random(1, i)
+        positions[i], positions[j] = positions[j], positions[i]
+    end
+
+    local num_tiles = love.math.random(8, 11)
+    local values = {2048, 1024}
+    local mid_pool = {128, 256, 512}
+    table.insert(values, mid_pool[love.math.random(1, #mid_pool)])
+
+    local pool = {2, 4, 8, 16, 32, 64, 128, 256, 512}
+    while #values < num_tiles do
+        local idx = love.math.random(1, #pool)
+        table.insert(values, pool[idx])
+    end
+
+    for i = #values, 2, -1 do
+        local j = love.math.random(1, i)
+        values[i], values[j] = values[j], values[i]
+    end
+
+    for i = 1, num_tiles do
+        local pos = positions[i]
+        tiles[pos] = values[i]
+    end
+
+    return tiles
+end
+
+_G.studio_preview_tiles = renderer._studio.generateRandomBoard()
+
+function renderer.scrambleStudioPreview()
+    _G.studio_preview_tiles = renderer._studio.generateRandomBoard()
+    renderer.triggerStudioWave()
+end
+
+function renderer.saveAndEquipCustomTheme(slot)
+    if not renderer._studio.slots then renderer.initCustomThemes() end
+    slot = slot or _G.studio_slot or 1
+    local save_mod = require("save")
+    if save_mod.saveCustomThemes then
+        save_mod.saveCustomThemes(renderer._studio.slots)
+    end
+    _G.theme = "custom_" .. slot
+    _G.themeSelectInitialTheme = _G.theme
+    save_mod.saveTheme(_G.theme)
+    renderer.applyTheme(true)
+end
+
 
 -- Returns all theme names defined in the themes table, excluding always-unlocked ones.
 -- Used by cheats to dynamically unlock everything without a hardcoded list.
@@ -1854,6 +2177,9 @@ local theme_display_overrides = {
     lofi = "Lo-Fi",
     platinum = "Luxe",
     guardian = "Sapphire",
+    custom_1 = "Custom 1",
+    custom_2 = "Custom 2",
+    custom_3 = "Custom 3",
 }
 
 function renderer.getThemeDisplayName(theme_id, uppercase)
@@ -3945,7 +4271,7 @@ function renderer.init()
     -- Load store item icons & achievement icons
     item_icons = {}
     achievement_icons = {}
-    local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "coin_rush", "ticket", "cat", "dog" }
+    local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "coin_rush", "ticket", "cat", "dog", "theme" }
     for _, name in ipairs(item_names) do
         local ok_item, item_img = pcall(love.graphics.newImage, "assets/icon/" .. name .. ".png")
         if ok_item then
@@ -7153,6 +7479,21 @@ function renderer.updateTransition(dt)
         end
     end
 
+    if _G.studio_anim_target_y then
+        if not _G.screen_transitions then
+            _G.studio_anim_y = _G.studio_anim_target_y
+        else
+            if not _G.studio_anim_y then
+                _G.studio_anim_y = _G.studio_anim_target_y
+            end
+            local lerp_factor = 1 - math.exp(-25 * dt)
+            _G.studio_anim_y = _G.studio_anim_y + (_G.studio_anim_target_y - _G.studio_anim_y) * lerp_factor
+            if math.abs(_G.studio_anim_y - _G.studio_anim_target_y) < 0.5 then
+                _G.studio_anim_y = _G.studio_anim_target_y
+            end
+        end
+    end
+
     -- Arcade panel slide animation
     if not _G.screen_transitions then
         arcade_panel_y_offset = arcade_panel_target
@@ -7999,7 +8340,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
                 "Press Y anytime to change theme!",
                 "",
                 "Unlock new themes by earning",
-                "achievements. 41 themes total!"
+                "achievements & purchasing from store."
             },
 
             tiles = {
@@ -9753,6 +10094,9 @@ end
 local themes_catalog = {
     { id = "light",      name = "Light",       unlock_type = "default" },
     { id = "dark",       name = "Dark",        unlock_type = "default" },
+    { id = "custom_1",   name = "Custom 1",    unlock_type = "studio",      store_id = "theme_studio" },
+    { id = "custom_2",   name = "Custom 2",    unlock_type = "studio",      store_id = "theme_studio" },
+    { id = "custom_3",   name = "Custom 3",    unlock_type = "studio",      store_id = "theme_studio" },
     { id = "abyss",      name = "Abyss",       unlock_type = "achievement", ach_id = "ach_score_7k",         ach_name = "High Scorer" },
     { id = "aurora",     name = "Aurora",      unlock_type = "achievement", ach_id = "ach_timeattack_2048",  ach_name = "Aurora" },
     { id = "candy",      name = "Candy",       unlock_type = "achievement", ach_id = "ach_merge_512",        ach_name = "Half Way There" },
@@ -9824,6 +10168,9 @@ function renderer.isThemeUnlocked(theme_id)
     if not theme_id then return false end
     if _G.cheat_unlock_all_themes then return true end
     if theme_id == "light" or theme_id == "dark" then return true end
+    if theme_id:match("^custom_") then
+        return (_G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)) and true or false
+    end
     local raw_t = theme_id == "cherry_blossom" and "cherry" or theme_id
     if _G.unlocked_themes then
         for _, t in ipairs(_G.unlocked_themes) do
@@ -10029,6 +10376,8 @@ function renderer.cyclePet(dir)
 end
 
 function renderer.startCustomizationTabTransition(from_tab, to_tab, dir)
+    _G.studio_anim_y = nil
+    _G.studio_anim_target_y = nil
     if not _G.screen_transitions then
         _G.customization_tab = to_tab
         _G.custom_tab_timer = 0
@@ -10079,7 +10428,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
     local cr = math.floor(board_size * 0.02)
     local theme_accent = tile_colors[2048] or help_key_color or {0.93, 0.76, 0.18, 1.0}
 
-    local function drawStatusBadge(is_eq, is_ow, b_off_x, b_alpha, custom_badge_txt, custom_unowned_txt, custom_y)
+    local function drawStatusBadge(is_eq, is_ow, b_off_x, b_alpha, custom_badge_txt, custom_unowned_txt, custom_y, custom_center_x)
         local cur_off = b_off_x or 0
         local cur_a = (b_alpha or 1.0) * a
         local badge_bg_col
@@ -10117,7 +10466,8 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local txt_w = font_help_label:getWidth(badge_txt)
         local badge_pad_x = math.floor(20 * scale)
         local badge_w = txt_w + badge_pad_x * 2
-        local badge_x = math.floor((w - badge_w) / 2) + off + cur_off
+        local center_x = custom_center_x or (math.floor(w / 2) + off + cur_off)
+        local badge_x = math.floor(center_x - badge_w / 2)
         local badge_cr = math.floor(badge_panel_h / 2)
 
         if badge_bg_col then
@@ -10213,7 +10563,9 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local is_theme_unlocked = renderer.isThemeUnlocked(cur_t)
         local unowned_text = "PRESS A TO EQUIP"
         if not is_theme_unlocked then
-            if entry.unlock_type == "store" then
+            if entry.unlock_type == "studio" then
+                unowned_text = "AVAILABLE IN THEME STUDIO"
+            elseif entry.unlock_type == "store" then
                 unowned_text = "AVAILABLE FROM STORE"
             elseif entry.unlock_type == "achievement" then
                 unowned_text = "UNLOCK: " .. (entry.ach_name and entry.ach_name:upper() or "ACHIEVEMENT")
@@ -10454,6 +10806,274 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id)
             drawStatusBadge(is_equipped, is_owned, 0, 1.0)
         end
+    elseif tab == 4 then
+        -- Theme Studio Tab
+        local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+        local cur_a = a
+        local user_coins = _G.stats and _G.stats.coins or 0
+
+        if not is_unlocked then
+            -- Locked state
+            local card_w = math.floor(340 * scale)
+            local card_h = board_size
+            local card_x = math.floor((w - card_w) / 2) + off
+            local card_y = board_y
+            local card_cr = cr * 2
+
+            love.graphics.setColor(board_color[1], board_color[2], board_color[3], (board_color[4] or 1.0) * cur_a)
+            roundedRect("fill", card_x, card_y, card_w, card_h, card_cr)
+            love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.12 * cur_a)
+            love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+            roundedRect("line", card_x, card_y, card_w, card_h, card_cr)
+
+            local icon_sz = math.floor(58 * scale)
+            local title_h = font_score:getHeight()
+            local desc_line_h = font_help_label:getHeight()
+            local gap_icon_title = math.floor(14 * scale)
+            local gap_title_desc = math.floor(8 * scale)
+            local total_content_h = icon_sz + gap_icon_title + title_h + gap_title_desc + desc_line_h * 2
+            local start_cy = card_y + math.floor((card_h - total_content_h) / 2)
+
+            -- Theme Studio icon
+            local icon_img = item_icons and item_icons["theme"]
+            if icon_img then
+                local icon_x = math.floor(card_x + (card_w - icon_sz) / 2)
+                local icon_y = start_cy
+                local sx = icon_sz / icon_img:getWidth()
+                local sy = icon_sz / icon_img:getHeight()
+                local icon_col = renderer.getContrastTextColor(board_color, help_key_color, dark_text) or ui_text
+                love.graphics.setColor(icon_col[1], icon_col[2], icon_col[3], 0.90 * cur_a)
+                if icon_shader then love.graphics.setShader(icon_shader) end
+                love.graphics.draw(icon_img, icon_x, icon_y, 0, sx, sy)
+                if icon_shader then love.graphics.setShader() end
+            end
+
+            -- Header inside card
+            love.graphics.setFont(font_score)
+            love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.95 * cur_a)
+            local lock_title = "THEME STUDIO"
+            local title_y = start_cy + icon_sz + gap_icon_title
+            love.graphics.printf(lock_title, card_x, title_y, card_w, "center")
+
+            -- Description inside card
+            love.graphics.setFont(font_help_label)
+            love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.65 * cur_a)
+            local lock_desc = "Design, preview, and save your own custom themes."
+            local desc_y = title_y + title_h + gap_title_desc
+            local desc_pad = math.floor(28 * scale)
+            love.graphics.printf(lock_desc, card_x + desc_pad, desc_y, card_w - desc_pad * 2, "center")
+
+            -- Status badge underneath preview card matching pets and boards
+            drawStatusBadge(false, false, 0, 1.0)
+        else
+            -- Unlocked Studio Workspace
+            if not renderer._studio.slots then renderer.initCustomThemes() end
+            local slot = _G.studio_slot or 1
+            local cur = _G.studio_cursor or 1
+            local s_data = renderer._studio.slots[slot] or renderer._studio.default_slots[1]
+            local c_theme = themes["custom_" .. slot] or themes.dark
+
+            -- 2-column Layout
+            local col_gap = math.floor(20 * scale)
+            local left_w = math.floor(220 * scale)
+            local right_w = math.floor(340 * scale)
+            local total_w = left_w + col_gap + right_w
+            local start_x = math.floor((w - total_w) / 2) + off
+            local top_y = subtitle_y + math.floor(4 * scale)
+
+            -- Left Column: Live Mini Board Preview
+            local left_x = start_x
+            local cell_gap = math.floor(5 * scale)
+            local cell_sz = math.floor(48 * scale)
+            local actual_board_sz = cell_sz * 4 + cell_gap * 5
+            local board_px = left_x + math.floor((left_w - actual_board_sz) / 2)
+            local board_py = top_y + math.floor(10 * scale)
+            local board_cr = math.floor(8 * scale)
+
+            local p_tiles = _G.studio_preview_tiles or renderer._studio.generateRandomBoard()
+            local is_wave = _G.screen_transitions and renderer._studio.wave_start_time and (love.timer.getTime() - renderer._studio.wave_start_time < 0.65)
+            local wave_elapsed = is_wave and (love.timer.getTime() - renderer._studio.wave_start_time) or 10
+
+            local f_sz_lg = math.max(10, math.floor(cell_sz * 0.45))
+            local f_sz_sm = math.max(8, math.floor(cell_sz * 0.35))
+
+            local k_lg = "studio_tile_lg_" .. f_sz_lg
+            local k_sm = "studio_tile_sm_" .. f_sz_sm
+
+            if not font_cache[k_lg] then font_cache[k_lg] = love.graphics.newFont(font_path, f_sz_lg) end
+            if not font_cache[k_sm] then font_cache[k_sm] = love.graphics.newFont(font_path, f_sz_sm) end
+
+            local f_lg = font_cache[k_lg]
+            local f_sm = font_cache[k_sm]
+
+            local function drawStudioBoard(target_slot, off_x_board, alpha_board)
+                local cur_theme = themes["custom_" .. target_slot] or themes.dark
+                local cur_alpha = alpha_board * cur_a
+                local bx = board_px + off_x_board
+                local by = board_py
+
+                -- Mini board background container
+                love.graphics.setColor(cur_theme.board_color[1], cur_theme.board_color[2], cur_theme.board_color[3], cur_alpha)
+                roundedRect("fill", bx, by, actual_board_sz, actual_board_sz, board_cr)
+
+                for row = 1, 4 do
+                    for col = 1, 4 do
+                        local cx = bx + cell_gap + (col - 1) * (cell_sz + cell_gap)
+                        local cy = by + cell_gap + (row - 1) * (cell_sz + cell_gap)
+                        local t_idx = (row - 1) * 4 + col
+                        local val = p_tiles[t_idx] or 0
+
+                        local cell_scale = 1.0
+                        if is_wave then
+                            local delay = (col + row - 2) * 0.04
+                            local ct = wave_elapsed - delay
+                            if ct < 0 then
+                                cell_scale = 0
+                            elseif ct < 0.40 then
+                                local p = ct / 0.40
+                                local t = p - 1
+                                cell_scale = 1 + 2.70158 * t * t * t + 1.70158 * t * t
+                                if cell_scale < 0 then cell_scale = 0 end
+                            else
+                                cell_scale = 1.0
+                            end
+                        end
+
+                        if cell_scale > 0.001 then
+                            local needs_scale = (cell_scale < 0.999 or cell_scale > 1.001)
+                            if needs_scale then
+                                love.graphics.push()
+                                love.graphics.translate(cx + cell_sz / 2, cy + cell_sz / 2)
+                                love.graphics.scale(cell_scale, cell_scale)
+                                love.graphics.translate(-(cx + cell_sz / 2), -(cy + cell_sz / 2))
+                            end
+
+                            love.graphics.setColor(cur_theme.tile_colors[0][1], cur_theme.tile_colors[0][2], cur_theme.tile_colors[0][3], cur_alpha)
+                            roundedRect("fill", cx, cy, cell_sz, cell_sz, math.floor(4 * scale))
+
+                            if val > 0 then
+                                local t_col = cur_theme.tile_colors[val] or (val >= 4096 and cur_theme.super_tile_color) or cur_theme.tile_colors[2]
+                                love.graphics.setColor(t_col[1], t_col[2], t_col[3], cur_alpha)
+                                roundedRect("fill", cx, cy, cell_sz, cell_sz, math.floor(4 * scale))
+
+                                local lum = renderer._studio.getLuminance(t_col[1], t_col[2], t_col[3])
+                                local txt_col = (lum > 0.50) and cur_theme.dark_text or cur_theme.light_text
+                                local f_tile = (val >= 1000) and f_sm or f_lg
+                                love.graphics.setFont(f_tile)
+                                love.graphics.setColor(txt_col[1], txt_col[2], txt_col[3], cur_alpha)
+                                local str_val = tostring(val)
+                                local tw = f_tile:getWidth(str_val)
+                                local th = f_tile:getHeight()
+                                love.graphics.print(str_val, math.floor(cx + (cell_sz - tw) / 2), math.floor(cy + (cell_sz - th) / 2))
+                            end
+
+                            if needs_scale then
+                                love.graphics.pop()
+                            end
+                        end
+                    end
+                end
+            end
+
+            drawStudioBoard(slot, 0, 1.0)
+            local is_slot_equipped = (_G.theme == "custom_" .. slot)
+            local badge_py = board_py + actual_board_sz + math.floor(14 * scale)
+            local badge_center_x = board_px + math.floor(actual_board_sz / 2)
+            drawStatusBadge(is_slot_equipped, true, 0, 1.0, "ACTIVE", "PRESS A TO EQUIP", badge_py, badge_center_x)
+
+            -- Right Column: Studio Control Deck
+            local right_x = left_x + left_w + col_gap
+            local row_h = math.floor(34 * scale)
+            local row_gap = math.floor(6 * scale)
+            local deck_py = top_y + math.floor(2 * scale)
+
+            local tone_names = {"Dark", "Light", "OLED"}
+            local style_names = {"Gradient Ramp", "Duotone", "Neon Cyber", "Pastel Soft"}
+            local board_tone_names = {"Neutral", "Tinted", "Deep Contrast"}
+
+            local rows_data = {
+                { label = "Slot", val = "◄ Custom " .. slot .. " ►" },
+                { label = "Base Tone", val = "◄ " .. (tone_names[s_data.base_tone or 1] or "Dark") .. " ►" },
+                { label = "Style", val = "◄ " .. (style_names[s_data.style or 1] or "Gradient Ramp") .. " ►" },
+                { label = "Start Hue", hue = (s_data.start_hue or 200) },
+                { label = "End Hue", hue = (s_data.end_hue or 330) },
+                { label = "Vibrancy", val = "◄ " .. (s_data.sat or 80) .. "% ►" },
+                { label = "Board Tint", val = "◄ " .. (board_tone_names[s_data.board_tone or 1] or "Neutral") .. " ►" }
+            }
+
+            local r_cr = math.floor(7 * scale)
+            for r_idx = 1, #rows_data do
+                local ry = deck_py + (r_idx - 1) * (row_h + row_gap)
+                love.graphics.setColor(0, 0, 0, 0.14 * cur_a)
+                roundedRect("fill", right_x, ry, right_w, row_h, r_cr)
+            end
+
+            local target_ry = deck_py + (cur - 1) * (row_h + row_gap)
+            _G.studio_anim_target_y = target_ry
+            if not _G.screen_transitions or not _G.studio_anim_y then
+                _G.studio_anim_y = target_ry
+            end
+            local pill_y = _G.studio_anim_y
+
+            local acc = help_key_color or {0.93, 0.76, 0.18, 1.0}
+            love.graphics.setColor(acc[1], acc[2], acc[3], 0.18 * cur_a)
+            roundedRect("fill", right_x, pill_y, right_w, row_h, r_cr)
+            love.graphics.setColor(acc[1], acc[2], acc[3], 0.85 * cur_a)
+            love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+            roundedRect("line", right_x, pill_y, right_w, row_h, r_cr)
+
+            for r_idx, r_item in ipairs(rows_data) do
+                local ry = deck_py + (r_idx - 1) * (row_h + row_gap)
+                local is_sel = (cur == r_idx)
+
+                love.graphics.setFont(font_help_label)
+                local lbl_col = is_sel and ui_text or {ui_text[1], ui_text[2], ui_text[3], 0.70}
+                love.graphics.setColor(lbl_col[1], lbl_col[2], lbl_col[3], cur_a)
+                love.graphics.print(r_item.label, right_x + math.floor(14 * scale), ry + math.floor((row_h - font_help_label:getHeight()) / 2))
+
+                local val_col = is_sel and ui_text or {ui_text[1], ui_text[2], ui_text[3], 0.85}
+                if r_item.hue then
+                    -- Color pill placed between navigation arrows
+                    local arrow_left = "◄"
+                    local arrow_right = "►"
+                    local al_w = font_help_label:getWidth(arrow_left)
+                    local ar_w = font_help_label:getWidth(arrow_right)
+                    local arrow_h = font_help_label:getHeight()
+
+                    local gap = math.floor(8 * scale)
+                    local pill_w = math.floor(48 * scale)
+                    local pill_h = math.floor(16 * scale)
+                    local pill_cr = math.floor(pill_h / 2)
+
+                    local right_edge = right_x + right_w - math.floor(14 * scale)
+                    local ar_x = right_edge - ar_w
+                    local pill_x = ar_x - gap - pill_w
+                    local al_x = pill_x - gap - al_w
+
+                    local arrow_y = ry + math.floor((row_h - arrow_h) / 2)
+                    local arrow_center_y = arrow_y + arrow_h * 0.54
+                    local cpill_y = math.floor(arrow_center_y - pill_h / 2)
+
+                    love.graphics.setColor(val_col[1], val_col[2], val_col[3], cur_a)
+                    love.graphics.print(arrow_left, al_x, arrow_y)
+                    love.graphics.print(arrow_right, ar_x, arrow_y)
+
+                    local sat = (s_data.sat or 80) / 100
+                    local hr, hg, hb = renderer._studio.hslToRgb(r_item.hue, sat, 0.50)
+                    love.graphics.setColor(hr, hg, hb, cur_a)
+                    roundedRect("fill", pill_x, cpill_y, pill_w, pill_h, pill_cr)
+
+                    local sw_lum = 0.299 * hr + 0.587 * hg + 0.114 * hb
+                    local bc = (sw_lum > 0.6) and {0, 0, 0, 0.25 * cur_a} or {1, 1, 1, 0.35 * cur_a}
+                    love.graphics.setColor(bc)
+                    love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
+                    roundedRect("line", pill_x, cpill_y, pill_w, pill_h, pill_cr)
+                else
+                    love.graphics.setColor(val_col[1], val_col[2], val_col[3], cur_a)
+                    love.graphics.printf(r_item.val, right_x, ry + math.floor((row_h - font_help_label:getHeight()) / 2), right_w - math.floor(14 * scale), "right")
+                end
+            end
+        end
     end
 end
 
@@ -10478,8 +11098,8 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
     love.graphics.print(title, (w - tw) / 2, title_y)
 
     -- Tab selection bar
-    local tab_names = {"Themes", "Boards", "Pets"}
-    local tab_gap = math.floor(26 * scale)
+    local tab_names = {"Themes", "Boards", "Pets", "Studio"}
+    local tab_gap = math.floor(20 * scale)
     local tab_widths = {}
     local total_tabs_w = 0
     love.graphics.setFont(font_score)
@@ -10576,7 +11196,20 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
 
     local is_theme_eq = (_G.theme == (_G.themeSelectInitialTheme or "light"))
     local is_theme_unlocked = renderer.isThemeUnlocked and renderer.isThemeUnlocked(_G.theme)
-    local action_a_label = not is_theme_unlocked and "Locked" or (is_theme_eq and "Active" or "Equip")
+    local cur_entry = renderer.getSelectedThemeEntry and renderer.getSelectedThemeEntry()
+    local is_theme_store = cur_entry and cur_entry.unlock_type == "store"
+    local action_a_label = "Equip"
+    if not is_theme_unlocked then
+        if cur_entry and cur_entry.unlock_type == "studio" then
+            action_a_label = "Studio"
+        elseif is_theme_store then
+            action_a_label = "Store"
+        else
+            action_a_label = "Locked"
+        end
+    else
+        action_a_label = is_theme_eq and "Active" or "Equip"
+    end
     if tab == 2 then
         local skin = board_skins_catalog[_G.custom_board_idx or 1]
         local is_owned = skin and ((skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id]))
@@ -10584,7 +11217,7 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
         if skin and skin.id == "default" then
             action_a_label = is_equipped and "Active" or "Equip"
         else
-            action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
+            action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Store")
         end
     elseif tab == 3 then
         local pet = pets_catalog[_G.custom_pet_idx or 1]
@@ -10592,17 +11225,28 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
             or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"]))
         local is_equipped = pet and ((pet.type == "cat" and _G.active_companion == "cat")
             or (pet.type == "dog" and _G.active_companion == "dog" and (_G.active_dog_breed or "roxy") == pet.breed_id))
-        action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Locked")
+        action_a_label = is_equipped and "Unequip" or (is_owned and "Equip" or "Store")
+    elseif tab == 4 then
+        local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+        if not is_unlocked then
+            action_a_label = "Store"
+        else
+            local cur_slot = _G.studio_slot or 1
+            local is_equipped = (_G.theme == "custom_" .. cur_slot)
+            action_a_label = is_equipped and "Active" or "Equip"
+        end
     end
 
-    if love.system.getOS() ~= "Web" then
+    local is_studio_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+    if love.system.getOS() ~= "Web" and (tab ~= 4 or is_studio_unlocked) then
         local dpad_x = math.floor(20 * scale)
         local dpad_size = math.floor(24 * scale)
         drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
         dpad_x = dpad_x + dpad_size + math.floor(6 * scale)
         love.graphics.setFont(font_help_label)
         love.graphics.setColor(ui_text)
-        love.graphics.print("Browse", dpad_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
+        local dpad_label = (tab == 4) and "Adjust" or "Browse"
+        love.graphics.print(dpad_label, dpad_x, badge_y + (badge_h - font_help_label:getHeight()) / 2)
     end
 
     local actions = {
@@ -10611,6 +11255,13 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
     }
     if tab == 2 or tab == 3 then
         table.insert(actions, {key = "Y", label = "Switch Theme"})
+    elseif tab == 4 then
+        if is_studio_unlocked then
+            table.insert(actions, {key = "X", label = "Random"})
+            table.insert(actions, {key = "Y", label = "Scramble"})
+        else
+            table.insert(actions, {key = "Y", label = "Switch Theme"})
+        end
     end
 
     for _, action in ipairs(actions) do
@@ -12007,6 +12658,7 @@ local function drawStoreItemIcon(item_id, cx, cy, radius, is_selected, alpha_ove
     if key == "cherry_blossom" then key = "cherry" end
     if key == "second_chance" then key = "shield" end
     if key == "secret_key" then key = "key" end
+    if item_id == "theme_studio" or key == "studio" then key = "theme" end
 
     local img = item_icons and (item_icons[key] or item_icons[item_id])
     if not img and key == "cat" then
@@ -12324,6 +12976,7 @@ function renderer.getStoreItems()
         {id="extra_swap",    category="upgrade",   cost=350,  name="Extra Starting Swap",  desc="Permanently start Plus Mode with +1 Swap"},
         {id="extra_bomb",    category="upgrade",   cost=500,  name="Extra Starting Bomb",  desc="Permanently start Plus Mode with +1 Bomb"},
         {id="jukebox",       category="upgrade",   cost=1000, name="Jukebox",              desc="Music Player & Manager"},
+        {id="theme_studio",  category="upgrade",   cost=1000, name="Theme Studio",         desc="Custom Theme Creator in Customization"},
         {id="coin_multiplier",category="upgrade",  cost=1200,name="2x Coin Multiplier",    desc="Permanently double all earned Coins"},
 
         -- Boosters & Powerups
@@ -12566,12 +13219,16 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
     local total_content_h = math.max(0, current_y_acc - card_gap + math.floor(16 * scale))
     local max_scroll = math.max(0, total_content_h - avail_h)
     
-    _G.store_scroll = _G.store_scroll or 0
     local sel_itm = items[selection]
     local is_sel_pur = sel_itm and _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items[sel_itm.id] or (sel_itm.id == "theme_cherry" and _G.stats.purchased_items["theme_cherry_blossom"]))
     local sel_card_h = (sel_itm and (sel_itm.id == "mascot_dog" or sel_itm.id == "secret_key") and is_sel_pur) and math.floor(92 * scale) or math.floor(58 * scale)
     local target_scroll = (card_y_offsets[selection] or 0) - (avail_h - sel_card_h) / 2
     target_scroll = math.max(0, math.min(max_scroll, target_scroll))
+
+    if _G.store_scroll == nil or _G.store_snap_scroll then
+        _G.store_scroll = target_scroll
+        _G.store_snap_scroll = nil
+    end
 
     if skip_transition or not _G.screen_transitions then
         _G.store_scroll = target_scroll
