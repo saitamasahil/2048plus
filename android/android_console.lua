@@ -1700,48 +1700,60 @@ end
 -- Vector icon rendering helpers for fullscreen and overlay controls
 local function drawFullscreenIcon(cx, cy, sz, col)
     love.graphics.setColor(col or {1, 1, 1, 1})
-    local half = sz * 0.45
-    local arm = sz * 0.28
+    local half = math.floor(sz * 0.42)
+    local arm = math.floor(sz * 0.26)
+    local icx = math.floor(cx)
+    local icy = math.floor(cy)
     love.graphics.setLineWidth(math.max(2, math.floor(sz * 0.10)))
-    love.graphics.line(cx - half, cy - half + arm, cx - half, cy - half, cx - half + arm, cy - half)
-    love.graphics.line(cx + half - arm, cy - half, cx + half, cy - half, cx + half, cy - half + arm)
-    love.graphics.line(cx - half, cy + half - arm, cx - half, cy + half, cx - half + arm, cy + half)
-    love.graphics.line(cx + half - arm, cy + half, cx + half, cy + half, cx + half, cy + half - arm)
+    love.graphics.line(icx - half, icy - half + arm, icx - half, icy - half, icx - half + arm, icy - half)
+    love.graphics.line(icx + half - arm, icy - half, icx + half, icy - half, icx + half, icy - half + arm)
+    love.graphics.line(icx - half, icy + half - arm, icx - half, icy + half, icx - half + arm, icy + half)
+    love.graphics.line(icx + half - arm, icy + half, icx + half, icy + half, icx + half, icy + half - arm)
 end
 
 local function drawPauseIcon(cx, cy, sz, col)
     love.graphics.setColor(col or {1, 1, 1, 1})
-    local bar_w = math.max(3, math.floor(sz * 0.22))
-    local bar_h = math.floor(sz * 0.65)
-    local gap = math.max(3, math.floor(sz * 0.18))
-    local y = cy - bar_h / 2
-    love.graphics.rectangle("fill", cx - gap / 2 - bar_w, y, bar_w, bar_h, 2, 2)
-    love.graphics.rectangle("fill", cx + gap / 2, y, bar_w, bar_h, 2, 2)
+    local bar_w = math.max(2, math.floor(sz * 0.22))
+    local bar_h = math.floor(sz * 0.32) * 2
+    local gap = math.max(2, math.floor(sz * 0.20))
+    local total_w = bar_w * 2 + gap
+    local start_x = math.floor(cx - total_w / 2)
+    local start_y = math.floor(cy - bar_h / 2)
+    local cr = math.max(1, math.floor(bar_w * 0.3))
+    love.graphics.rectangle("fill", start_x, start_y, bar_w, bar_h, cr, cr)
+    love.graphics.rectangle("fill", start_x + bar_w + gap, start_y, bar_w, bar_h, cr, cr)
 end
 
 local function drawPlayIcon(cx, cy, sz, col)
     love.graphics.setColor(col or {1, 1, 1, 1})
-    local r = sz * 0.38
-    love.graphics.polygon("fill", cx - r * 0.6, cy - r, cx - r * 0.6, cy + r, cx + r, cy)
+    local pw = math.floor(sz * 0.32) * 2
+    local ph = math.floor(sz * 0.35) * 2
+    local x0 = math.floor(cx - pw / 2)
+    local x1 = x0 + pw
+    local y0 = math.floor(cy - ph / 2)
+    local y1 = y0 + ph
+    love.graphics.polygon("fill", x0, y0, x0, y1, x1, cy)
 end
 
 local function drawConsoleIcon(cx, cy, sz, col)
     love.graphics.setColor(col or {1, 1, 1, 1})
-    local bw = sz * 0.92
-    local bh = sz * 0.54
-    love.graphics.rectangle("fill", cx - bw / 2, cy - bh / 2, bw, bh, 6, 6)
+    local bw = math.floor(sz * 0.92)
+    local bh = math.floor(sz * 0.54)
+    local icx = math.floor(cx)
+    local icy = math.floor(cy)
+    love.graphics.rectangle("fill", math.floor(icx - bw / 2), math.floor(icy - bh / 2), bw, bh, 6, 6)
     love.graphics.setColor(0.12, 0.12, 0.15, 0.85)
-    local dpad_cx = cx - bw * 0.24
-    local dpad_cy = cy
-    local dpad_arm = sz * 0.16
-    local dpad_thick = sz * 0.08
-    love.graphics.rectangle("fill", dpad_cx - dpad_arm, dpad_cy - dpad_thick / 2, dpad_arm * 2, dpad_thick, 1, 1)
-    love.graphics.rectangle("fill", dpad_cx - dpad_thick / 2, dpad_cy - dpad_arm, dpad_thick, dpad_arm * 2, 1, 1)
-    local btn_cx = cx + bw * 0.24
-    local btn_cy = cy
-    local btn_r = sz * 0.065
-    love.graphics.circle("fill", btn_cx - btn_r * 1.5, btn_cy, btn_r)
-    love.graphics.circle("fill", btn_cx + btn_r * 1.5, btn_cy, btn_r)
+    local dpad_cx = math.floor(icx - bw * 0.24)
+    local dpad_cy = icy
+    local dpad_arm = math.floor(sz * 0.16)
+    local dpad_thick = math.max(2, math.floor(sz * 0.08))
+    love.graphics.rectangle("fill", dpad_cx - dpad_arm, math.floor(dpad_cy - dpad_thick / 2), dpad_arm * 2, dpad_thick, 1, 1)
+    love.graphics.rectangle("fill", math.floor(dpad_cx - dpad_thick / 2), dpad_cy - dpad_arm, dpad_thick, dpad_arm * 2, 1, 1)
+    local btn_cx = math.floor(icx + bw * 0.24)
+    local btn_cy = icy
+    local btn_r = math.max(1, math.floor(sz * 0.065))
+    love.graphics.circle("fill", math.floor(btn_cx - btn_r * 1.5), btn_cy, btn_r)
+    love.graphics.circle("fill", math.floor(btn_cx + btn_r * 1.5), btn_cy, btn_r)
 end
 
 local function drawUndoIcon(cx, cy, sz, col)
@@ -2347,11 +2359,17 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
 
             local content_alpha = (btn.disabled and not btn.badge and 0.40 or 0.95) * a
             local icon_col = {btn_content_col[1], btn_content_col[2], btn_content_col[3], content_alpha}
-            drawButtonIcon(btn.icon, btn.x + btn.w / 2, btn.y + press_offset + 20, 20, icon_col)
+            local icon_sz = 20
+            local f_h = f_lbl:getHeight()
+            local content_gap = 2
+            local total_content_h = icon_sz + content_gap + f_h
+            local content_top = btn.y + press_offset + math.floor((btn.h - total_content_h) / 2)
+
+            drawButtonIcon(btn.icon, btn.x + btn.w / 2, content_top + icon_sz / 2, icon_sz, icon_col)
 
             love.graphics.setColor(btn_content_col[1], btn_content_col[2], btn_content_col[3], content_alpha)
             local lw = f_lbl:getWidth(btn.label)
-            love.graphics.print(btn.label, btn.x + math.floor((btn.w - lw) / 2), btn.y + press_offset + 34)
+            love.graphics.print(btn.label, btn.x + math.floor((btn.w - lw) / 2), content_top + icon_sz + content_gap)
 
             if btn.badge then
                 local f_badge = assets.font_badge or f_lbl
@@ -2968,9 +2986,10 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
                 love.graphics.setFont(f)
                 local lbl = s_name:upper() .. "1"
                 local tw = f:getWidth(lbl)
-                local th = f:getHeight()
+                local asc = f:getAscent()
+                local btn_cy = btn.y + btn.h / 2 + press_offset
                 love.graphics.setColor(1, 1, 1, 0.90 * btn_alpha)
-                love.graphics.print(lbl, math.floor(btn.x + (btn.w - tw) / 2), math.floor(btn.y + press_offset + (btn.h - th) / 2))
+                love.graphics.print(lbl, math.floor(btn.x + (btn.w - tw) / 2 + 0.5), math.floor(btn_cy - asc * 0.690 + 0.5))
             end
         end
     end
@@ -3166,9 +3185,9 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
                 love.graphics.setFont(f)
                 local lbl = b_name:upper()
                 local tw = f:getWidth(lbl)
-                local th = f:getHeight()
+                local asc = f:getAscent()
                 love.graphics.setColor(1, 1, 1, 0.95 * btn_alpha)
-                love.graphics.print(lbl, math.floor(cx - tw / 2), math.floor(cy + press_offset - th / 2))
+                love.graphics.print(lbl, math.floor(cx - tw / 2 + 0.5), math.floor(cy + press_offset - asc * 0.690 + 0.5))
             end
         end
     end
@@ -3197,9 +3216,10 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
                 love.graphics.setFont(f)
                 local lbl = p_name:upper()
                 local tw = f:getWidth(lbl)
-                local th = f:getHeight()
+                local asc = f:getAscent()
+                local btn_cy = btn.y + btn.h / 2 + press_offset
                 love.graphics.setColor(1, 1, 1, 0.90 * btn_alpha)
-                love.graphics.print(lbl, math.floor(btn.x + (btn.w - tw) / 2), math.floor(btn.y + press_offset + (btn.h - th) / 2))
+                love.graphics.print(lbl, math.floor(btn.x + (btn.w - tw) / 2 + 0.5), math.floor(btn_cy - asc * 0.690 + 0.5))
             end
         end
     end
