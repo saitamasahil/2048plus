@@ -10371,6 +10371,7 @@ function renderer.cyclePet(dir)
     if cur > count then cur = 1 elseif cur < 1 then cur = count end
     _G.custom_pet_prev_idx = prev
     _G.custom_pet_idx = cur
+    _G.custom_pet_start_time = love.timer.getTime()
     if _G.screen_transitions then
         _G.custom_pet_anim_timer = 0.24
         _G.custom_pet_anim_dir = dir
@@ -10382,6 +10383,9 @@ end
 function renderer.startCustomizationTabTransition(from_tab, to_tab, dir)
     _G.studio_anim_y = nil
     _G.studio_anim_target_y = nil
+    if to_tab == 3 then
+        _G.custom_pet_start_time = love.timer.getTime()
+    end
     if not _G.screen_transitions then
         _G.customization_tab = to_tab
         _G.custom_tab_timer = 0
@@ -10702,6 +10706,13 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
         local prev_idx = _G.custom_pet_prev_idx or cur_idx
         local prev_pet = pets_catalog[prev_idx] or pets_catalog[1]
 
+        if not _G.custom_pet_start_time or _G.last_viewed_custom_pet_idx ~= cur_idx or _G.last_custom_tab_viewed ~= 3 or _G.last_custom_app_state ~= _G.appState then
+            _G.custom_pet_start_time = love.timer.getTime()
+            _G.last_viewed_custom_pet_idx = cur_idx
+            _G.last_custom_app_state = _G.appState
+        end
+        _G.last_custom_tab_viewed = 3
+
         local is_animating = not skip_transition and _G.screen_transitions and _G.custom_pet_anim_timer and _G.custom_pet_anim_timer > 0
 
         -- Card background for companion preview
@@ -10721,27 +10732,67 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             coco  = {ox = 31.5, oy = 34.5, sz = 29},
         }
 
-        local function drawPetSprite(pet_item, off_p, alpha_p)
+        local function drawPetSprite(pet_item, off_p, alpha_p, is_prev)
             local pcx = math.floor(box_cx + off_p)
             local pcy = math.floor(box_cy)
+            local now = love.timer.getTime()
+            local start_t = _G.custom_pet_start_time or now
+            local anim_time = math.max(0, now - start_t)
+
             if pet_item.type == "cat" then
-                local frames = pet_cat_sit_frames
-                if not frames or #frames == 0 then frames = pet_cat_idle_down_frames end
-                if frames and #frames > 0 then
-                    local f_idx = (math.floor(love.timer.getTime() * 4) % #frames) + 1
-                    local img = frames[f_idx]
-                    if img then
-                        img:setFilter("nearest", "nearest")
-                        local p_scale = (board_size * 0.22) / 12
-                        love.graphics.setColor(1, 1, 1, alpha_p)
-                        love.graphics.draw(img, pcx, pcy, 0, p_scale, p_scale, 17.5, 26.0)
+                local happy_frames = pet_cat_happy_frames
+                local idle_frames = pet_cat_idle_down_frames
+                if not idle_frames or #idle_frames == 0 then idle_frames = pet_cat_sit_frames end
+
+                local img = nil
+                if is_prev then
+                    if idle_frames and #idle_frames > 0 then
+                        local f_idx = (math.floor(now * 4) % #idle_frames) + 1
+                        img = idle_frames[f_idx]
                     end
+                else
+                    local happy_count = happy_frames and #happy_frames or 0
+                    local happy_fps = 8
+                    local happy_dur = (happy_count > 0) and (happy_count / happy_fps) or 0
+                    if happy_count > 0 and anim_time < happy_dur then
+                        local f_idx = math.min(happy_count, math.floor(anim_time * happy_fps) + 1)
+                        img = happy_frames[f_idx]
+                    elseif idle_frames and #idle_frames > 0 then
+                        local idle_t = anim_time - happy_dur
+                        local f_idx = (math.floor(idle_t * 4) % #idle_frames) + 1
+                        img = idle_frames[f_idx]
+                    end
+                end
+
+                if img then
+                    img:setFilter("nearest", "nearest")
+                    local p_scale = (board_size * 0.22) / 12
+                    love.graphics.setColor(1, 1, 1, alpha_p)
+                    love.graphics.draw(img, pcx, pcy, 0, p_scale, p_scale, 17.5, 26.0)
                 end
             elseif pet_item.type == "dog" then
                 local b_frames = pet_dog_breed_frames[pet_item.breed_id]
                 local frames = (b_frames and b_frames.sit and #b_frames.sit > 0) and b_frames.sit or (b_frames and b_frames.idle1)
                 if frames and #frames > 0 then
-                    local f_idx = (math.floor(love.timer.getTime() * 5) % #frames) + 1
+                    local f_idx = 1
+                    local fps = 5
+                    local sit_start = 4
+                    if #frames >= 6 then
+                        local loop_len = #frames - sit_start + 1
+                        if is_prev then
+                            f_idx = sit_start + (math.floor(now * fps) % loop_len)
+                        else
+                            local raw_idx = math.floor(anim_time * fps) + 1
+                            if raw_idx <= #frames then
+                                f_idx = raw_idx
+                            else
+                                local loop_time = anim_time - (#frames / fps)
+                                f_idx = sit_start + (math.floor(loop_time * fps) % loop_len)
+                            end
+                        end
+                    else
+                        f_idx = (math.floor(now * fps) % #frames) + 1
+                    end
                     local img = frames[f_idx]
                     if img then
                         img:setFilter("nearest", "nearest")
@@ -10776,8 +10827,8 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
             -- Scissor clip pet sprites within preview box
             love.graphics.setScissor(board_x, board_y, board_size, board_size)
-            drawPetSprite(prev_pet, -p_dir * p_slide * pp, (1 - pp) * a)
-            drawPetSprite(pet, p_dir * p_slide * (1 - pp), pp * a)
+            drawPetSprite(prev_pet, -p_dir * p_slide * pp, (1 - pp) * a, true)
+            drawPetSprite(pet, p_dir * p_slide * (1 - pp), pp * a, false)
             love.graphics.setScissor()
 
             local prev_is_owned = (prev_pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
@@ -10802,7 +10853,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             _G.customization_prev_btn_bounds = { x = sub_x - math.floor(8 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
             _G.customization_next_btn_bounds = { x = sub_x + cur_sw - math.floor(28 * scale), y = subtitle_y - math.floor(4 * scale), w = math.floor(36 * scale), h = subtitle_h + math.floor(8 * scale) }
 
-            drawPetSprite(pet, 0, a)
+            drawPetSprite(pet, 0, a, false)
 
             local is_owned = (pet.type == "cat" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_cat"])
                 or (pet.type == "dog" and _G.stats and _G.stats.purchased_items and _G.stats.purchased_items["mascot_dog"])

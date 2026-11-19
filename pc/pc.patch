@@ -306,7 +306,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11276,8 +11312,9 @@
+@@ -11327,8 +11363,9 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, lbl_y)
  
@@ -317,7 +317,7 @@ diff --git a/renderer.lua b/renderer.lua
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11649,7 +11686,7 @@
+@@ -11700,7 +11737,7 @@
  
          -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
          if not _G.achievements_slide_ready then
@@ -326,7 +326,7 @@ diff --git a/renderer.lua b/renderer.lua
                  achievements_new_canvas = love.graphics.newCanvas(w, h)
              end
              love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-@@ -12388,7 +12425,7 @@
+@@ -12439,7 +12476,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -335,7 +335,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12621,7 +12658,7 @@
+@@ -12672,7 +12709,7 @@
  
              -- Badge
              right_x = right_x - label_gap
@@ -344,7 +344,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -13588,7 +13625,7 @@
+@@ -13639,7 +13676,7 @@
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -353,7 +353,7 @@ diff --git a/renderer.lua b/renderer.lua
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -14417,7 +14454,7 @@
+@@ -14468,7 +14505,7 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap
