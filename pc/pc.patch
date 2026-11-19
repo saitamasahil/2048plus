@@ -344,7 +344,7 @@ diff --git a/renderer.lua b/renderer.lua
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -13587,7 +13624,7 @@
+@@ -13588,7 +13625,7 @@
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -353,7 +353,7 @@ diff --git a/renderer.lua b/renderer.lua
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -14416,7 +14453,7 @@
+@@ -14417,7 +14454,7 @@
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap

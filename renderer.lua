@@ -13572,12 +13572,13 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
     love.graphics.setColor(ui_text)
     love.graphics.print("Navigate", left_x, lbl_y)
 
-    -- Action buttons: B Back, A Select, X Filter
+    -- Action buttons: B Back, A Select, X Filter, Y Switch Theme
     local right_x = w - padding
     local actions = {
         {key = "B", label = "Back"},
         {key = "A", label = "Select"},
-        {key = "X", label = "Filter"}
+        {key = "X", label = "Filter"},
+        {key = "Y", label = "Switch Theme"}
     }
     for _, action in ipairs(actions) do
         love.graphics.setFont(font_help_label)
