@@ -59,6 +59,9 @@ local jukebox_modal_duration_close = 0.18
 local jukebox_modal_close_cb = nil
 local prev_jukebox_web_modal = false
 
+renderer.MENU_TITLE_Y = 18
+renderer.TITLE_CONTENT_GAP = 10
+
 -- Pause and overlay transition state
 local pause_trans = {
     modal_state = "closed",
@@ -8156,7 +8159,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
 
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
-    local padding = math.floor(20 * scale)
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
 
     -- Slide animation state
     if not static_only and _G.tutorial_slide_timer and _G.tutorial_slide_timer > 0 then
@@ -8374,7 +8377,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
     local dot_r = math.floor(4 * scale)
     local dot_gap = math.floor(14 * scale)
     local dots_w = total_pages * (dot_r * 2 + dot_gap) - dot_gap
-    local dots_y = padding + font_title:getHeight() + math.floor(8 * scale)
+    local dots_y = padding + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
 
     local function drawSlide(slide_idx, offset_x, alpha_mod)
         local slide_data = slides[slide_idx]
@@ -8393,7 +8396,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
             r = ui_text[1] or 1; g = ui_text[2] or 1; b = ui_text[3] or 1; a = ui_text[4] or 1
         end
         love.graphics.setColor(r, g, b, a * alpha_mod)
-        love.graphics.print(title_text, (w - title_w) / 2, padding)
+        love.graphics.print(title_text, math.floor((w - title_w) / 2), padding)
 
         -- 2. Message box area
         local msg_y = dots_y + dot_r * 2 + math.floor(12 * scale)
@@ -8753,12 +8756,10 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
 
-    local header_h = math.floor((_G.text_size == "large" and 70 or 85) * scale)
-    local total_h = header_h + math.floor(12 * scale) + menu_h
-    local available_h = badge_y - math.floor(10 * scale)
-    local start_y = math.max(math.floor(10 * scale), math.floor(math.floor(10 * scale) + (available_h - total_h) / 2))
-
-    local menu_start_y = start_y + header_h + math.floor(12 * scale)
+    local f_title = font_main_menu_title or font_tile_large
+    local header_h = f_title and f_title:getHeight() or math.floor(36 * scale)
+    local start_y = math.floor(renderer.MENU_TITLE_Y * scale)
+    local menu_start_y = start_y + header_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
 
     local max_options
     if _G.settings_page == "audio" then
@@ -8825,8 +8826,8 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
     local title_text = _G.settings_page == "audio" and "AUDIO & HAPTICS" or "SETTINGS"
     local tw = f_title:getWidth(title_text)
     local th = f_title:getHeight()
-    local tx = (w - tw) / 2
-    local ty = layout.start_y + (layout.header_h - th) / 2
+    local tx = math.floor((w - tw) / 2)
+    local ty = layout.start_y
 
     love.graphics.setColor(ui_text)
     love.graphics.setFont(f_title)
@@ -9964,10 +9965,10 @@ function renderer.drawSecretMenu(selection, skip_transition)
     love.graphics.setColor(ui_text)
     local title = "Secret Menu"
     local tw = font_title:getWidth(title)
-    local title_y = math.floor(8 * scale)
-    love.graphics.print(title, (w - tw) / 2, title_y)
+    local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
+    love.graphics.print(title, math.floor((w - tw) / 2), title_y)
 
-    local header_bottom = title_y + font_title:getHeight() + math.floor(4 * scale)
+    local start_y = title_y + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
 
     local options = {
         "Unlock All Themes: " .. (_G.cheat_unlock_all_themes and "ON" or "OFF"),
@@ -9984,8 +9985,6 @@ function renderer.drawSecretMenu(selection, skip_transition)
     local menu_h = (#options - 1) * gap + font_message:getHeight()
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
-    local available_h = badge_y - header_bottom
-    local start_y = math.floor(header_bottom + (available_h - menu_h) / 2)
 
     local margin = math.floor(20 * scale)
     local max_ow = 0
@@ -10247,8 +10246,8 @@ local function getBoardPreviewMetrics()
     local w = is_console and 640 or love.graphics.getWidth()
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or _G.scale or 1
-    local title_y = h * 0.032
-    local tab_y = title_y + (font_cheats_title and font_cheats_title:getHeight() or 30) + math.floor(6 * scale)
+    local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
+    local tab_y = title_y + (font_cheats_title and font_cheats_title:getHeight() or 30) + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local tab_bottom = tab_y + (font_score and font_score:getHeight() or 24) + math.floor(8 * scale)
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
@@ -10407,8 +10406,8 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
     local off = off_x or 0
     local a = alpha_val or 1.0
 
-    local title_y = h * 0.032
-    local tab_y = title_y + (font_cheats_title and font_cheats_title:getHeight() or 30) + math.floor(6 * scale)
+    local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
+    local tab_y = title_y + (font_cheats_title and font_cheats_title:getHeight() or 30) + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local tab_bottom = tab_y + (font_score and font_score:getHeight() or 24) + math.floor(8 * scale)
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
@@ -11149,8 +11148,8 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
     love.graphics.setColor(ui_text)
     local title = "Customization"
     local tw = font_cheats_title:getWidth(title)
-    local title_y = h * 0.032
-    love.graphics.print(title, (w - tw) / 2, title_y)
+    local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
+    love.graphics.print(title, math.floor((w - tw) / 2), title_y)
 
     -- Tab selection bar
     local tab_names = {"Themes", "Boards", "Pets", "Studio"}
@@ -11165,7 +11164,7 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
         if i < #tab_names then total_tabs_w = total_tabs_w + tab_gap end
     end
 
-    local tab_y = title_y + font_cheats_title:getHeight() + math.floor(6 * scale)
+    local tab_y = title_y + font_cheats_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local start_tab_x = (w - total_tabs_w) / 2
     local cur_tab_x = start_tab_x
 
@@ -11633,9 +11632,9 @@ function renderer.getAchievementsMaxScroll()
     local is_console = _G.is_console_active and _G.is_console_active()
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or (_G.scale or 1.0)
-    local padding = math.floor(20 * scale)
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
     local title_h = font_title and font_title:getHeight() or math.floor(36 * scale)
-    local tab_y = padding + title_h + math.floor(10 * scale)
+    local tab_y = padding + title_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local score_h = font_score and font_score:getHeight() or math.floor(24 * scale)
     local line_y = tab_y + score_h + math.floor(4 * scale)
     local list_y = line_y + math.floor(12 * scale)
@@ -11654,9 +11653,9 @@ function renderer.getStatsMaxScroll()
     local is_console = _G.is_console_active and _G.is_console_active()
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or (_G.scale or 1.0)
-    local padding = math.floor(20 * scale)
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
     local title_h = font_title and font_title:getHeight() or math.floor(36 * scale)
-    local tab_y = padding + title_h + math.floor(10 * scale)
+    local tab_y = padding + title_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local score_h = font_score and font_score:getHeight() or math.floor(24 * scale)
     local line_y = tab_y + score_h + math.floor(4 * scale)
     local list_y = line_y + math.floor(12 * scale)
@@ -11677,7 +11676,7 @@ end
 function renderer.drawAchievements(scroll, skip_transition, static_only, override_tab)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
-    local padding = math.floor(20 * scale)
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
     local active_tab = override_tab or _G.achievements_tab or 1
     if scroll == nil then
         scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
@@ -11791,13 +11790,15 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
 
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
-    local padding = math.floor(20 * scale)
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
 
     -- Header Title
     love.graphics.setFont(font_title)
     love.graphics.setColor(ui_text)
     local title = "Achievements & Stats"
-    love.graphics.print(title, padding, padding)
+    local tw = font_title:getWidth(title)
+    local title_x = math.max(padding, math.floor((w - tw) / 2))
+    love.graphics.print(title, title_x, padding)
 
     -- Tab selection bar
     local tab1_txt = "Achievements"
@@ -11808,7 +11809,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
 
     local total_tab_w = t1_w + t2_w + tab_gap
     local start_tab_x = (w - total_tab_w) / 2
-    local tab_y = padding + font_title:getHeight() + math.floor(10 * scale)
+    local tab_y = padding + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
 
     -- Draw Tab 1 text
     local t1_x = start_tab_x
@@ -12469,14 +12470,14 @@ function renderer.drawAbout(skip_transition)
 
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
-    local padding = math.floor(10 * scale)
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
 
     -- Header with version
     love.graphics.setFont(font_title)
     love.graphics.setColor(ui_text)
     local title = "About 2048 Plus"
     local tw = font_title:getWidth(title)
-    love.graphics.print(title, (w - tw) / 2, padding)
+    love.graphics.print(title, math.floor((w - tw) / 2), padding)
 
     love.graphics.setFont(font_label)
     love.graphics.setColor(ui_text)
@@ -12484,16 +12485,17 @@ function renderer.drawAbout(skip_transition)
     local vw = font_label:getWidth(version_text)
     local header_title_h = font_title:getHeight()
     local header_ver_h = font_label:getHeight()
-    love.graphics.print(version_text, (w - vw) / 2, padding + header_title_h - math.floor(2 * scale))
+    local ver_y = padding + header_title_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
+    love.graphics.print(version_text, math.floor((w - vw) / 2), ver_y)
 
-    local header_h = padding + header_title_h + header_ver_h
+    local header_h = ver_y + header_ver_h
 
     -- Fixed Footer position
     local badge_h = math.floor(28 * scale)
     local footer_y = h - badge_h - math.floor(7 * scale)
 
     -- Scrollable Viewport bounds
-    local viewport_top = header_h + math.floor(2 * scale)
+    local viewport_top = header_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local viewport_h = footer_y - viewport_top - math.floor(4 * scale)
 
     -- Scissor clip viewport
@@ -13139,7 +13141,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
     local h = is_console and 480 or love.graphics.getHeight()
     local scale = is_console and 1.0 or (_G.scale or 1)
     local padding = math.floor(20 * scale)
-    local title_y = math.floor(18 * scale)
+    local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
     local coins = _G.stats and _G.stats.coins or 0
 
     if not content_only then
@@ -13150,7 +13152,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
         love.graphics.setColor(ui_text)
         local title = "Store"
         local tw = font_title:getWidth(title)
-        love.graphics.print(title, (w - tw) / 2, title_y)
+        love.graphics.print(title, math.floor((w - tw) / 2), title_y)
 
         -- Coins pill
         love.graphics.setFont(font_help_label)
@@ -13258,7 +13260,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
 
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
-    local header_bottom = title_y + font_title:getHeight() + math.floor(15 * scale)
+    local header_bottom = title_y + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local list_y = header_bottom
     local avail_h = badge_y - list_y - math.floor(10 * scale)
 
@@ -13700,8 +13702,8 @@ function renderer.drawJukebox(selection, skip_transition)
     love.graphics.setColor(ui_text)
     local title = "Jukebox"
     local tw = font_title:getWidth(title)
-    local title_y = math.floor(14 * scale)
-    love.graphics.print(title, (w - tw) / 2, title_y)
+    local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
+    love.graphics.print(title, math.floor((w - tw) / 2), title_y)
 
     -- Song count pill badge in header
     local total_songs = #playlist
@@ -13772,7 +13774,7 @@ function renderer.drawJukebox(selection, skip_transition)
     local prev_track    = _G.jukebox_prev_track
     local current_track = sound_mod.getCurrentTrack and sound_mod.getCurrentTrack()
 
-    local card_y  = title_y + font_title:getHeight() + math.floor(8 * scale)
+    local card_y  = title_y + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
     local pad_v   = math.floor(8  * scale)   -- vertical padding top/bottom
     local pad_h   = math.floor(14 * scale)   -- horizontal padding sides
 
