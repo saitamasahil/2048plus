@@ -8765,27 +8765,17 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
     local start_y = math.floor(renderer.MENU_TITLE_Y * scale)
     local menu_start_y = start_y + header_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
 
-    local max_options
-    if _G.settings_page == "audio" then
-        max_options = {
-            "Sound Effects: Off",
-            "Music: Off",
-            "Vibration: Off",
-            "Button Vibration: Off",
-            "Back"
-        }
-    else
-        max_options = {
-            "Audio & Haptics",
-            "Text Size: Normal",
-            "Gameplay Animation Speed: Instant",
-            "Transitions: Off",
-            "Undo Limit (Classic/Huge): Unlimited",
-            "Time Attack Max Limit: 90s",
-            "CRT Shader: Off",
-            "Back"
-        }
-    end
+    local margin = math.floor(20 * scale)
+    local max_options = {
+        "Audio & Haptics",
+        "Text Size: Normal",
+        "Gameplay Animation Speed: Fast",
+        "Transitions: Off",
+        "Undo Limit (Classic/Huge): Unlimited",
+        "Time Attack Max Limit: 90s",
+        "CRT Shader: Off",
+        "Back"
+    }
     local max_ow = 0
     for _, opt in ipairs(max_options) do
         local ow = font_message:getWidth(opt)
@@ -8793,7 +8783,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
             max_ow = ow
         end
     end
-    local block_x = (w - max_ow) / 2
+    local block_x = math.max(margin, (w - max_ow) / 2)
 
     local target_oy = menu_start_y + (selection - 1) * gap
     local sel_opt = options[selection]
@@ -8830,12 +8820,17 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
     local title_text = _G.settings_page == "audio" and "AUDIO & HAPTICS" or "SETTINGS"
     local tw = f_title:getWidth(title_text)
     local th = f_title:getHeight()
-    local tx = math.floor((w - tw) / 2)
+    local title_scale = 1.0
+    local max_tw = w - math.floor(24 * scale)
+    if tw > max_tw then
+        title_scale = max_tw / tw
+    end
+    local tx = math.floor((w - tw * title_scale) / 2)
     local ty = layout.start_y
 
     love.graphics.setColor(ui_text)
     love.graphics.setFont(f_title)
-    love.graphics.print(title_text, tx, ty)
+    love.graphics.print(title_text, tx, ty, 0, title_scale, title_scale)
 
     for i, opt in ipairs(options) do
         local oy = layout.menu_start_y + (i - 1) * layout.gap
@@ -9965,14 +9960,15 @@ function renderer.drawSecretMenu(selection, skip_transition)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
 
-    love.graphics.setFont(font_title)
+    local f_title = font_main_menu_title or font_tile_large or font_title
+    love.graphics.setFont(f_title)
     love.graphics.setColor(ui_text)
-    local title = "Secret Menu"
-    local tw = font_title:getWidth(title)
+    local title = "SECRET MENU"
+    local tw = f_title:getWidth(title)
     local title_y = math.floor(renderer.MENU_TITLE_Y * scale)
     love.graphics.print(title, math.floor((w - tw) / 2), title_y)
 
-    local start_y = title_y + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
+    local start_y = title_y + f_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
 
     local options = {
         "Unlock All Themes: " .. (_G.cheat_unlock_all_themes and "ON" or "OFF"),
@@ -9985,20 +9981,29 @@ function renderer.drawSecretMenu(selection, skip_transition)
     table.insert(options, "Back")
 
     love.graphics.setFont(font_message)
-    local gap = (_G.text_size == "large" and 40 or 36) * scale
+    local gap = (_G.text_size == "large" and 37 or 34) * scale
     local menu_h = (#options - 1) * gap + font_message:getHeight()
     local badge_h = math.floor(28 * scale)
     local badge_y = h - badge_h - math.floor(7 * scale)
 
     local margin = math.floor(20 * scale)
+    local max_settings_options = {
+        "Audio & Haptics",
+        "Text Size: Normal",
+        "Gameplay Animation Speed: Fast",
+        "Transitions: Off",
+        "Undo Limit (Classic/Huge): Unlimited",
+        "Time Attack Max Limit: 90s",
+        "CRT Shader: Off",
+        "Back"
+    }
     local max_ow = 0
-    for _, opt in ipairs(options) do
+    for _, opt in ipairs(max_settings_options) do
         local ow = font_message:getWidth(opt)
         if ow > max_ow then
             max_ow = ow
         end
     end
-    -- Clamp block_x so menu never shifts past the left margin
     local block_x = math.max(margin, (w - max_ow) / 2)
 
     local target_oy = start_y + (selection - 1) * gap
@@ -12485,7 +12490,7 @@ function renderer.drawAbout(skip_transition)
     local vw = font_label:getWidth(version_text)
     local header_title_h = font_title:getHeight()
     local header_ver_h = font_label:getHeight()
-    local ver_y = padding + header_title_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
+    local ver_y = padding + header_title_h - math.floor(6 * scale)
     love.graphics.print(version_text, math.floor((w - vw) / 2), ver_y)
 
     local header_h = ver_y + header_ver_h
