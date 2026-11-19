@@ -16,7 +16,7 @@ diff --git a/conf.lua b/conf.lua
      t.window.vsync = 1
      t.window.display = 1
      t.window.highdpi = true
-@@ -17,7 +19,7 @@
+@@ -17,7 +17,7 @@
  
      t.modules.thread = false
      t.modules.audio = true
@@ -41,7 +41,7 @@ diff --git a/main.lua b/main.lua
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -2597,6 +2603,9 @@
+@@ -2592,6 +2592,9 @@
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
@@ -51,7 +51,7 @@ diff --git a/main.lua b/main.lua
      if button == 1 then
          -- Customization tab click
          if _G.appState == "THEME_SELECT" then
-@@ -2731,6 +2740,18 @@
+@@ -2725,6 +2725,18 @@
      end
  end
  

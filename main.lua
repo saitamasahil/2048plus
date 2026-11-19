@@ -902,6 +902,8 @@ function love.update(dt)
                         _G.achievements_scroll_target = 0
                         _G.stats_scroll = 0
                         _G.stats_scroll_target = 0
+                        _G.achievements_tab_timer = 0
+                        _G.achievements_tab_prev = nil
                     elseif sel == "Tutorial" then
                         _G.appState = "TUTORIAL"
                         _G.tutorial_page = 1
@@ -1403,36 +1405,29 @@ function love.update(dt)
                     _G.achievements_scroll_target = 0
                     _G.stats_scroll = 0
                     _G.stats_scroll_target = 0
+                    _G.achievements_tab_timer = 0
                 end)
             elseif event == input.events.L1 then
                 local cur_t = _G.achievements_tab or 1
                 local next_tab = (cur_t > 1) and (cur_t - 1) or 2
                 if next_tab ~= cur_t then
                     sound.playMenuMove()
-                    queueTransitionAction(event, 0.08, function()
-                        if _G.screen_transitions then
-                            renderer.captureOldAchievementsSlide(cur_t)
-                            _G.achievements_slide_dir = -1
-                            _G.achievements_slide_timer = 0.20
-                            _G.achievements_slide_ready = false
-                        end
+                    if _G.screen_transitions and renderer.startAchievementsTabTransition then
+                        renderer.startAchievementsTabTransition(cur_t, next_tab, -1)
+                    else
                         _G.achievements_tab = next_tab
-                    end)
+                    end
                 end
             elseif event == input.events.R1 then
                 local cur_t = _G.achievements_tab or 1
                 local next_tab = (cur_t < 2) and (cur_t + 1) or 1
                 if next_tab ~= cur_t then
                     sound.playMenuMove()
-                    queueTransitionAction(event, 0.08, function()
-                        if _G.screen_transitions then
-                            renderer.captureOldAchievementsSlide(cur_t)
-                            _G.achievements_slide_dir = 1
-                            _G.achievements_slide_timer = 0.20
-                            _G.achievements_slide_ready = false
-                        end
+                    if _G.screen_transitions and renderer.startAchievementsTabTransition then
+                        renderer.startAchievementsTabTransition(cur_t, next_tab, 1)
+                    else
                         _G.achievements_tab = next_tab
-                    end)
+                    end
                 end
             elseif event == input.events.UP then
                 if (_G.achievements_tab or 1) == 1 then
@@ -2683,13 +2678,12 @@ function love.mousereleased(x, y, button, istouch, presses)
                         if idx ~= cur_tab then
                             local sound = require("sound")
                             if sound and sound.playMenuMove then sound.playMenuMove() end
-                            if _G.screen_transitions then
-                                renderer.captureOldAchievementsSlide(cur_tab)
-                                _G.achievements_slide_dir = (idx > cur_tab) and 1 or -1
-                                _G.achievements_slide_timer = 0.20
-                                _G.achievements_slide_ready = false
+                            local dir = (idx > cur_tab) and 1 or -1
+                            if _G.screen_transitions and renderer.startAchievementsTabTransition then
+                                renderer.startAchievementsTabTransition(cur_tab, idx, dir)
+                            else
+                                _G.achievements_tab = idx
                             end
-                            _G.achievements_tab = idx
                         end
                         return
                     end

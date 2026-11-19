@@ -346,6 +346,7 @@ function renderer.resetMenuAnimation()
     achievements_old_canvas = nil
     achievements_new_canvas = nil
     _G.achievements_slide_timer = 0
+    _G.achievements_tab_timer = 0
     text_size_transition_timer = 0
     text_size_new_canvas_ready = false
     text_size_old_canvas = nil
@@ -7336,6 +7337,9 @@ function renderer.updateTransition(dt)
     if _G.custom_tab_timer and _G.custom_tab_timer > 0 then
         _G.custom_tab_timer = math.max(0, _G.custom_tab_timer - dt)
     end
+    if _G.achievements_tab_timer and _G.achievements_tab_timer > 0 then
+        _G.achievements_tab_timer = math.max(0, _G.achievements_tab_timer - dt)
+    end
     if _G.custom_board_anim_timer and _G.custom_board_anim_timer > 0 then
         _G.custom_board_anim_timer = math.max(0, _G.custom_board_anim_timer - dt)
     end
@@ -11673,201 +11677,40 @@ function renderer.getStatsMaxScroll()
     return math.max(0, math.ceil((total_stats_height - avail_h) / stat_step))
 end
 
-function renderer.drawAchievements(scroll, skip_transition, static_only, override_tab)
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
-    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
-    local active_tab = override_tab or _G.achievements_tab or 1
-    if scroll == nil then
-        scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
-    end
-
-    -- Slide animation state
-    if not static_only and _G.achievements_slide_timer and _G.achievements_slide_timer > 0 then
-        local dt = love.timer.getDelta()
-        _G.achievements_slide_timer = _G.achievements_slide_timer - dt
-        if _G.achievements_slide_timer < 0 then _G.achievements_slide_timer = 0 end
-    end
-
-    -- Draw slide content with iOS Push & Dim transition
-    if not static_only and _G.achievements_slide_timer and _G.achievements_slide_timer > 0 then
-        local progress = 1 - (_G.achievements_slide_timer / 0.20)
-        local p = 1 - math.pow(1 - progress, 3) -- cubic ease-out
-
-        local dir = _G.achievements_slide_dir or 1
-        local shadow_w = math.floor(20 * scale)
-
-        -- Capture the new tab to achievements_new_canvas ONCE at the start of transition
-        if not _G.achievements_slide_ready then
-            if not achievements_new_canvas then
-                achievements_new_canvas = love.graphics.newCanvas(w, h)
-            end
-            love.graphics.setCanvas({achievements_new_canvas, stencil = true})
-            love.graphics.clear()
-            local new_tab_scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
-            renderer.drawAchievements(new_tab_scroll, true, true, active_tab)
-            love.graphics.setCanvas()
-            _G.achievements_slide_ready = true
-        end
-
-        if dir == 1 then
-            -- Forward transition: new page slides in from right
-            -- Parallax shift for old page
-            local old_x = math.floor(-0.3 * w * p)
-            local new_x = math.floor(w * (1 - p))
-
-            -- Draw old page
-            if achievements_old_canvas then
-                love.graphics.setColor(1, 1, 1, 1)
-                love.graphics.setBlendMode("replace", "premultiplied")
-                love.graphics.draw(achievements_old_canvas, old_x, 0)
-                love.graphics.setBlendMode("alpha", "alphamultiply")
-
-                -- Dim the old page
-                love.graphics.setColor(0, 0, 0, 0.5 * p)
-                love.graphics.rectangle("fill", old_x, 0, w, h)
-            end
-
-            -- 2. Draw shadow to the left of the new page
-            for i = 0, shadow_w - 1 do
-                local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                love.graphics.setColor(0, 0, 0, alpha)
-                love.graphics.rectangle("fill", new_x - shadow_w + i, 0, 1, h)
-            end
-
-            -- Draw new page
-            if achievements_new_canvas then
-                love.graphics.setColor(1, 1, 1, 1)
-                love.graphics.setBlendMode("replace", "premultiplied")
-                love.graphics.draw(achievements_new_canvas, new_x, 0)
-                love.graphics.setBlendMode("alpha", "alphamultiply")
-            end
-        else
-            -- Backward transition: old page slides out to right
-            -- Parallax shift for new page
-            local new_x = math.floor(-0.3 * w * (1 - p))
-            local old_x = math.floor(w * p)
-
-            -- Draw new page
-            if achievements_new_canvas then
-                love.graphics.setColor(1, 1, 1, 1)
-                love.graphics.setBlendMode("replace", "premultiplied")
-                love.graphics.draw(achievements_new_canvas, new_x, 0)
-                love.graphics.setBlendMode("alpha", "alphamultiply")
-            end
-
-            -- Dim the new page
-            love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
-            love.graphics.rectangle("fill", new_x, 0, w, h)
-
-            -- Draw edge shadow
-            if achievements_old_canvas then
-                for i = 0, shadow_w - 1 do
-                    local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                    love.graphics.setColor(0, 0, 0, alpha)
-                    love.graphics.rectangle("fill", old_x - shadow_w + i, 0, 1, h)
-                end
-
-                -- Draw old page
-                love.graphics.setColor(1, 1, 1, 1)
-                love.graphics.setBlendMode("replace", "premultiplied")
-                love.graphics.draw(achievements_old_canvas, old_x, 0)
-                love.graphics.setBlendMode("alpha", "alphamultiply")
-            end
-        end
-
-        -- Theme transition overlay
-        if not skip_transition and transition_timer > 0 and transition_canvas then
-            love.graphics.stencil(drawStencilCircle, "replace", 1)
-            love.graphics.setStencilTest(transition_direction < 0 and "greater" or "equal", 0)
-            love.graphics.draw(transition_canvas, 0, 0)
-            love.graphics.setStencilTest()
-        end
+function renderer.startAchievementsTabTransition(from_tab, to_tab, dir)
+    if not _G.screen_transitions then
+        _G.achievements_tab = to_tab
+        _G.achievements_tab_timer = 0
         return
     end
 
-    renderer.clearBackground()
+    _G.achievements_tab_prev = from_tab
+    _G.achievements_tab = to_tab
+    _G.achievements_tab_dir = dir or (to_tab > from_tab and 1 or -1)
+    _G.achievements_tab_timer = 0.24
+    _G.achievements_tab_ready = false
+end
 
+function renderer.drawAchievementsTabContent(tab, scroll)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
     local padding = math.floor(renderer.MENU_TITLE_Y * scale)
-
-    -- Header Title
-    love.graphics.setFont(font_title)
-    love.graphics.setColor(ui_text)
-    local title = "Achievements & Stats"
-    local tw = font_title:getWidth(title)
-    local title_x = math.max(padding, math.floor((w - tw) / 2))
-    love.graphics.print(title, title_x, padding)
-
-    -- Tab selection bar
-    local tab1_txt = "Achievements"
-    local tab2_txt = "Statistics"
-    local t1_w = font_score:getWidth(tab1_txt)
-    local t2_w = font_score:getWidth(tab2_txt)
-    local tab_gap = math.floor(40 * scale)
-
-    local total_tab_w = t1_w + t2_w + tab_gap
-    local start_tab_x = (w - total_tab_w) / 2
     local tab_y = padding + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
-
-    -- Draw Tab 1 text
-    local t1_x = start_tab_x
-    if active_tab == 1 then
-        love.graphics.setColor(ui_text) -- highlighted
-    else
-        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.5) -- muted
-    end
-    love.graphics.setFont(font_score)
-    love.graphics.print(tab1_txt, t1_x, tab_y)
-
-    -- Draw Tab 2 text
-    local t2_x = t1_x + t1_w + tab_gap
-    if active_tab == 2 then
-        love.graphics.setColor(ui_text) -- highlighted
-    else
-        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.5) -- muted
-    end
-    love.graphics.print(tab2_txt, t2_x, tab_y)
-
-    -- Underline for active tab
     local line_h = math.floor(3 * scale)
     local line_y = tab_y + font_score:getHeight() + math.floor(4 * scale)
-    love.graphics.setColor(ui_text)
-    if active_tab == 1 then
-        love.graphics.rectangle("fill", t1_x, line_y, t1_w, line_h)
-    else
-        love.graphics.rectangle("fill", t2_x, line_y, t2_w, line_h)
-    end
-
-    -- Record tab hitboxes
-    _G.achievements_tab_bounds = {
-        {x = t1_x, y = tab_y, w = t1_w, h = line_y + line_h - tab_y + math.floor(8 * scale)},
-        {x = t2_x, y = tab_y, w = t2_w, h = line_y + line_h - tab_y + math.floor(8 * scale)}
-    }
-
-    -- Shoulder badges for tab switching
-    local shoulder_badge_w = math.floor(32 * scale)
-    local shoulder_badge_h = math.floor(18 * scale)
-    local shoulder_badge_y = math.floor(tab_y + font_score:getHeight() * 0.42 - shoulder_badge_h / 2)
-    local l1_x = start_tab_x - shoulder_badge_w - math.floor(14 * scale)
-    local r1_x = start_tab_x + total_tab_w + math.floor(14 * scale)
-    if l1_x > math.floor(8 * scale) then
-        drawKeyBadge("L1", l1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
-    end
-    if r1_x + shoulder_badge_w < w - math.floor(8 * scale) then
-        drawKeyBadge("R1", r1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
-    end
-    _G.achievements_l1_bounds = {x = l1_x - math.floor(6 * scale), y = shoulder_badge_y - math.floor(4 * scale), w = shoulder_badge_w + math.floor(12 * scale), h = shoulder_badge_h + math.floor(8 * scale)}
-    _G.achievements_r1_bounds = {x = r1_x - math.floor(6 * scale), y = shoulder_badge_y - math.floor(4 * scale), w = shoulder_badge_w + math.floor(12 * scale), h = shoulder_badge_h + math.floor(8 * scale)}
-
     local list_y = line_y + math.floor(12 * scale)
     local footer_h = math.floor(55 * scale)
     local avail_h = h - list_y - footer_h
+
+    local active_tab = tab or _G.achievements_tab or 1
+    local active_scroll = scroll
+    if active_scroll == nil then
+        active_scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+    end
+
     local item_h = math.floor(85 * scale)
     local total_items = #achievementsList
     _G.achievements_max_scroll = math.max(0, math.ceil((total_items * item_h - avail_h) / item_h))
-
     -- Helper to format numbers with commas
     local function formatNum(n)
         local formatted = tostring(math.floor(n or 0))
@@ -11899,7 +11742,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         local item_h = math.floor(85 * scale)
         love.graphics.setScissor(0, list_y - math.floor(5 * scale), w, h - list_y - footer_h + math.floor(5 * scale))
 
-        local current_y = list_y - (scroll * item_h)
+        local current_y = list_y - (active_scroll * item_h)
         for i, ach in ipairs(achievementsList) do
             do
                 local isUnlocked = (_G.achievements and _G.achievements[ach.id]) or false
@@ -12229,7 +12072,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             local scroll_track_x = w - padding + math.floor(6 * scale)
             local bar_total_steps = _G.achievements_max_scroll + 1
             local thumb_h = math.max(math.floor(20 * scale), math.floor(scroll_track_h / bar_total_steps))
-            local thumb_progress = (_G.achievements_scroll or 0) / _G.achievements_max_scroll
+            local thumb_progress = active_scroll / _G.achievements_max_scroll
             thumb_progress = math.max(0, math.min(1, thumb_progress))
             local thumb_y = scroll_track_y + thumb_progress * (scroll_track_h - thumb_h)
             local base_bar_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
@@ -12281,7 +12124,6 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             _G.stats_scroll_target = _G.stats_max_scroll
         end
 
-        local active_scroll = scroll
         local current_stats_y = list_y - math.floor(active_scroll * stat_step)
 
         love.graphics.setScissor(0, list_y - math.floor(5 * scale), w, avail_h + math.floor(5 * scale))
@@ -12393,7 +12235,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             local scroll_track_x = w - padding + math.floor(6 * scale)
             local bar_total_steps = _G.stats_max_scroll + 1
             local thumb_h = math.max(math.floor(20 * scale), math.floor(scroll_track_h / bar_total_steps))
-            local thumb_progress = (_G.stats_scroll or 0) / _G.stats_max_scroll
+            local thumb_progress = active_scroll / _G.stats_max_scroll
             thumb_progress = math.max(0, math.min(1, thumb_progress))
             local thumb_y = scroll_track_y + thumb_progress * (scroll_track_h - thumb_h)
 
@@ -12403,6 +12245,164 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.5)
             roundedRect("fill", scroll_track_x, thumb_y, math.floor(3 * scale), thumb_h, math.floor(1.5 * scale))
         end
+    end
+
+end
+
+function renderer.drawAchievements(scroll, skip_transition, static_only, override_tab)
+    renderer.clearBackground()
+
+    local w, h = love.graphics.getDimensions()
+    local scale = _G.scale
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
+    local active_tab = override_tab or _G.achievements_tab or 1
+    if scroll == nil then
+        scroll = (active_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+    end
+
+    -- Header Title
+    love.graphics.setFont(font_title)
+    love.graphics.setColor(ui_text)
+    local title = "Achievements & Stats"
+    local tw = font_title:getWidth(title)
+    local title_x = math.max(padding, math.floor((w - tw) / 2))
+    love.graphics.print(title, title_x, padding)
+
+    -- Tab selection bar
+    local tab1_txt = "Achievements"
+    local tab2_txt = "Statistics"
+    local t1_w = font_score:getWidth(tab1_txt)
+    local t2_w = font_score:getWidth(tab2_txt)
+    local tab_gap = math.floor(40 * scale)
+
+    local total_tab_w = t1_w + t2_w + tab_gap
+    local start_tab_x = (w - total_tab_w) / 2
+    local tab_y = padding + font_title:getHeight() + math.floor(renderer.TITLE_CONTENT_GAP * scale)
+
+    -- Draw Tab 1 text
+    local t1_x = start_tab_x
+    if active_tab == 1 then
+        love.graphics.setColor(ui_text)
+    else
+        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.5)
+    end
+    love.graphics.setFont(font_score)
+    love.graphics.print(tab1_txt, t1_x, tab_y)
+
+    -- Draw Tab 2 text
+    local t2_x = t1_x + t1_w + tab_gap
+    if active_tab == 2 then
+        love.graphics.setColor(ui_text)
+    else
+        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.5)
+    end
+    love.graphics.print(tab2_txt, t2_x, tab_y)
+
+    local tab_x_positions = {
+        [1] = {x = t1_x, w = t1_w},
+        [2] = {x = t2_x, w = t2_w}
+    }
+
+    -- Active tab underline
+    local line_h = math.floor(3 * scale)
+    local line_y = tab_y + font_score:getHeight() + math.floor(4 * scale)
+    love.graphics.setColor(ui_text)
+
+    local is_tab_transitioning = not skip_transition and not static_only and _G.screen_transitions and _G.achievements_tab_timer and _G.achievements_tab_timer > 0
+    if is_tab_transitioning and _G.achievements_tab_prev and tab_x_positions[_G.achievements_tab_prev] and tab_x_positions[active_tab] then
+        local t = 1 - (_G.achievements_tab_timer / 0.24)
+        local tp = t * t * (3 - 2 * t)
+        local from_info = tab_x_positions[_G.achievements_tab_prev]
+        local to_info = tab_x_positions[active_tab]
+        local lx = (1 - tp) * from_info.x + tp * to_info.x
+        local lw = (1 - tp) * from_info.w + tp * to_info.w
+        roundedRect("fill", lx - math.floor(4 * scale), line_y, lw + math.floor(8 * scale), line_h, line_h / 2)
+    else
+        local act_info = tab_x_positions[active_tab] or tab_x_positions[1]
+        roundedRect("fill", act_info.x - math.floor(4 * scale), line_y, act_info.w + math.floor(8 * scale), line_h, line_h / 2)
+    end
+
+    -- Record tab hitboxes
+    _G.achievements_tab_bounds = {
+        {x = t1_x, y = tab_y, w = t1_w, h = line_y + line_h - tab_y + math.floor(8 * scale)},
+        {x = t2_x, y = tab_y, w = t2_w, h = line_y + line_h - tab_y + math.floor(8 * scale)}
+    }
+
+    -- Shoulder badges for tab switching
+    local shoulder_badge_w = math.floor(32 * scale)
+    local shoulder_badge_h = math.floor(18 * scale)
+    local shoulder_badge_y = math.floor(tab_y + font_score:getHeight() * 0.42 - shoulder_badge_h / 2)
+    local l1_x = start_tab_x - shoulder_badge_w - math.floor(14 * scale)
+    local r1_x = start_tab_x + total_tab_w + math.floor(14 * scale)
+    if l1_x > math.floor(8 * scale) then
+        drawKeyBadge("L1", l1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
+    end
+    if r1_x + shoulder_badge_w < w - math.floor(8 * scale) then
+        drawKeyBadge("R1", r1_x, shoulder_badge_y, shoulder_badge_w, shoulder_badge_h, nil, font_help_key_small)
+    end
+    _G.achievements_l1_bounds = {x = l1_x - math.floor(6 * scale), y = shoulder_badge_y - math.floor(4 * scale), w = shoulder_badge_w + math.floor(12 * scale), h = shoulder_badge_h + math.floor(8 * scale)}
+    _G.achievements_r1_bounds = {x = r1_x - math.floor(6 * scale), y = shoulder_badge_y - math.floor(4 * scale), w = shoulder_badge_w + math.floor(12 * scale), h = shoulder_badge_h + math.floor(8 * scale)}
+
+    local list_y = line_y + math.floor(12 * scale)
+    local footer_h = math.floor(55 * scale)
+    local avail_h = h - list_y - footer_h
+
+    -- Middle content panel
+    if is_tab_transitioning and _G.achievements_tab_prev and _G.achievements_tab_prev ~= active_tab then
+        if not _G.achievements_tab_ready then
+            if not achievements_old_canvas or achievements_old_canvas:getWidth() ~= w or achievements_old_canvas:getHeight() ~= h then
+                achievements_old_canvas = love.graphics.newCanvas(w, h)
+            end
+            if not achievements_new_canvas or achievements_new_canvas:getWidth() ~= w or achievements_new_canvas:getHeight() ~= h then
+                achievements_new_canvas = love.graphics.newCanvas(w, h)
+            end
+
+            local from_tab = _G.achievements_tab_prev
+            local to_tab = active_tab
+            local from_s = (from_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+            local to_s = (to_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
+
+            love.graphics.setCanvas(achievements_old_canvas)
+            love.graphics.clear(0, 0, 0, 0)
+            renderer.drawAchievementsTabContent(from_tab, from_s)
+
+            love.graphics.setCanvas(achievements_new_canvas)
+            love.graphics.clear(0, 0, 0, 0)
+            renderer.drawAchievementsTabContent(to_tab, to_s)
+
+            love.graphics.setCanvas()
+            _G.achievements_tab_ready = true
+        end
+
+        local t = 1 - (_G.achievements_tab_timer / 0.24)
+        local tp = t * t * (3 - 2 * t)
+        local from_tab = _G.achievements_tab_prev
+        local to_tab = active_tab
+        local t_dir = _G.achievements_tab_dir or (to_tab > from_tab and 1 or -1)
+        local slide_dist = w
+        local old_x = math.floor(-t_dir * slide_dist * tp)
+        local new_x = math.floor(t_dir * slide_dist * (1 - tp))
+
+        love.graphics.setScissor(0, list_y - math.floor(5 * scale), w, avail_h + math.floor(10 * scale))
+
+        if achievements_old_canvas then
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("alpha", "premultiplied")
+            love.graphics.draw(achievements_old_canvas, old_x, 0)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
+        end
+
+        if achievements_new_canvas then
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.setBlendMode("alpha", "premultiplied")
+            love.graphics.draw(achievements_new_canvas, new_x, 0)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
+        end
+
+        love.graphics.setScissor()
+        love.graphics.setColor(1, 1, 1, 1)
+    else
+        renderer.drawAchievementsTabContent(active_tab, scroll)
     end
 
     -- Footer bar for Achievements & Stats
