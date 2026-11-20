@@ -10748,28 +10748,13 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local anim_time = math.max(0, now - start_t)
 
             if pet_item.type == "cat" then
-                local happy_frames = pet_cat_happy_frames
                 local idle_frames = pet_cat_idle_down_frames
                 if not idle_frames or #idle_frames == 0 then idle_frames = pet_cat_sit_frames end
 
                 local img = nil
-                if is_prev then
-                    if idle_frames and #idle_frames > 0 then
-                        local f_idx = (math.floor(now * 4) % #idle_frames) + 1
-                        img = idle_frames[f_idx]
-                    end
-                else
-                    local happy_count = happy_frames and #happy_frames or 0
-                    local happy_fps = 8
-                    local happy_dur = (happy_count > 0) and (happy_count / happy_fps) or 0
-                    if happy_count > 0 and anim_time < happy_dur then
-                        local f_idx = math.min(happy_count, math.floor(anim_time * happy_fps) + 1)
-                        img = happy_frames[f_idx]
-                    elseif idle_frames and #idle_frames > 0 then
-                        local idle_t = anim_time - happy_dur
-                        local f_idx = (math.floor(idle_t * 4) % #idle_frames) + 1
-                        img = idle_frames[f_idx]
-                    end
+                if idle_frames and #idle_frames > 0 then
+                    local f_idx = (math.floor(now * 4) % #idle_frames) + 1
+                    img = idle_frames[f_idx]
                 end
 
                 if img then
@@ -10782,22 +10767,12 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 local b_frames = pet_dog_breed_frames[pet_item.breed_id]
                 local frames = (b_frames and b_frames.sit and #b_frames.sit > 0) and b_frames.sit or (b_frames and b_frames.idle1)
                 if frames and #frames > 0 then
-                    local f_idx = 1
                     local fps = 5
                     local sit_start = 4
+                    local f_idx = 1
                     if #frames >= 6 then
                         local loop_len = #frames - sit_start + 1
-                        if is_prev then
-                            f_idx = sit_start + (math.floor(now * fps) % loop_len)
-                        else
-                            local raw_idx = math.floor(anim_time * fps) + 1
-                            if raw_idx <= #frames then
-                                f_idx = raw_idx
-                            else
-                                local loop_time = anim_time - (#frames / fps)
-                                f_idx = sit_start + (math.floor(loop_time * fps) % loop_len)
-                            end
-                        end
+                        f_idx = sit_start + (math.floor(now * fps) % loop_len)
                     else
                         f_idx = (math.floor(now * fps) % #frames) + 1
                     end
