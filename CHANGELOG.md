@@ -1,4 +1,18 @@
 # Changelog
+
+## [9.0.0]
+### Added
+- Added Theme Studio to design and save custom palettes in Customization
+- Added option to open the Store directly from locked items in Customization
+- Added encrypted game saves with integrity verification to protect progress
+
+### Changed
+- Improved Android touch response and haptic vibration
+- Minor UI changes
+
+### Fixed
+- Fixed accidental swipes and virtual button presses on Android
+
 ## [8.0.4]
 ### Added
 - Added 3-second audio countdown beeps and haptic rumble when time is running low in Time Attack
