@@ -8635,20 +8635,20 @@ function renderer.drawTutorial(page, skip_transition, static_only)
         {key = "Y", label = "Switch Theme"}
     }
 
-    -- Page counter on the left
     love.graphics.setFont(font_help_label)
-    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.6)
-    local page_text = page .. "/" .. total_pages
-    love.graphics.print(page_text, padding, lbl_y)
-
-    -- DPAD on the left
-    if love.system.getOS() ~= "Web" then
-        local dpad_x = padding + math.floor(45 * scale)
+    if love.system.getOS() == "Web" then
+        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.6)
+        love.graphics.print(page .. "/" .. total_pages, padding, lbl_y)
+    else
+        local dpad_x = padding
         local dpad_size = math.floor(24 * scale)
         drawKeyBadge("DPAD", dpad_x, badge_y + (badge_h - dpad_size) / 2, dpad_size, dpad_size)
         dpad_x = dpad_x + dpad_size + math.floor(6 * scale)
         love.graphics.setColor(ui_text)
         love.graphics.print("Page", dpad_x, lbl_y)
+        dpad_x = dpad_x + font_help_label:getWidth("Page") + math.floor(6 * scale)
+        love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.6)
+        love.graphics.print(page .. "/" .. total_pages, dpad_x, lbl_y)
 
         -- Draw actions right-to-left
         local right_x = w - math.floor(10 * scale)
