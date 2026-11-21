@@ -516,31 +516,101 @@ end
 
 
 function renderer.getContrastTextColor(bg_col, desired_text_col, dark_fallback)
-    if not bg_col then return desired_text_col or {0.98, 0.98, 1.0, 1} end
-    
-    local r_bg, g_bg, b_bg = bg_col[1] or 0, bg_col[2] or 0, bg_col[3] or 0
+    local bg = bg_col or board_color or {0.15, 0.15, 0.15, 1}
+    local r_bg, g_bg, b_bg = bg[1] or 0, bg[2] or 0, bg[3] or 0
     local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
-    
+
     if bg_lum > 0.45 then
-        -- Light / Medium background: we want a dark text color.
-        if desired_text_col then
-            local r_tx, g_tx, b_tx = desired_text_col[1] or 0, desired_text_col[2] or 0, desired_text_col[3] or 0
-            local tx_lum = 0.299 * r_tx + 0.587 * g_tx + 0.114 * b_tx
-            if tx_lum < 0.40 then
-                return desired_text_col
+        local candidates = {}
+        if desired_text_col then table.insert(candidates, desired_text_col) end
+        if dark_fallback then table.insert(candidates, dark_fallback) end
+        if dark_text then table.insert(candidates, dark_text) end
+        if ui_text then table.insert(candidates, ui_text) end
+        if super_tile_color then table.insert(candidates, super_tile_color) end
+        table.insert(candidates, {0.12, 0.12, 0.15, 1})
+
+        local best_c = nil
+        local best_diff = 0
+        for _, cand in ipairs(candidates) do
+            local rc, gc, bc = cand[1] or 0, cand[2] or 0, cand[3] or 0
+            local clum = 0.299 * rc + 0.587 * gc + 0.114 * bc
+            if clum < 0.45 then
+                local diff = bg_lum - clum
+                if diff > best_diff then
+                    best_diff = diff
+                    best_c = cand
+                end
             end
         end
-        return dark_fallback or {0.10, 0.10, 0.12, 1}
+        return best_c or dark_fallback or {0.12, 0.12, 0.15, 1}
     else
-        -- Dark background: we want a light text color.
-        if desired_text_col then
-            local r_tx, g_tx, b_tx = desired_text_col[1] or 0, desired_text_col[2] or 0, desired_text_col[3] or 0
-            local tx_lum = 0.299 * r_tx + 0.587 * g_tx + 0.114 * b_tx
-            if tx_lum > 0.50 then
-                return desired_text_col
+        local candidates = {}
+        if desired_text_col then table.insert(candidates, desired_text_col) end
+        if light_text then table.insert(candidates, light_text) end
+        table.insert(candidates, {0.98, 0.98, 1.0, 1})
+
+        local best_c = nil
+        local best_diff = 0
+        for _, cand in ipairs(candidates) do
+            local rc, gc, bc = cand[1] or 0, cand[2] or 0, cand[3] or 0
+            local clum = 0.299 * rc + 0.587 * gc + 0.114 * bc
+            if clum > 0.50 then
+                local diff = clum - bg_lum
+                if diff > best_diff then
+                    best_diff = diff
+                    best_c = cand
+                end
             end
         end
-        return {0.98, 0.98, 1.0, 1}
+        return best_c or light_text or {0.98, 0.98, 1.0, 1}
+    end
+end
+
+function renderer.getHighlightColor(bg_col, preferred_col)
+    local bg = bg_col or board_color or {0.15, 0.15, 0.15, 1}
+    local r_bg, g_bg, b_bg = bg[1] or 0, bg[2] or 0, bg[3] or 0
+    local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
+
+    local pref = preferred_col or help_key_color
+    if pref then
+        local r_p, g_p, b_p = pref[1] or 0, pref[2] or 0, pref[3] or 0
+        local p_lum = 0.299 * r_p + 0.587 * g_p + 0.114 * b_p
+        local lum_diff = math.abs(bg_lum - p_lum)
+
+        local dr = r_p - r_bg
+        local dg = g_p - g_bg
+        local db = b_p - b_bg
+        local color_dist = math.sqrt(2 * dr * dr + 4 * dg * dg + 3 * db * db) / 3.0
+
+        if color_dist >= 0.22 or lum_diff >= 0.22 then
+            return pref
+        end
+    end
+
+    local candidates = { super_tile_color, ui_text, light_text, dark_text }
+    local best_col = nil
+    local best_diff = 0
+
+    for _, cand in ipairs(candidates) do
+        if cand then
+            local rc, gc, bc = cand[1] or 0, cand[2] or 0, cand[3] or 0
+            local clum = 0.299 * rc + 0.587 * gc + 0.114 * bc
+            local diff = math.abs(bg_lum - clum)
+            if diff > best_diff then
+                best_diff = diff
+                best_col = cand
+            end
+        end
+    end
+
+    if best_diff >= 0.25 then
+        return best_col
+    end
+
+    if bg_lum < 0.45 then
+        return {0.98, 0.98, 1.0, 1.0}
+    else
+        return {0.12, 0.15, 0.20, 1.0}
     end
 end
 
@@ -11726,22 +11796,30 @@ function renderer.drawAchievementsTabContent(tab, scroll)
         for i, ach in ipairs(achievementsList) do
             do
                 local isUnlocked = (_G.achievements and _G.achievements[ach.id]) or false
+                local hl_col = renderer.getHighlightColor(board_color, help_key_color)
+                local card_w = w - padding * 2
+                local card_h = item_h - math.floor(10 * scale)
+
                 -- Card background
-                love.graphics.setColor(board_color[1], board_color[2], board_color[3], isUnlocked and 0.95 or 0.85)
-                roundedRect("fill", padding, current_y, w - padding * 2, item_h - math.floor(10 * scale), math.floor(12 * scale))
+                if isUnlocked then
+                    love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.95)
+                else
+                    love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.82)
+                end
+                roundedRect("fill", padding, current_y, card_w, card_h, math.floor(12 * scale))
 
                 -- Card border
                 if isUnlocked then
-                    love.graphics.setColor(help_key_color)
+                    love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.90)
+                    love.graphics.setLineWidth(math.floor(2 * scale))
                 else
-                    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.35)
+                    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.22)
+                    love.graphics.setLineWidth(math.floor(1.2 * scale))
                 end
-                love.graphics.setLineWidth(math.floor(2 * scale))
-                roundedRect("line", padding, current_y, w - padding * 2, item_h - math.floor(10 * scale), math.floor(12 * scale))
+                roundedRect("line", padding, current_y, card_w, card_h, math.floor(12 * scale))
 
                 -- Icon container
                 local icon_s = math.floor(48 * scale)
-                local card_h = item_h - math.floor(10 * scale)
                 local icon_x = padding + math.floor(12 * scale)
                 local icon_y = current_y + (card_h - icon_s) / 2
                 achievement_icons = achievement_icons or {}
@@ -11758,7 +11836,7 @@ function renderer.drawAchievementsTabContent(tab, scroll)
 
                 if custom_ach_img then
                     local base_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
-                    local alpha = isUnlocked and 1.0 or 0.50
+                    local alpha = isUnlocked and 1.0 or 0.45
                     local sw = icon_s / custom_ach_img:getWidth()
                     local sh = icon_s / custom_ach_img:getHeight()
                     love.graphics.setColor(base_col[1], base_col[2], base_col[3], alpha)
@@ -11865,18 +11943,6 @@ function renderer.drawAchievementsTabContent(tab, scroll)
                 local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
 
                 local tag_text_color = base_text_col
-                if isUnlocked then
-                    local r_bg, g_bg, b_bg = board_color[1] or 0, board_color[2] or 0, board_color[3] or 0
-                    local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
-                    local cand = (ui_text and ui_text ~= dark_text) and ui_text or super_tile_color
-                    local r_st, g_st, b_st = cand[1] or 0, cand[2] or 0, cand[3] or 0
-                    local st_lum = 0.299 * r_st + 0.587 * g_st + 0.114 * b_st
-                    if (bg_lum < 0.45 and st_lum >= 0.45) or (bg_lum >= 0.45 and st_lum < 0.45) then
-                        tag_text_color = cand
-                    else
-                        tag_text_color = (bg_lum < 0.45) and (ui_text or light_text or base_text_col) or (dark_text or base_text_col)
-                    end
-                end
 
                 love.graphics.setFont(font_help_label)
                 local font_h = font_help_label:getHeight()
@@ -11931,7 +11997,7 @@ function renderer.drawAchievementsTabContent(tab, scroll)
                 if isUnlocked then
                     love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
                 else
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.92)
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.65)
                 end
                 love.graphics.print(display_name, text_x, current_y + math.floor(12 * scale))
 
@@ -11941,9 +12007,9 @@ function renderer.drawAchievementsTabContent(tab, scroll)
 
                 love.graphics.setFont(font_help_label)
                 if isUnlocked then
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.85)
                 else
-                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.80)
+                    love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.45)
                 end
 
                 local desc_w = font_help_label:getWidth(display_desc)
@@ -11996,16 +12062,23 @@ function renderer.drawAchievementsTabContent(tab, scroll)
 
                 if has_reward then
                     if isUnlocked then
-                        love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 0.25)
+                        love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.22)
                     else
-                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.22)
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.12)
                     end
                     roundedRect("fill", rew_box_x, rew_box_y, rew_pill_w, tag_h, math.floor(5 * scale))
 
                     if isUnlocked then
+                        love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.50)
+                    else
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.20)
+                    end
+                    roundedRect("line", rew_box_x, rew_box_y, rew_pill_w, tag_h, math.floor(5 * scale))
+
+                    if isUnlocked then
                         love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0)
                     else
-                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.55)
                     end
                     local rew_text_x = rew_box_x + math.floor((rew_pill_w - rw) / 2)
                     local rew_text_y = rew_box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
@@ -12014,16 +12087,23 @@ function renderer.drawAchievementsTabContent(tab, scroll)
 
                 if has_coins then
                     if isUnlocked then
-                        love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 0.25)
+                        love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.22)
                     else
-                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.22)
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.12)
                     end
                     roundedRect("fill", coin_box_x, coin_box_y, coin_pill_w, tag_h, math.floor(5 * scale))
 
                     if isUnlocked then
+                        love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.50)
+                    else
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.20)
+                    end
+                    roundedRect("line", coin_box_x, coin_box_y, coin_pill_w, tag_h, math.floor(5 * scale))
+
+                    if isUnlocked then
                         love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0)
                     else
-                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.88)
+                        love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.55)
                     end
 
                     local c_content_x = coin_box_x + math.floor((coin_pill_w - c_content_w) / 2)
@@ -12032,6 +12112,11 @@ function renderer.drawAchievementsTabContent(tab, scroll)
                     love.graphics.print(c_str, c_content_x, coin_text_y)
 
                     if coin_icon then
+                        if isUnlocked then
+                            love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0)
+                        else
+                            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.55)
+                        end
                         love.graphics.setShader(icon_shader)
                         local sw = c_icon_sz / coin_icon:getWidth()
                         local sh = c_icon_sz / coin_icon:getHeight()
@@ -13339,27 +13424,29 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
             if y + card_h >= list_y - math.floor(6 * scale) and y <= list_y + avail_h + math.floor(6 * scale) then
                 local is_sel = (i == selection)
                 local consumable_count = is_consumable and (_G.stats and item.ckey and (_G.stats[item.ckey] or 0) or 0) or 0
+                local hl_col = renderer.getHighlightColor(board_color, help_key_color)
+                local card_w = w - padding * 2
 
-                -- Card background: dim unselected cards, brightly tint selected card
+                -- Card background
                 if is_sel then
                     love.graphics.setColor(board_color[1], board_color[2], board_color[3], 1.0 * card_alpha)
-                    roundedRect("fill", padding, y, w - padding * 2, card_h, math.floor(10 * scale))
-                    love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.22 * card_alpha)
-                    roundedRect("fill", padding, y, w - padding * 2, card_h, math.floor(10 * scale))
+                    roundedRect("fill", padding, y, card_w, card_h, math.floor(10 * scale))
+                    love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.16 * card_alpha)
+                    roundedRect("fill", padding, y, card_w, card_h, math.floor(10 * scale))
                 else
                     love.graphics.setColor(board_color[1], board_color[2], board_color[3], 0.85 * card_alpha)
-                    roundedRect("fill", padding, y, w - padding * 2, card_h, math.floor(10 * scale))
+                    roundedRect("fill", padding, y, card_w, card_h, math.floor(10 * scale))
                 end
 
                 -- Selected card border
                 if is_sel then
-                    love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 1.0 * card_alpha)
+                    love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 1.0 * card_alpha)
                     love.graphics.setLineWidth(math.floor(2.5 * scale))
                 else
-                    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.25 * card_alpha)
+                    love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.22 * card_alpha)
                     love.graphics.setLineWidth(math.floor(1.2 * scale))
                 end
-                roundedRect("line", padding, y, w - padding * 2, card_h, math.floor(10 * scale))
+                roundedRect("line", padding, y, card_w, card_h, math.floor(10 * scale))
 
                 -- Vector Icon Badge
                 local icon_radius = math.floor(20 * scale)
@@ -13372,11 +13459,11 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                 local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
 
                 love.graphics.setFont(font_label)
-                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 1.0 or 0.92) * card_alpha)
+                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 1.0 or 0.88) * card_alpha)
                 love.graphics.print(item.name, text_x, y + math.floor(5 * scale))
 
                 love.graphics.setFont(font_help_label)
-                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 0.88 or 0.78) * card_alpha)
+                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 0.88 or 0.70) * card_alpha)
                 love.graphics.print(item.desc, text_x, y + math.floor(28 * scale))
 
                 -- 4 Dog Breed Pills when Dog Companion is purchased
@@ -13406,7 +13493,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
 
                         -- Draw Pill Background
                         if is_active then
-                            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.95 * card_alpha)
+                            love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.95 * card_alpha)
                             roundedRect("fill", px, pill_y, pill_w, pill_h, math.floor(8 * scale))
                             love.graphics.setColor(1, 1, 1, 0.9 * card_alpha)
                             love.graphics.setLineWidth(math.floor(1.5 * scale))
@@ -13475,17 +13562,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
 
                 -- Price and purchase tag
                 love.graphics.setFont(font_help_label)
-                local r_bg, g_bg, b_bg = board_color[1] or 0, board_color[2] or 0, board_color[3] or 0
-                local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
-                local cand = (ui_text and ui_text ~= dark_text) and ui_text or super_tile_color
-                local r_st, g_st, b_st = cand[1] or 0, cand[2] or 0, cand[3] or 0
-                local st_lum = 0.299 * r_st + 0.587 * g_st + 0.114 * b_st
                 local tag_text_color = base_text_col
-                if (bg_lum < 0.45 and st_lum >= 0.45) or (bg_lum >= 0.45 and st_lum < 0.45) then
-                    tag_text_color = cand
-                else
-                    tag_text_color = (bg_lum < 0.45) and (ui_text or light_text or base_text_col) or (dark_text or base_text_col)
-                end
 
                 if purchased then
                     local tag_txt = "PURCHASED"
