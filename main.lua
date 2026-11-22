@@ -2833,6 +2833,37 @@ function love.wheelmoved(x, y)
                 end
             end
         end
+    elseif _G.appState == "MENU" then
+        local options = renderer.getMainMenuOptions and renderer.getMainMenuOptions() or {}
+        local max_menu = #options
+        if max_menu > 0 then
+            menuSelection = math.max(1, math.min(max_menu, menuSelection))
+            if y > 0 then
+                if menuSelection > 1 then
+                    menuSelection = menuSelection - 1
+                    sound.playMenuMove()
+                end
+            elseif y < 0 then
+                if menuSelection < max_menu then
+                    menuSelection = menuSelection + 1
+                    sound.playMenuMove()
+                end
+            end
+        end
+    elseif _G.appState == "CHEATS_MENU" then
+        local max_sel = 7
+        local cur = _G.cheats_selection or 1
+        if y > 0 then
+            if cur > 1 then
+                _G.cheats_selection = cur - 1
+                sound.playMenuMove()
+            end
+        elseif y < 0 then
+            if cur < max_sel then
+                _G.cheats_selection = cur + 1
+                sound.playMenuMove()
+            end
+        end
     end
 end
 

@@ -74,7 +74,7 @@ index b3a1247..531acb9 100644
      if event then
          input.state[event] = true
 diff --git a/main.lua b/main.lua
-index 1105bec..444c315 100644
+index e1ef438..444c315 100644
 --- a/a/main.lua
 +++ b/main.lua
 @@ -105,6 +105,9 @@ local function queueTransitionAction(key, delay, action, direction)
@@ -127,7 +127,7 @@ index 1105bec..444c315 100644
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2914,3 +2930,9 @@ function love.visible(v)
+@@ -2945,3 +2961,9 @@ function love.visible(v)
          end
      end
  end
