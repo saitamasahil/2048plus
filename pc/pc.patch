@@ -36,10 +36,10 @@ index f5d7cfc..d646503 100644
  -- Achievements and Unlockables
  _G.achievements = {
 diff --git a/input.lua b/input.lua
-index 17e40b8..9402eee 100644
+index b3a1247..531acb9 100644
 --- a/input.lua
 +++ b/input.lua
-@@ -119,6 +119,19 @@ local function is_directional(event)
+@@ -166,6 +166,19 @@ local function is_directional(event)
  end
  
  function love.keypressed(key)
@@ -59,7 +59,7 @@ index 17e40b8..9402eee 100644
      local triggered = false
      for event_name, k in pairs(input.events) do
          if key == k then
-@@ -216,6 +229,13 @@ function love.keyreleased(key)
+@@ -263,6 +276,13 @@ function love.keyreleased(key)
  end
  
  function love.gamepadpressed(js, button)
