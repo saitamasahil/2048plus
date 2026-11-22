@@ -4137,37 +4137,11 @@ end
 -- ============================================================================
 -- Initialization
 -- ============================================================================
-function renderer.init()
-    local scale = _G.scale
+-- One-time texture and sprite asset loading to prevent disk I/O on window resize
+function renderer.loadTextures()
+    if renderer._textures_loaded then return end
+    renderer._textures_loaded = true
 
-    renderer.updateLayout(4)
-
-    -- Load fonts — sizes relative to cell size for proper scaling
-    local text_scale = 1.0
-    if _G.text_size == "large" then
-        text_scale = 1.15
-    end
-
-    font_score      = love.graphics.newFont(font_path, math.floor(20 * scale * text_scale))
-    font_title      = love.graphics.newFont(font_path, math.floor(36 * scale * text_scale))
-
-    local header_text_scale = (_G.text_size == "large") and 1.0 or 1.0
-    font_header_2048 = love.graphics.newFont(font_path, math.floor(36 * scale * header_text_scale))
-    font_main_menu_title = love.graphics.newFont(font_path, math.floor(72 * scale))
-    font_main_menu_plus = love.graphics.newFont(font_path, math.floor(30 * scale))
-    font_header_plus = love.graphics.newFont(font_path, math.floor(13 * scale))
-    font_cheats_title = love.graphics.newFont(font_path, math.floor(56 * scale))
-    font_label      = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
-    font_message    = love.graphics.newFont(font_path, math.floor(28 * scale * text_scale))
-    font_toast      = love.graphics.newFont(font_path, math.floor(17 * scale * text_scale))
-    font_help_key   = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
-    font_help_key_small = love.graphics.newFont(font_path, math.floor(12 * scale * text_scale))
-    font_help_label = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
-    font_bgm        = love.graphics.newFont(font_path, math.floor(13 * scale))
-    renderer.font_help_key   = font_help_key
-    renderer.font_help_key_small = font_help_key_small
-    renderer.font_help_label = font_help_label
-    renderer.font_bgm        = font_bgm
     logo_2048 = love.graphics.newImage("assets/logo/logo_2048.png")
 
     -- Load UI header icons directly from assets/icon/
@@ -4201,7 +4175,6 @@ function renderer.init()
 
     local ok_tr_pause, tps_img = pcall(love.graphics.newImage, "assets/icon/track_pause.png")
     if ok_tr_pause then track_pause_icon = tps_img end
-
 
     -- Preload pet animations for each state
     pet_cat_idle_down_frames = {}
@@ -4360,7 +4333,7 @@ function renderer.init()
         end
     end
 
-    -- Load store item icons & achievement icons
+    -- Load store item icons and achievement icons
     item_icons = {}
     achievement_icons = {}
     local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "coin_rush", "ticket", "cat", "dog", "theme" }
@@ -4386,6 +4359,41 @@ function renderer.init()
             return vec4(color.rgb, t.a * color.a);
         }
     ]]
+end
+
+function renderer.init()
+    local scale = _G.scale
+
+    renderer.updateLayout(4)
+
+    -- Load fonts — sizes relative to cell size for proper scaling
+    local text_scale = 1.0
+    if _G.text_size == "large" then
+        text_scale = 1.15
+    end
+
+    font_score      = love.graphics.newFont(font_path, math.floor(20 * scale * text_scale))
+    font_title      = love.graphics.newFont(font_path, math.floor(36 * scale * text_scale))
+
+    local header_text_scale = (_G.text_size == "large") and 1.0 or 1.0
+    font_header_2048 = love.graphics.newFont(font_path, math.floor(36 * scale * header_text_scale))
+    font_main_menu_title = love.graphics.newFont(font_path, math.floor(72 * scale))
+    font_main_menu_plus = love.graphics.newFont(font_path, math.floor(30 * scale))
+    font_header_plus = love.graphics.newFont(font_path, math.floor(13 * scale))
+    font_cheats_title = love.graphics.newFont(font_path, math.floor(56 * scale))
+    font_label      = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
+    font_message    = love.graphics.newFont(font_path, math.floor(28 * scale * text_scale))
+    font_toast      = love.graphics.newFont(font_path, math.floor(17 * scale * text_scale))
+    font_help_key   = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
+    font_help_key_small = love.graphics.newFont(font_path, math.floor(12 * scale * text_scale))
+    font_help_label = love.graphics.newFont(font_path, math.floor(16 * scale * text_scale))
+    font_bgm        = love.graphics.newFont(font_path, math.floor(13 * scale))
+    renderer.font_help_key   = font_help_key
+    renderer.font_help_key_small = font_help_key_small
+    renderer.font_help_label = font_help_label
+    renderer.font_bgm        = font_bgm
+
+    renderer.loadTextures()
 
     -- Set arcade panel to start fully closed
     local card_h = math.floor((_G.text_size == "large" and 124 or 120) * scale)
