@@ -1873,9 +1873,9 @@ themes.cherry_blossom = themes.cherry
 -- Custom theme slots and generation
 renderer._studio = {}
 renderer._studio.default_slots = {
-    { slot = 1, base_tone = 1, style = 1, start_hue = 200, end_hue = 330, sat = 85, board_tone = 1 },
+    { slot = 1, base_tone = 1, style = 1, start_hue = 215, end_hue = 260, sat = 85, board_tone = 2 },
     { slot = 2, base_tone = 2, style = 1, start_hue = 35, end_hue = 15, sat = 80, board_tone = 2 },
-    { slot = 3, base_tone = 3, style = 3, start_hue = 145, end_hue = 275, sat = 95, board_tone = 1 }
+    { slot = 3, base_tone = 3, style = 3, start_hue = 155, end_hue = 195, sat = 90, board_tone = 1 }
 }
 renderer._studio.slots = nil
 
