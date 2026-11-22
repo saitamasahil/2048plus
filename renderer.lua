@@ -10288,15 +10288,22 @@ function renderer.isThemeUnlocked(theme_id)
         return (_G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)) and true or false
     end
     local raw_t = theme_id == "cherry_blossom" and "cherry" or theme_id
-    if _G.unlocked_themes then
-        for _, t in ipairs(_G.unlocked_themes) do
-            local un_raw = t == "cherry_blossom" and "cherry" or t
-            if un_raw == raw_t then
-                return true
+    local set = renderer._unlocked_set
+    local list = _G.unlocked_themes
+    local count = list and #list or 0
+    if not set or renderer._unlocked_ref ~= list or renderer._unlocked_count ~= count then
+        set = {}
+        if list then
+            for _, t in ipairs(list) do
+                local un_raw = t == "cherry_blossom" and "cherry" or t
+                set[un_raw] = true
             end
         end
+        renderer._unlocked_set = set
+        renderer._unlocked_ref = list
+        renderer._unlocked_count = count
     end
-    return false
+    return set[raw_t] == true
 end
 
 function renderer.cycleCustomTheme(dir)

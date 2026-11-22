@@ -2722,6 +2722,117 @@ function love.wheelmoved(x, y)
                 _G.stats_scroll_target = math.min(max_scroll, old_target + 1)
             end
         end
+    elseif _G.appState == "STORE" then
+        local items = renderer.getStoreItems and renderer.getStoreItems() or {}
+        local items_count = math.max(1, #items)
+        local cur = _G.store_selection or 1
+        if y > 0 then
+            if cur > 1 then
+                _G.store_selection = cur - 1
+                sound.playMenuMove()
+            end
+        elseif y < 0 then
+            if cur < items_count then
+                _G.store_selection = cur + 1
+                sound.playMenuMove()
+            end
+        end
+    elseif _G.appState == "TUTORIAL" then
+        local cur_page = _G.tutorial_page or 1
+        local max_p = renderer.getTutorialPageCount and renderer.getTutorialPageCount() or 11
+        if y > 0 or x < 0 then
+            if cur_page > 1 then
+                sound.playMenuMove()
+                if _G.screen_transitions and renderer.captureOldTutorialSlide then
+                    renderer.captureOldTutorialSlide(cur_page)
+                    _G.tutorial_slide_dir = -1
+                    _G.tutorial_slide_timer = 0.20
+                    _G.tutorial_slide_ready = false
+                end
+                _G.tutorial_page = cur_page - 1
+            end
+        elseif y < 0 or x > 0 then
+            if cur_page < max_p then
+                sound.playMenuMove()
+                if _G.screen_transitions and renderer.captureOldTutorialSlide then
+                    renderer.captureOldTutorialSlide(cur_page)
+                    _G.tutorial_slide_dir = 1
+                    _G.tutorial_slide_timer = 0.20
+                    _G.tutorial_slide_ready = false
+                end
+                _G.tutorial_page = cur_page + 1
+            end
+        end
+    elseif _G.appState == "SETTINGS" then
+        local options = renderer.getSettingsOptions and renderer.getSettingsOptions() or {}
+        local max_sel = #options
+        local cur = _G.settings_selection or 1
+        if y > 0 then
+            if cur > 1 then
+                _G.settings_selection = cur - 1
+                sound.playMenuMove()
+            end
+        elseif y < 0 then
+            if cur < max_sel then
+                _G.settings_selection = cur + 1
+                sound.playMenuMove()
+            end
+        end
+    elseif _G.appState == "ABOUT" then
+        local max_scroll = _G.about_max_scroll or 0
+        local step = math.floor(35 * (_G.scale or 1))
+        local cur = _G.about_scroll_target or 0
+        if y > 0 then
+            if cur > 0 then
+                _G.about_scroll_target = math.max(0, cur - step)
+            end
+        elseif y < 0 then
+            if cur < max_scroll then
+                _G.about_scroll_target = math.min(max_scroll, cur + step)
+            end
+        end
+    elseif _G.appState == "THEME_SELECT" then
+        local tab = _G.customization_tab or 1
+        if y > 0 then
+            if tab == 1 then
+                sound.playMenuMove()
+                if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
+            elseif tab == 2 then
+                sound.playMenuMove()
+                if renderer.cycleBoardSkin then renderer.cycleBoardSkin(-1) end
+            elseif tab == 3 then
+                sound.playMenuMove()
+                if renderer.cyclePet then renderer.cyclePet(-1) end
+            end
+        elseif y < 0 then
+            if tab == 1 then
+                sound.playMenuMove()
+                if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
+            elseif tab == 2 then
+                sound.playMenuMove()
+                if renderer.cycleBoardSkin then renderer.cycleBoardSkin(1) end
+            elseif tab == 3 then
+                sound.playMenuMove()
+                if renderer.cyclePet then renderer.cyclePet(1) end
+            end
+        end
+    elseif _G.appState == "JUKEBOX" then
+        if not (_G.jukebox_web_modal or (renderer.isJukeboxModalClosing and renderer.isJukeboxModalClosing())) then
+            local playlist = sound.getBgmPlaylist and sound.getBgmPlaylist() or {}
+            local total_tracks = math.max(1, #playlist)
+            local cur = _G.jukebox_selection or 1
+            if y > 0 then
+                if cur > 1 then
+                    _G.jukebox_selection = cur - 1
+                    sound.playMenuMove()
+                end
+            elseif y < 0 then
+                if cur < total_tracks then
+                    _G.jukebox_selection = cur + 1
+                    sound.playMenuMove()
+                end
+            end
+        end
     end
 end
 

@@ -74,7 +74,7 @@ index b3a1247..531acb9 100644
      if event then
          input.state[event] = true
 diff --git a/main.lua b/main.lua
-index 5676f99..0be7ec3 100644
+index 1105bec..444c315 100644
 --- a/main.lua
 +++ b/main.lua
 @@ -105,6 +105,9 @@ local function queueTransitionAction(key, delay, action, direction)
@@ -127,7 +127,7 @@ index 5676f99..0be7ec3 100644
                      elseif sel == "Back" then
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
-@@ -2803,3 +2819,9 @@ function love.visible(v)
+@@ -2914,3 +2930,9 @@ function love.visible(v)
          end
      end
  end
@@ -138,7 +138,7 @@ index 5676f99..0be7ec3 100644
 +    renderer.init()
 +end
 diff --git a/renderer.lua b/renderer.lua
-index d1ca8b8..2463e21 100644
+index 10c155e..4ac7e1b 100644
 --- a/renderer.lua
 +++ b/renderer.lua
 @@ -367,7 +367,7 @@ end
@@ -302,7 +302,7 @@ index d1ca8b8..2463e21 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -11424,8 +11460,9 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
+@@ -11431,8 +11467,9 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, lbl_y)
  
@@ -313,7 +313,7 @@ index d1ca8b8..2463e21 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12549,7 +12586,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -12556,7 +12593,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
              -- Badge
              right_x = right_x - label_gap
@@ -322,7 +322,7 @@ index d1ca8b8..2463e21 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12783,7 +12820,7 @@ function renderer.drawAbout(skip_transition)
+@@ -12790,7 +12827,7 @@ function renderer.drawAbout(skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -331,7 +331,7 @@ index d1ca8b8..2463e21 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -13811,7 +13848,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -13818,7 +13855,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -340,7 +340,7 @@ index d1ca8b8..2463e21 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -14640,7 +14677,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -14647,7 +14684,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap
