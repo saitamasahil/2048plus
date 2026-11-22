@@ -2398,6 +2398,95 @@ local matrix_cols = nil
 local matrix_last_t = nil
 local skin_matrix_cols = nil
 
+renderer._bg = {
+    pts_buffer = {},
+    rng1 = love.math and love.math.newRandomGenerator and love.math.newRandomGenerator(1),
+    rng2 = love.math and love.math.newRandomGenerator and love.math.newRandomGenerator(2),
+    cosmic_dust_clouds = {
+        {0.2, 0.25, 0.45, 0.15, 0.70, 260, 0.08},
+        {0.7, 0.65, 0.85, 0.10, 0.40, 290, 0.06},
+        {0.5, 0.35, 0.95, 0.30, 0.60, 220, 0.07},
+        {0.8, 0.20, 0.90, 0.65, 0.20, 180, 0.05},
+    },
+    aurora_palette = {
+        {0.0, 0.95, 0.60},
+        {0.0, 0.80, 0.90},
+        {0.45, 0.10, 0.95},
+        {0.0, 0.50, 1.0},
+        {0.85, 0.20, 0.75},
+    },
+    abyss_clouds = {
+        {0.35, 0.25, 0.50, 0.12, 0.55, 280, 0.07},
+        {0.65, 0.55, 0.08, 0.15, 0.50, 300, 0.06},
+        {0.50, 0.70, 0.55, 0.05, 0.45, 240, 0.05},
+        {0.25, 0.65, 0.35, 0.25, 0.70, 200, 0.05},
+    },
+    inferno_pools = {
+        {0.2, 0.9, 1.0, 0.15, 0.0},
+        {0.5, 0.85, 1.0, 0.25, 0.0},
+        {0.8, 0.92, 0.95, 0.10, 0.0},
+    },
+    pond_current_layers = {
+        {y_ratio = 0.18, freq = 0.008, spd = 0.8, amp = 6.0, alpha = 0.10, col = {0.05, 0.65, 0.85}},
+        {y_ratio = 0.34, freq = 0.006, spd = -0.6, amp = 8.0, alpha = 0.08, col = {0.01, 0.52, 0.78}},
+        {y_ratio = 0.52, freq = 0.009, spd = 0.9, amp = 7.0, alpha = 0.09, col = {0.02, 0.71, 0.83}},
+        {y_ratio = 0.68, freq = 0.007, spd = -0.7, amp = 9.0, alpha = 0.08, col = {0.05, 0.65, 0.85}},
+        {y_ratio = 0.84, freq = 0.010, spd = 0.75, amp = 7.5, alpha = 0.10, col = {0.01, 0.52, 0.78}},
+    },
+    pond_ripple_positions = {
+        {0.16, 0.18, 0.0, 3.8},
+        {0.84, 0.15, 1.4, 4.2},
+        {0.50, 0.32, 2.7, 3.6},
+        {0.20, 0.52, 0.8, 4.0},
+        {0.80, 0.58, 2.1, 3.7},
+        {0.35, 0.74, 1.1, 4.4},
+        {0.72, 0.82, 3.2, 3.9},
+        {0.12, 0.88, 2.3, 4.1},
+    },
+    synthwave_shapes = {{0.15, 0.25}, {0.72, 0.18}, {0.88, 0.35}, {0.05, 0.38}},
+    cyberpunk_corners = {{0, 0}, {1, 0}, {0, 1}, {1, 1}},
+    ocean_wave_layers = {
+        {y_ratio = 0.32, amp = 20, freq = 0.003, speed = 0.7, alpha = 0.045, color = {0.0, 0.7, 0.95}},
+        {y_ratio = 0.62, amp = 26, freq = 0.0025, speed = -0.5, alpha = 0.050, color = {0.1, 0.85, 0.9}},
+        {y_ratio = 0.85, amp = 18, freq = 0.0035, speed = 0.45, alpha = 0.040, color = {0.0, 0.55, 0.85}},
+    },
+    forest_greens = {
+        {0.15, 0.55, 0.18}, {0.30, 0.72, 0.20},
+        {0.08, 0.42, 0.12}, {0.45, 0.78, 0.22}
+    },
+    volcano_pools = {
+        {0.18, 1.10, 240, 0.0},
+        {0.50, 1.08, 300, 0.0},
+        {0.82, 1.10, 210, 0.0},
+    },
+    volcano_vents = {0.20, 0.50, 0.80},
+    dracula_mists = {
+        {0.22, 0.30, 0.11, 0.08},
+        {0.78, 0.65, 0.09, 0.07},
+        {0.45, 0.80, 0.13, 0.06},
+        {0.10, 0.70, 0.10, 0.05},
+    },
+    hyperdrive_star_colors = {
+        {1.0, 1.0, 1.0},
+        {0.5, 0.8, 1.0},
+        {0.8, 0.5, 1.0},
+        {0.5, 1.0, 0.9},
+        {1.0, 0.85, 0.4},
+    },
+    retrogold_torches = {{0.0, 1.0}, {1.0, 1.0}, {0.5, 1.05}},
+    retrogold_flares = {{0.15, 0.22}, {0.72, 0.18}, {0.88, 0.60}, {0.35, 0.75}, {0.58, 0.35}},
+    spectrum_ray_colors = {
+        {1.00, 0.15, 0.15},
+        {1.00, 0.52, 0.05},
+        {1.00, 0.90, 0.05},
+        {0.10, 0.85, 0.25},
+        {0.05, 0.70, 1.00},
+        {0.35, 0.10, 0.95},
+        {0.75, 0.05, 0.95},
+    },
+    bamboo_node_offsets = { 0.15, 0.45, 0.25, 0.70, 0.35, 0.60, 0.20, 0.80, 0.40 }
+}
+
 function renderer.drawDynamicBackground(themeName)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
@@ -2407,13 +2496,7 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Soft deep-space nebula dust clouds
-        local dust_clouds = {
-            {0.2, 0.25, 0.45, 0.15, 0.70, 260, 0.08},
-            {0.7, 0.65, 0.85, 0.10, 0.40, 290, 0.06},
-            {0.5, 0.35, 0.95, 0.30, 0.60, 220, 0.07},
-            {0.8, 0.20, 0.90, 0.65, 0.20, 180, 0.05},
-        }
-        for idx, cloud in ipairs(dust_clouds) do
+        for idx, cloud in ipairs(renderer._bg.cosmic_dust_clouds) do
             local cx = w * cloud[1] + math.sin(t * 0.12 + idx * 1.8) * 75 * scale
             local cy = h * cloud[2] + math.cos(t * 0.10 + idx * 2.2) * 55 * scale
             love.graphics.setColor(cloud[3], cloud[4], cloud[5], cloud[7] * 0.6)
@@ -2501,20 +2584,10 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Aurora palette: green, teal, purple, blue, pink bands
-        local aurora_colors = {
-            {0.0, 0.95, 0.60},  -- vivid green
-            {0.0, 0.80, 0.90},  -- teal
-            {0.45, 0.10, 0.95}, -- deep violet
-            {0.0, 0.50, 1.0},   -- ice blue
-            {0.85, 0.20, 0.75}, -- magenta
-        }
-
         -- Layer 1: Wide layered curtain bands
-        -- Each curtain spans nearly full screen height, anchored at top, waving at bottom
         local seg_count = 60
         for band = 1, 5 do
-            local c = aurora_colors[band]
+            local c = renderer._bg.aurora_palette[band]
             local band_offset = (band - 1) * 0.18
             -- Each band sways at a slightly different frequency
             local sway_freq = 0.18 + band * 0.04
@@ -2571,13 +2644,7 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Swirling dust clouds
-        local clouds = {
-            {0.35, 0.25, 0.50, 0.12, 0.55, 280, 0.07},  -- deep purple
-            {0.65, 0.55, 0.08, 0.15, 0.50, 300, 0.06},  -- deep blue
-            {0.50, 0.70, 0.55, 0.05, 0.45, 240, 0.05},  -- teal accent
-            {0.25, 0.65, 0.35, 0.25, 0.70, 200, 0.05},  -- pink nebula
-        }
-        for idx, cloud in ipairs(clouds) do
+        for idx, cloud in ipairs(renderer._bg.abyss_clouds) do
             local cx = w * cloud[1] + math.sin(t * 0.15 + idx * 1.5) * 90 * scale
             local cy = h * cloud[2] + math.cos(t * 0.12 + idx * 2.1) * 70 * scale
             -- Outer glow
@@ -2655,12 +2722,7 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Deep lava glow pools at bottom
-        local pools = {
-            {0.2, 0.9, 1.0, 0.15, 0.0},
-            {0.5, 0.85, 1.0, 0.25, 0.0},
-            {0.8, 0.92, 0.95, 0.10, 0.0},
-        }
-        for idx, p in ipairs(pools) do
+        for idx, p in ipairs(renderer._bg.inferno_pools) do
             local px = w * p[1] + math.sin(t * 0.25 + idx * 2.0) * 40 * scale
             local py = h * p[2] + math.cos(t * 0.3 + idx) * 15 * scale
             local pulse = 0.7 + 0.3 * math.sin(t * 0.8 + idx * 1.5)
@@ -2739,42 +2801,30 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Undulating pond surface currents
-        local current_layers = {
-            {y_ratio = 0.18, freq = 0.008, spd = 0.8, amp = 6.0, alpha = 0.10, col = {0.05, 0.65, 0.85}},
-            {y_ratio = 0.34, freq = 0.006, spd = -0.6, amp = 8.0, alpha = 0.08, col = {0.01, 0.52, 0.78}},
-            {y_ratio = 0.52, freq = 0.009, spd = 0.9, amp = 7.0, alpha = 0.09, col = {0.02, 0.71, 0.83}},
-            {y_ratio = 0.68, freq = 0.007, spd = -0.7, amp = 9.0, alpha = 0.08, col = {0.05, 0.65, 0.85}},
-            {y_ratio = 0.84, freq = 0.010, spd = 0.75, amp = 7.5, alpha = 0.10, col = {0.01, 0.52, 0.78}},
-        }
         love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
         local step = math.max(12, math.floor(w / 32))
-        for _, wl in ipairs(current_layers) do
+        local pts_buf = renderer._bg.pts_buffer
+        for _, wl in ipairs(renderer._bg.pond_current_layers) do
             local base_y = h * wl.y_ratio
             love.graphics.setColor(wl.col[1], wl.col[2], wl.col[3], wl.alpha)
-            local pts = {}
+            local pt_idx = 0
             for x = -step, w + step, step do
                 local wy = base_y + math.sin(x * wl.freq + t * wl.spd) * wl.amp * scale
                                  + math.cos(x * wl.freq * 1.6 - t * wl.spd * 0.7) * (wl.amp * 0.35 * scale)
-                table.insert(pts, x)
-                table.insert(pts, wy)
+                pt_idx = pt_idx + 1
+                pts_buf[pt_idx] = x
+                pt_idx = pt_idx + 1
+                pts_buf[pt_idx] = wy
             end
-            if #pts >= 4 then
-                love.graphics.line(pts)
+            for k = pt_idx + 1, #pts_buf do pts_buf[k] = nil end
+            if pt_idx >= 4 then
+                love.graphics.line(pts_buf)
             end
         end
 
         -- Layer 2: Concentric circular water ripples
         love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
-        local ripple_positions = {
-            {0.16, 0.18, 0.0, 3.8},
-            {0.84, 0.15, 1.4, 4.2},
-            {0.50, 0.32, 2.7, 3.6},
-            {0.20, 0.52, 0.8, 4.0},
-            {0.80, 0.58, 2.1, 3.7},
-            {0.35, 0.74, 1.1, 4.4},
-            {0.72, 0.82, 3.2, 3.9},
-            {0.12, 0.88, 2.3, 4.1},
-        }
+        local ripple_positions = renderer._bg.pond_ripple_positions
         local max_radius = 65 * scale
         for _, rdata in ipairs(ripple_positions) do
             local rx = w * rdata[1]
@@ -2927,10 +2977,12 @@ function renderer.drawDynamicBackground(themeName)
         local t = love.timer.getTime()
         love.graphics.push("all")
 
-        -- Seeded RNG for deterministic-but-changing chaos
+        -- Seeded RNG for deterministic chaos without allocation
         local time_step = math.floor(t * 12)
-        local rng = love.math.newRandomGenerator(time_step * 17 + 31)
-        local rng_slow = love.math.newRandomGenerator(math.floor(t * 4) * 53 + 19)
+        if renderer._bg.rng1 then renderer._bg.rng1:setSeed(time_step * 17 + 31) end
+        if renderer._bg.rng2 then renderer._bg.rng2:setSeed(math.floor(t * 4) * 53 + 19) end
+        local rng = renderer._bg.rng1
+        local rng_slow = renderer._bg.rng2
 
         -- Layer 1: Occasional scanline tears
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
@@ -3072,8 +3124,7 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Layer 5: Floating retro geometric shapes in sky
-        local shapes = {{0.15, 0.25}, {0.72, 0.18}, {0.88, 0.35}, {0.05, 0.38}}
-        for idx, s in ipairs(shapes) do
+        for idx, s in ipairs(renderer._bg.synthwave_shapes) do
             local sx2 = w * s[1] + math.sin(t * 0.2 + idx * 1.3) * 12 * scale
             local sy2 = h * s[2] + math.cos(t * 0.15 + idx * 2.1) * 8 * scale
             local sz = (12 + idx * 6) * scale
@@ -3092,7 +3143,8 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Neon rain — vertical streaks of cyan/pink falling fast
-        local rain_rng = love.math.newRandomGenerator(42)
+        if renderer._bg.rng1 then renderer._bg.rng1:setSeed(42) end
+        local rain_rng = renderer._bg.rng1
         for i = 1, 28 do
             local rx = ((rain_rng:random() * 0.95 + 0.025) * w)
             local speed = 80 + rain_rng:random() * 120
@@ -3139,9 +3191,9 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Layer 5: Flickering corner circuit traces
-        local corners = {{0, 0}, {w, 0}, {0, h}, {w, h}}
-        for ci, corner in ipairs(corners) do
-            local cx2, cy2 = corner[1], corner[2]
+        for ci = 1, 4 do
+            local corner = renderer._bg.cyberpunk_corners[ci]
+            local cx2, cy2 = corner[1] * w, corner[2] * h
             local flip_x = (ci == 1 or ci == 3) and 1 or -1
             local flip_y = (ci == 1 or ci == 2) and 1 or -1
             local flicker = 0.5 + 0.5 * math.sin(t * 3.5 + ci * 2.1)
@@ -3185,30 +3237,30 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Deep water swells
-        local wave_layers = {
-            {y_ratio = 0.32, amp = 20, freq = 0.003, speed = 0.7, alpha = 0.045, color = {0.0, 0.7, 0.95}},
-            {y_ratio = 0.62, amp = 26, freq = 0.0025, speed = -0.5, alpha = 0.050, color = {0.1, 0.85, 0.9}},
-            {y_ratio = 0.85, amp = 18, freq = 0.0035, speed = 0.45, alpha = 0.040, color = {0.0, 0.55, 0.85}},
-        }
         love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
-        for _, wl in ipairs(wave_layers) do
+        local ocean_pts = renderer._bg.pts_buffer
+        for _, wl in ipairs(renderer._bg.ocean_wave_layers) do
             local base_y = h * wl.y_ratio
             love.graphics.setColor(wl.color[1], wl.color[2], wl.color[3], wl.alpha)
-            local pts = {}
+            local pt_idx = 0
             local step = math.max(16, math.floor(w / 32))
             for x = -step, w + step, step do
                 local wy = base_y + math.sin(x * wl.freq + t * wl.speed) * wl.amp * scale
                                  + math.cos(x * wl.freq * 1.7 - t * wl.speed * 0.6) * (wl.amp * 0.4) * scale
-                table.insert(pts, x)
-                table.insert(pts, wy)
+                pt_idx = pt_idx + 1
+                ocean_pts[pt_idx] = x
+                pt_idx = pt_idx + 1
+                ocean_pts[pt_idx] = wy
             end
-            if #pts >= 4 then
-                love.graphics.line(pts)
+            for k = pt_idx + 1, #ocean_pts do ocean_pts[k] = nil end
+            if pt_idx >= 4 then
+                love.graphics.line(ocean_pts)
             end
         end
 
         -- Drifting marine motes
-        local mote_rng = love.math.newRandomGenerator(1024)
+        if renderer._bg.rng1 then renderer._bg.rng1:setSeed(1024) end
+        local mote_rng = renderer._bg.rng1
         for i = 1, 28 do
             local mx_base = mote_rng:random() * w
             local my_base = mote_rng:random() * h
@@ -3286,7 +3338,8 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Layer 3: Tiny Gentle Fireflies
-        local ff_rng = love.math.newRandomGenerator(321)
+        if renderer._bg.rng1 then renderer._bg.rng1:setSeed(321) end
+        local ff_rng = renderer._bg.rng1
         for i = 1, 8 do
             local base_x = ff_rng:random() * w
             local speed = 0.2 + (i % 4) * 0.1
@@ -3324,11 +3377,7 @@ function renderer.drawDynamicBackground(themeName)
                 love.graphics.rotate(rot)
 
                 -- Forest green palette
-                local greens = {
-                    {0.15, 0.55, 0.18}, {0.30, 0.72, 0.20},
-                    {0.08, 0.42, 0.12}, {0.45, 0.78, 0.22}
-                }
-                local c = greens[(i % 4) + 1]
+                local c = renderer._bg.forest_greens[(i % 4) + 1]
 
                 -- Leaf body
                 love.graphics.setColor(c[1], c[2], c[3], alpha)
@@ -3350,12 +3399,7 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Magma glow pools at bottom
-        local pools = {
-            {0.18, 1.10, 240, 0.0},  -- left pool
-            {0.50, 1.08, 300, 0.0},  -- center pool
-            {0.82, 1.10, 210, 0.0},  -- right pool
-        }
-        for idx, p in ipairs(pools) do
+        for idx, p in ipairs(renderer._bg.volcano_pools) do
             local px = w * p[1] + math.sin(t * 0.2 + idx * 1.7) * 22 * scale
             local py = h * p[2]
             local pulse = 0.6 + 0.4 * math.sin(t * 0.55 + idx * 2.1)
@@ -3372,8 +3416,7 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Layer 2: Lava burst jets — 3 eruption vents shooting arcs upward
-        local vents = {0.20, 0.50, 0.80}
-        for vi, vx_frac in ipairs(vents) do
+        for vi, vx_frac in ipairs(renderer._bg.volcano_vents) do
             local vent_x = w * vx_frac
             local vent_y = h + 5 * scale
             -- Each vent fires multiple lava blobs in arcs
@@ -3481,13 +3524,7 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.circle("fill", moon_x, moon_y, 28 * scale)
 
         -- Layer 2: Drifting purple-black mist pools
-        local mists = {
-            {0.22, 0.30, 0.11, 0.08},
-            {0.78, 0.65, 0.09, 0.07},
-            {0.45, 0.80, 0.13, 0.06},
-            {0.10, 0.70, 0.10, 0.05},
-        }
-        for mi, m in ipairs(mists) do
+        for mi, m in ipairs(renderer._bg.dracula_mists) do
             local mx = w * m[1] + math.sin(t * 0.08 + mi * 1.7) * 50 * scale
             local my = h * m[2] + math.cos(t * 0.06 + mi * 2.3) * 30 * scale
             local pulse = 0.7 + 0.3 * math.sin(t * 0.2 + mi)
@@ -3709,13 +3746,6 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Layer 2: Warp star streaks
-        local star_colors = {
-            {1.0, 1.0, 1.0},   -- white
-            {0.5, 0.8, 1.0},   -- ice blue
-            {0.8, 0.5, 1.0},   -- purple
-            {0.5, 1.0, 0.9},   -- cyan
-            {1.0, 0.85, 0.4},  -- warm gold
-        }
         love.graphics.setLineWidth(math.max(1, math.floor(scale)))
         for i = 1, 80 do
             local golden = 0.6180339887
@@ -3737,7 +3767,7 @@ function renderer.drawDynamicBackground(themeName)
             local ty = sy - math.sin(angle) * trail_len
 
             -- Color + alpha
-            local c = star_colors[(i % 5) + 1]
+            local c = renderer._bg.hyperdrive_star_colors[(i % 5) + 1]
             local alpha = math.min(0.85, progress * 1.2)
             -- Bright white head, colored trail
             love.graphics.setColor(c[1], c[2], c[3], alpha * 0.6)
@@ -3758,8 +3788,7 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Ambient golden glow pulses
-        local torch_positions = {{0.0, 1.0}, {1.0, 1.0}, {0.5, 1.05}}
-        for ti, tp in ipairs(torch_positions) do
+        for ti, tp in ipairs(renderer._bg.retrogold_torches) do
             local tx = w * tp[1]
             local ty = h * tp[2]
             local flicker = 0.7 + 0.3 * math.sin(t * (2.1 + ti * 0.7) + ti * 1.3)
@@ -3809,8 +3838,7 @@ function renderer.drawDynamicBackground(themeName)
         end
 
         -- Layer 3: Gold lens flares
-        local flare_spots = {{0.15, 0.22}, {0.72, 0.18}, {0.88, 0.60}, {0.35, 0.75}, {0.58, 0.35}}
-        for fi, fs in ipairs(flare_spots) do
+        for fi, fs in ipairs(renderer._bg.retrogold_flares) do
             local fx = w * fs[1]
             local fy = h * fs[2]
             local flare_pulse = math.sin(t * (0.8 + fi * 0.25) + fi * 1.7) * 0.5 + 0.5
@@ -3840,17 +3868,7 @@ function renderer.drawDynamicBackground(themeName)
         -- Spectrum: prismatic light rays, like sunlight split through a prism
         -- 7 ROYGBIV color beams fan out diagonally across the screen, slowly breathing
 
-        local ray_colors = {
-            {1.00, 0.15, 0.15},  -- red
-            {1.00, 0.52, 0.05},  -- orange
-            {1.00, 0.90, 0.05},  -- yellow
-            {0.10, 0.85, 0.25},  -- green
-            {0.05, 0.70, 1.00},  -- blue
-            {0.35, 0.10, 0.95},  -- indigo
-            {0.75, 0.05, 0.95},  -- violet
-        }
-
-        local num_rays = #ray_colors
+        local num_rays = #renderer._bg.spectrum_ray_colors
         -- Origin point: top-left corner area
         local origin_x = w * (-0.05)
         local origin_y = h * (-0.05)
@@ -4647,7 +4665,7 @@ function renderer.drawBoard(game, override_skin, override_layout)
         local scale = _G.scale or 1
         local num_slats = 9
         local slat_step = (bs - 8 * scale) / num_slats
-        local node_offsets = { 0.15, 0.45, 0.25, 0.70, 0.35, 0.60, 0.20, 0.80, 0.40 }
+        local node_offsets = renderer._bg.bamboo_node_offsets
 
         for i = 1, num_slats do
             local sx = bx + 4 * scale + (i - 1) * slat_step
@@ -5152,6 +5170,13 @@ end
 -- ============================================================================
 -- Draw all tiles
 -- ============================================================================
+renderer._anim = {
+    bomb_dummy = { x = 0, y = 0, value = 0, isBombing = true },
+    swap_prev_pos = { x = 0, y = 0 },
+    swap_dummy = { x = 0, y = 0, value = 0, previousPosition = nil }
+}
+renderer._anim.swap_dummy.previousPosition = renderer._anim.swap_prev_pos
+
 function renderer.drawTiles(game)
     local t = game.animationTimer
     local d = game.animationDuration
@@ -5225,31 +5250,37 @@ function renderer.drawTiles(game)
 
     if game.bombAnimation then
         local p = 1 - (game.bombAnimation.timer / game.bombAnimation.duration)
-        local t = {
-            x = game.bombAnimation.x,
-            y = game.bombAnimation.y,
-            value = game.bombAnimation.tileValue,
-            isBombing = true
-        }
+        local t = renderer._anim.bomb_dummy
+        t.x = game.bombAnimation.x
+        t.y = game.bombAnimation.y
+        t.value = game.bombAnimation.tileValue
         renderer.drawTile(t, p)
     end
 
     if game.swapAnimation then
         local p = 1 - (game.swapAnimation.timer / game.swapAnimation.duration)
+        local s_dummy = renderer._anim.swap_dummy
+        local s_prev = renderer._anim.swap_prev_pos
 
-        local drawSwapTile = function(s)
-            if not s then return end
-            local t = {
-                x = s.endX,
-                y = s.endY,
-                value = s.val,
-                previousPosition = {x = s.startX, y = s.startY}
-            }
-            renderer.drawTile(t, p)
+        local t1 = game.swapAnimation.t1
+        if t1 then
+            s_dummy.x = t1.endX
+            s_dummy.y = t1.endY
+            s_dummy.value = t1.val
+            s_prev.x = t1.startX
+            s_prev.y = t1.startY
+            renderer.drawTile(s_dummy, p)
         end
 
-        drawSwapTile(game.swapAnimation.t1)
-        drawSwapTile(game.swapAnimation.t2)
+        local t2 = game.swapAnimation.t2
+        if t2 then
+            s_dummy.x = t2.endX
+            s_dummy.y = t2.endY
+            s_dummy.value = t2.val
+            s_prev.x = t2.startX
+            s_prev.y = t2.startY
+            renderer.drawTile(s_dummy, p)
+        end
     end
 
     if game.floatingNotifications then
@@ -6644,11 +6675,10 @@ function renderer.drawHelp(game)
         local h3 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s3))
         local h4 = math.floor(min_h + (max_h - min_h) * (0.30 + 0.70 * s4))
 
-        local bars = { h1, h2, h3, h4 }
-        for idx = 1, 4 do
-            local bx = start_x + (idx - 1) * (bar_w + bar_gap)
-            love.graphics.rectangle("fill", bx, base_y - bars[idx], bar_w, bars[idx], bar_cr, bar_cr)
-        end
+        love.graphics.rectangle("fill", start_x, base_y - h1, bar_w, h1, bar_cr, bar_cr)
+        love.graphics.rectangle("fill", start_x + (bar_w + bar_gap), base_y - h2, bar_w, h2, bar_cr, bar_cr)
+        love.graphics.rectangle("fill", start_x + (bar_w + bar_gap) * 2, base_y - h3, bar_w, h3, bar_cr, bar_cr)
+        love.graphics.rectangle("fill", start_x + (bar_w + bar_gap) * 3, base_y - h4, bar_w, h4, bar_cr, bar_cr)
 
         -- Draw text label
         if type(ui_text) == "table" then
@@ -7937,11 +7967,10 @@ function renderer.drawNowPlayingFooter(center_x, center_y, max_w, alpha_mult, al
     local h3 = math.floor(min_h + (max_h - min_h) * (0.20 + 0.80 * s3))
     local h4 = math.floor(min_h + (max_h - min_h) * (0.30 + 0.70 * s4))
 
-    local bars = { h1, h2, h3, h4 }
-    for idx = 1, 4 do
-        local bx = start_x + (idx - 1) * (bar_w + bar_gap)
-        love.graphics.rectangle("fill", bx, base_y - bars[idx], bar_w, bars[idx], bar_cr, bar_cr)
-    end
+    love.graphics.rectangle("fill", start_x, base_y - h1, bar_w, h1, bar_cr, bar_cr)
+    love.graphics.rectangle("fill", start_x + (bar_w + bar_gap), base_y - h2, bar_w, h2, bar_cr, bar_cr)
+    love.graphics.rectangle("fill", start_x + (bar_w + bar_gap) * 2, base_y - h3, bar_w, h3, bar_cr, bar_cr)
+    love.graphics.rectangle("fill", start_x + (bar_w + bar_gap) * 3, base_y - h4, bar_w, h4, bar_cr, bar_cr)
 
     if type(ui_text) == "table" then
         love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], (ui_text[4] or 1.0) * alpha)
@@ -8228,22 +8257,12 @@ local function drawMiniBoard(bx, by, board_size, tiles, highlight, alpha_mod)
     end
 end
 
-function renderer.drawTutorial(page, skip_transition, static_only)
-    renderer.clearBackground()
-
-    local w, h = love.graphics.getDimensions()
-    local scale = _G.scale
-    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
-
-    -- Slide animation state
-    if not static_only and _G.tutorial_slide_timer and _G.tutorial_slide_timer > 0 then
-        local dt = love.timer.getDelta()
-        _G.tutorial_slide_timer = _G.tutorial_slide_timer - dt
-        if _G.tutorial_slide_timer < 0 then _G.tutorial_slide_timer = 0 end
-    end
-
-    -- Tutorial slide data
-    local slides = {
+renderer._tutorial = {
+    actions = {
+        {key = "B", label = "Exit"},
+        {key = "Y", label = "Switch Theme"}
+    },
+    slides = {
         {
             title = "HOW TO PLAY",
             lines = {
@@ -8445,6 +8464,24 @@ function renderer.drawTutorial(page, skip_transition, static_only)
             }
         }
     }
+}
+
+function renderer.drawTutorial(page, skip_transition, static_only)
+    renderer.clearBackground()
+
+    local w, h = love.graphics.getDimensions()
+    local scale = _G.scale
+    local padding = math.floor(renderer.MENU_TITLE_Y * scale)
+
+    -- Slide animation state
+    if not static_only and _G.tutorial_slide_timer and _G.tutorial_slide_timer > 0 then
+        local dt = love.timer.getDelta()
+        _G.tutorial_slide_timer = _G.tutorial_slide_timer - dt
+        if _G.tutorial_slide_timer < 0 then _G.tutorial_slide_timer = 0 end
+    end
+
+    -- Tutorial slide data
+    local slides = renderer._tutorial.slides
 
     local total_pages = #slides
 
@@ -8700,10 +8737,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
     local lbl_y = getFooterLabelY(badge_y, badge_h, font_help_label)
 
     -- Build action list: B to exit, Y to switch theme
-    local actions = {
-        {key = "B", label = "Exit"},
-        {key = "Y", label = "Switch Theme"}
-    }
+    local actions = renderer._tutorial.actions
 
     love.graphics.setFont(font_help_label)
     if love.system.getOS() == "Web" then
@@ -10351,6 +10385,23 @@ local function getBoardPreviewSize()
     return exact_bs
 end
 
+renderer._preview = {
+    layout = {
+        board_x = 0,
+        board_y = 0,
+        board_size = 0,
+        cell_size = 0,
+        cell_gap = 0,
+        corner_radius = 0
+    },
+    samples = {
+        {col = 1, row = 1, val = 2},
+        {col = 2, row = 1, val = 4},
+        {col = 2, row = 2, val = 8},
+        {col = 3, row = 2, val = 16},
+    }
+}
+
 local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
     local canvas_w, canvas_h = target_canvas:getDimensions()
     local exact_bs = bs or canvas_w
@@ -10361,14 +10412,13 @@ local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
     local drawn_bs = 4 * p_cs + 5 * p_gap
     local off_board = math.floor((canvas_w - drawn_bs) / 2)
 
-    local p_layout = {
-        board_x = off_board,
-        board_y = off_board,
-        board_size = drawn_bs,
-        cell_size = p_cs,
-        cell_gap = p_gap,
-        corner_radius = math.floor(p_cs * 0.08)
-    }
+    local p_layout = renderer._preview.layout
+    p_layout.board_x = off_board
+    p_layout.board_y = off_board
+    p_layout.board_size = drawn_bs
+    p_layout.cell_size = p_cs
+    p_layout.cell_gap = p_gap
+    p_layout.corner_radius = math.floor(p_cs * 0.08)
 
     local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({target_canvas, stencil = true})
@@ -10385,13 +10435,7 @@ local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
         font_cache["swatch_" .. tostring(sample_fsize)] = font_swatch
     end
 
-    local preview_samples = {
-        {col = 1, row = 1, val = 2},
-        {col = 2, row = 1, val = 4},
-        {col = 2, row = 2, val = 8},
-        {col = 3, row = 2, val = 16},
-    }
-    for _, smp in ipairs(preview_samples) do
+    for _, smp in ipairs(renderer._preview.samples) do
         local tx = p_layout.board_x + p_layout.cell_gap + (smp.col - 1) * (p_layout.cell_size + p_layout.cell_gap)
         local ty = p_layout.board_y + p_layout.cell_gap + (smp.row - 1) * (p_layout.cell_size + p_layout.cell_gap)
         local color = tile_colors[smp.val] or tile_colors[2]
@@ -13072,6 +13116,41 @@ local function drawAnimatedButtonSequence(start_x, start_y, btn_seq, active_step
     end
 end
 
+renderer._store = {
+    mode_labels = {
+        [0] = "Default",
+        [1] = "Not Owned",
+        [2] = "Owned",
+        [3] = "Themes",
+        [4] = "Skins",
+        [5] = "Companions",
+        [6] = "Upgrades",
+        [7] = "Boosters",
+        [8] = "Low → High",
+        [9] = "High → Low"
+    },
+    card_y_offsets = {},
+    cache = {
+        items = nil,
+        sort_mode = nil,
+        breed_id = nil,
+        pu_undo = nil,
+        pu_swap = nil,
+        pu_bomb = nil,
+        b128 = nil,
+        b256 = nil,
+        b512 = nil,
+        coin_rush = nil,
+        shield = nil,
+        pur_count = nil,
+        stats_ref = nil
+    }
+}
+
+function renderer.invalidateStoreCache()
+    renderer._store.cache.items = nil
+end
+
 function renderer.getStoreItems()
     local booster_128 = _G.stats and (_G.stats.start_128_count or 0) or 0
     local booster_256 = _G.stats and (_G.stats.start_256_count or 0) or 0
@@ -13081,9 +13160,34 @@ function renderer.getStoreItems()
     local pu_undo  = _G.stats and (_G.stats.powerup_undo_count  or 0) or 0
     local pu_swap  = _G.stats and (_G.stats.powerup_swap_count  or 0) or 0
     local pu_bomb  = _G.stats and (_G.stats.powerup_bomb_count  or 0) or 0
+    local breed_id = _G.active_dog_breed or "roxy"
+    local sort_mode = _G.store_sort_mode or 0
+
+    local pur_count = 0
+    if _G.stats and _G.stats.purchased_items then
+        for _ in pairs(_G.stats.purchased_items) do
+            pur_count = pur_count + 1
+        end
+    end
+
+    local sc = renderer._store.cache
+    if sc.items
+       and sc.sort_mode == sort_mode
+       and sc.breed_id == breed_id
+       and sc.pu_undo == pu_undo
+       and sc.pu_swap == pu_swap
+       and sc.pu_bomb == pu_bomb
+       and sc.b128 == booster_128
+       and sc.b256 == booster_256
+       and sc.b512 == booster_512
+       and sc.coin_rush == coin_rush_count
+       and sc.shield == shield_count
+       and sc.pur_count == pur_count
+       and sc.stats_ref == _G.stats then
+        return sc.items
+    end
 
     local current_dog_info = "Roxy (Pomeranian)"
-    local breed_id = _G.active_dog_breed or "roxy"
     for _, b in ipairs(_G.DOG_BREEDS or {}) do
         if b.id == breed_id then
             current_dog_info = b.name .. " (" .. b.breed .. ")"
@@ -13197,6 +13301,20 @@ function renderer.getStoreItems()
         table.sort(items, function(a, b) return a.cost > b.cost end)
     end
 
+    sc.items = items
+    sc.sort_mode = sort_mode
+    sc.breed_id = breed_id
+    sc.pu_undo = pu_undo
+    sc.pu_swap = pu_swap
+    sc.pu_bomb = pu_bomb
+    sc.b128 = booster_128
+    sc.b256 = booster_256
+    sc.b512 = booster_512
+    sc.coin_rush = coin_rush_count
+    sc.shield = shield_count
+    sc.pur_count = pur_count
+    sc.stats_ref = _G.stats
+
     return items
 end
 
@@ -13253,26 +13371,20 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
 
         -- Filter mode pill
         local sort_mode = _G.store_sort_mode or 0
-        local mode_labels = {
-            [0] = "Default",
-            [1] = "Not Owned",
-            [2] = "Owned",
-            [3] = "Themes",
-            [4] = "Skins",
-            [5] = "Companions",
-            [6] = "Upgrades",
-            [7] = "Boosters",
-            [8] = "Low → High",
-            [9] = "High → Low"
-        }
-        local mode_txt = mode_labels[sort_mode] or "Default"
+        local mode_txt = renderer._store.mode_labels[sort_mode] or "Default"
         local sort_tw = font_help_label:getWidth(mode_txt)
         local sort_icon_sz = math.floor(16 * scale)
         local sort_pill_w = sort_tw + (sort_icon and (sort_icon_sz + 18 * scale) or math.floor(18 * scale))
         local sort_pill_x = padding
         local sort_pill_y = pill_y
 
-        _G.store_sort_btn_bounds = { x = sort_pill_x, y = sort_pill_y, w = sort_pill_w, h = pill_h }
+        if not _G.store_sort_btn_bounds then
+            _G.store_sort_btn_bounds = { x = 0, y = 0, w = 0, h = 0 }
+        end
+        _G.store_sort_btn_bounds.x = sort_pill_x
+        _G.store_sort_btn_bounds.y = sort_pill_y
+        _G.store_sort_btn_bounds.w = sort_pill_w
+        _G.store_sort_btn_bounds.h = pill_h
 
         local is_sort_anim = not skip_transition and _G.screen_transitions and (store_sort_transition_timer > 0)
         local sort_prog = is_sort_anim and math.max(0, math.min(1, 1 - (store_sort_transition_timer / STORE_SORT_TRANSITION_DURATION))) or 0
@@ -13329,7 +13441,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
     local list_y = header_bottom
     local avail_h = badge_y - list_y - math.floor(10 * scale)
 
-    local card_y_offsets = {}
+    local card_y_offsets = renderer._store.card_y_offsets
     local current_y_acc = 0
     local card_gap = math.floor(10 * scale)
 
@@ -13339,6 +13451,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
         local ch = ((itm.id == "mascot_dog" or itm.id == "secret_key") and is_pur) and math.floor(92 * scale) or math.floor(58 * scale)
         current_y_acc = current_y_acc + ch + card_gap
     end
+    for k = #items + 1, #card_y_offsets do card_y_offsets[k] = nil end
 
     -- Add extra bottom padding margin to total_content_h so last card border never clips against bottom nav
     local total_content_h = math.max(0, current_y_acc - card_gap + math.floor(16 * scale))
