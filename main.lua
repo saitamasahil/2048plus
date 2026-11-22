@@ -68,6 +68,7 @@ local function captureOldScreen()
     if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
         old_screen_canvas = love.graphics.newCanvas(w, h)
     end
+    local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({old_screen_canvas, stencil = true})
     love.graphics.clear()
     if (_G.is_console_active and _G.is_console_active()) and not _G.android_fullscreen then
@@ -87,7 +88,11 @@ local function captureOldScreen()
     else
         drawCurrentScreen()
     end
-    love.graphics.setCanvas()
+    if prev_canvas then
+        love.graphics.setCanvas({prev_canvas, stencil = true})
+    else
+        love.graphics.setCanvas()
+    end
 end
 
 local function queueTransitionAction(key, delay, action, direction)

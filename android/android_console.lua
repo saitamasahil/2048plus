@@ -2165,11 +2165,22 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     love.graphics.getWidth = stubFsWidth
     love.graphics.getHeight = stubFsHeight
 
-    game_draw_fn()
+    local real_setCanvas = love.graphics.setCanvas
+    love.graphics.setCanvas = function(c, ...)
+        if c == nil or c == fs_canvas or (type(c) == "table" and c[1] == fs_canvas) then
+            real_setCanvas({fs_canvas, stencil = true})
+        else
+            real_setCanvas(c, ...)
+        end
+    end
 
+    local ok, err = pcall(game_draw_fn)
+
+    love.graphics.setCanvas = real_setCanvas
     love.graphics.getDimensions = real_getDimensions
     love.graphics.getWidth = real_getWidth
     love.graphics.getHeight = real_getHeight
+    if not ok then error(err) end
 
     local anim_t = ui_anim_t or 1.0
     local top_slide = (1 - anim_t) * (-50)
@@ -2515,11 +2526,22 @@ function android_console.drawConsole(game_draw_fn, dt, chassis_slide_y, chassis_
         love.graphics.getWidth = stubGetWidth
         love.graphics.getHeight = stubGetHeight
 
-        game_draw_fn()
+        local real_setCanvas = love.graphics.setCanvas
+        love.graphics.setCanvas = function(c, ...)
+            if c == nil or c == canvas or (type(c) == "table" and c[1] == canvas) then
+                real_setCanvas({canvas, stencil = true})
+            else
+                real_setCanvas(c, ...)
+            end
+        end
 
+        local ok, err = pcall(game_draw_fn)
+
+        love.graphics.setCanvas = real_setCanvas
         love.graphics.getDimensions = real_getDimensions
         love.graphics.getWidth = real_getWidth
         love.graphics.getHeight = real_getHeight
+        if not ok then error(err) end
 
         love.graphics.setCanvas()
     end
