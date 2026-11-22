@@ -10466,14 +10466,18 @@ local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
     end
 
     love.graphics.pop()
-    love.graphics.setCanvas(prev_canvas)
+    if prev_canvas then
+        love.graphics.setCanvas({prev_canvas, stencil = true})
+    else
+        love.graphics.setCanvas()
+    end
 end
 
 function renderer.prepareBoardTransition(prev_idx, cur_idx, bs)
     local target_bs = bs or getBoardPreviewSize()
     if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= target_bs then
-        board_preview_canvas_curr = love.graphics.newCanvas(target_bs, target_bs)
-        board_preview_canvas_prev = love.graphics.newCanvas(target_bs, target_bs)
+        board_preview_canvas_curr = love.graphics.newCanvas(target_bs, target_bs, {stencil = true})
+        board_preview_canvas_prev = love.graphics.newCanvas(target_bs, target_bs, {stencil = true})
         board_preview_canvas_size = target_bs
     end
 
@@ -10818,8 +10822,8 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
 
             local theme_changed = (board_preview_rendered_theme ~= _G.theme)
             if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= board_size then
-                board_preview_canvas_curr = love.graphics.newCanvas(board_size, board_size)
-                board_preview_canvas_prev = love.graphics.newCanvas(board_size, board_size)
+                board_preview_canvas_curr = love.graphics.newCanvas(board_size, board_size, {stencil = true})
+                board_preview_canvas_prev = love.graphics.newCanvas(board_size, board_size, {stencil = true})
                 board_preview_canvas_size = board_size
                 renderBoardPreviewToCanvas(board_preview_canvas_curr, skin.id, board_size)
                 board_preview_rendered_skin_id = skin.id
@@ -12476,11 +12480,12 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
     -- Middle content panel
     if is_tab_transitioning and _G.achievements_tab_prev and _G.achievements_tab_prev ~= active_tab then
         if not _G.achievements_tab_ready then
+            local prev_canvas = love.graphics.getCanvas()
             if not achievements_old_canvas or achievements_old_canvas:getWidth() ~= w or achievements_old_canvas:getHeight() ~= h then
-                achievements_old_canvas = love.graphics.newCanvas(w, h)
+                achievements_old_canvas = love.graphics.newCanvas(w, h, {stencil = true})
             end
             if not achievements_new_canvas or achievements_new_canvas:getWidth() ~= w or achievements_new_canvas:getHeight() ~= h then
-                achievements_new_canvas = love.graphics.newCanvas(w, h)
+                achievements_new_canvas = love.graphics.newCanvas(w, h, {stencil = true})
             end
 
             local from_tab = _G.achievements_tab_prev
@@ -12488,15 +12493,19 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             local from_s = (from_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
             local to_s = (to_tab == 2) and (_G.stats_scroll or 0) or (_G.achievements_scroll or 0)
 
-            love.graphics.setCanvas(achievements_old_canvas)
+            love.graphics.setCanvas({achievements_old_canvas, stencil = true})
             love.graphics.clear(0, 0, 0, 0)
             renderer.drawAchievementsTabContent(from_tab, from_s)
 
-            love.graphics.setCanvas(achievements_new_canvas)
+            love.graphics.setCanvas({achievements_new_canvas, stencil = true})
             love.graphics.clear(0, 0, 0, 0)
             renderer.drawAchievementsTabContent(to_tab, to_s)
 
-            love.graphics.setCanvas()
+            if prev_canvas then
+                love.graphics.setCanvas({prev_canvas, stencil = true})
+            else
+                love.graphics.setCanvas()
+            end
             _G.achievements_tab_ready = true
         end
 

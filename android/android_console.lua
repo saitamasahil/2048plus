@@ -547,7 +547,7 @@ end
 
 function android_console.getCanvas()
     if not game_canvas then
-        game_canvas = love.graphics.newCanvas(640, 480)
+        game_canvas = love.graphics.newCanvas(640, 480, {stencil = true})
         game_canvas:setFilter("linear", "linear")
     end
     return game_canvas
@@ -2131,7 +2131,7 @@ function android_console.drawFullscreen(game_draw_fn, dt, ui_anim_t, only_render
     _G.android_fs_vh = vh
 
     if not fs_canvas or fs_canvas_w ~= vw or fs_canvas_h ~= vh then
-        fs_canvas = love.graphics.newCanvas(vw, vh)
+        fs_canvas = love.graphics.newCanvas(vw, vh, {stencil = true})
         fs_canvas:setFilter("linear", "linear")
         fs_canvas_w = vw
         fs_canvas_h = vh

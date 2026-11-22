@@ -66,7 +66,7 @@ local function captureOldScreen()
         w, h = love.graphics.getDimensions()
     end
     if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
-        old_screen_canvas = love.graphics.newCanvas(w, h)
+        old_screen_canvas = love.graphics.newCanvas(w, h, {stencil = true})
     end
     love.graphics.setCanvas({old_screen_canvas, stencil = true})
     love.graphics.clear()
@@ -2380,15 +2380,20 @@ local function draw_internal()
         local p = 1 - math.pow(1 - t_progress, 3)
 
         if not screen_canvas or screen_canvas:getWidth() ~= sc_w or screen_canvas:getHeight() ~= sc_h then
-            screen_canvas = love.graphics.newCanvas(sc_w, sc_h)
+            screen_canvas = love.graphics.newCanvas(sc_w, sc_h, {stencil = true})
         end
 
         -- Only render the new screen to the canvas ONCE at the start of the transition
         if not _G.screen_canvas_ready then
+            local prev_canvas = love.graphics.getCanvas()
             love.graphics.setCanvas({screen_canvas, stencil = true})
             love.graphics.clear()
             drawCurrentScreen()
-            love.graphics.setCanvas()
+            if prev_canvas then
+                love.graphics.setCanvas({prev_canvas, stencil = true})
+            else
+                love.graphics.setCanvas()
+            end
             _G.screen_canvas_ready = true
         end
 
