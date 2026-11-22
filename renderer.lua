@@ -2585,9 +2585,10 @@ function renderer.drawDynamicBackground(themeName)
         love.graphics.push("all")
 
         -- Layer 1: Wide layered curtain bands
+        local aurora_colors = renderer._bg.aurora_palette
         local seg_count = 60
         for band = 1, 5 do
-            local c = renderer._bg.aurora_palette[band]
+            local c = aurora_colors[band]
             local band_offset = (band - 1) * 0.18
             -- Each band sways at a slightly different frequency
             local sway_freq = 0.18 + band * 0.04
@@ -3868,7 +3869,8 @@ function renderer.drawDynamicBackground(themeName)
         -- Spectrum: prismatic light rays, like sunlight split through a prism
         -- 7 ROYGBIV color beams fan out diagonally across the screen, slowly breathing
 
-        local num_rays = #renderer._bg.spectrum_ray_colors
+        local ray_colors = renderer._bg.spectrum_ray_colors
+        local num_rays = #ray_colors
         -- Origin point: top-left corner area
         local origin_x = w * (-0.05)
         local origin_y = h * (-0.05)
