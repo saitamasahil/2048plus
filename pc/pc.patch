@@ -350,10 +350,10 @@ index d1ca8b8..2463e21 100644
          if action.key == "Y" then
              renderer.theme_button_x = right_x + key_w / 2
 diff --git a/save.lua b/save.lua
-index 49082c0..0216e76 100644
+index c5d7349..de08c0c 100644
 --- a/save.lua
 +++ b/save.lua
-@@ -68,6 +68,10 @@ local function getFilePath(filename)
+@@ -125,6 +125,10 @@ local function getFilePath(filename)
      end
  end
  
@@ -362,9 +362,9 @@ index 49082c0..0216e76 100644
 +end
 +
  function save.init(dir)
+     high_score_cache = {}
      local is_android = love and love.system and love.system.getOS and love.system.getOS() == "Android"
-     if not dir or dir == "" or is_android or _G.android_console then
-@@ -920,4 +924,28 @@ function save.loadFullscreenTutorialSeen()
+@@ -1010,4 +1014,28 @@ function save.loadFullscreenTutorialSeen()
      return false
  end
  

@@ -5,10 +5,80 @@ local save = {}
 local real_io = io
 
 local function smart_io_open(path, mode)
+    -- Atomic write handler writing to temp file before rename
+    if mode == "w" or mode == "wb" then
+        local tmp_path = path .. ".tmp"
+        local f = real_io.open(tmp_path, mode)
+        if f then
+            local closed = false
+            return {
+                write = function(self, ...)
+                    if not closed then return f:write(...) end
+                end,
+                flush = function(self)
+                    if not closed then return f:flush() end
+                end,
+                close = function(self)
+                    if not closed then
+                        closed = true
+                        f:flush()
+                        f:close()
+                        local ok = os.rename(tmp_path, path)
+                        if not ok then
+                            os.remove(path)
+                            ok = os.rename(tmp_path, path)
+                        end
+                        if not ok then
+                            pcall(os.remove, tmp_path)
+                        end
+                        return ok
+                    end
+                end
+            }
+        end
+
+        -- Fallback for sandboxed mobile platforms using love filesystem
+        if love and love.filesystem then
+            local basename = path:match("[^/\\]+$") or path
+            local buffer = {}
+            local closed = false
+            return {
+                write = function(self, data)
+                    if not closed then table.insert(buffer, tostring(data)) end
+                end,
+                flush = function(self)
+                end,
+                close = function(self)
+                    if not closed then
+                        closed = true
+                        local payload = table.concat(buffer)
+                        local tmp_basename = basename .. ".tmp"
+                        local ok = pcall(love.filesystem.write, tmp_basename, payload)
+                        if ok then
+                            local rename_ok = false
+                            if love.filesystem.rename then
+                                local res, r_ok = pcall(love.filesystem.rename, tmp_basename, basename)
+                                rename_ok = res and r_ok
+                            end
+                            if not rename_ok then
+                                pcall(love.filesystem.remove, basename)
+                                pcall(love.filesystem.write, basename, payload)
+                                pcall(love.filesystem.remove, tmp_basename)
+                            end
+                        else
+                            pcall(love.filesystem.write, basename, payload)
+                        end
+                    end
+                end
+            }
+        end
+        return nil
+    end
+
     local f = real_io.open(path, mode)
     if f then return f end
 
-    -- Fallback for sandboxed mobile platforms like Android using love.filesystem
+    -- Fallback for sandboxed mobile platforms using love filesystem
     if love and love.filesystem then
         local basename = path:match("[^/\\]+$") or path
         if mode == "r" or mode == "rb" then
@@ -25,20 +95,6 @@ local function smart_io_open(path, mode)
                     end
                 }
             end
-        elseif mode == "w" or mode == "wb" then
-            local buffer = {}
-            local closed = false
-            return {
-                write = function(self, data)
-                    if not closed then table.insert(buffer, tostring(data)) end
-                end,
-                close = function(self)
-                    if not closed then
-                        closed = true
-                        pcall(love.filesystem.write, basename, table.concat(buffer))
-                    end
-                end
-            }
         end
     end
     return nil
@@ -56,6 +112,7 @@ local SAVE_FILE = "highscore.dat"
 local STATE_FILE = "gamestate.dat"
 local ACHIEVEMENTS_FILE = "achievements.dat"
 local THEME_FILE = "theme.dat"
+local high_score_cache = {}
 
 local function getFilePath(filename)
     if SAVE_DIR == "" or SAVE_DIR == nil then
@@ -69,6 +126,7 @@ local function getFilePath(filename)
 end
 
 function save.init(dir)
+    high_score_cache = {}
     local is_android = love and love.system and love.system.getOS and love.system.getOS() == "Android"
     if not dir or dir == "" or is_android or _G.android_console then
         pcall(function()
@@ -284,10 +342,27 @@ end
 
 local function readProtectedFile(path)
     local file = io.open(path, "r")
-    if not file then return nil, false end
-    local content = file:read("*all")
-    file:close()
-    if not content or content == "" then return nil, false end
+    local content = nil
+    if file then
+        content = file:read("*all")
+        file:close()
+    end
+    if not content or content == "" then
+        -- Check if interrupted temp file exists
+        local tmp_file = io.open(path .. ".tmp", "r")
+        if tmp_file then
+            local tmp_content = tmp_file:read("*all")
+            tmp_file:close()
+            if tmp_content and tmp_content ~= "" then
+                local res, is_leg = unpackProtected(tmp_content:match("^%s*(.-)%s*$"))
+                if res then
+                    pcall(os.rename, path .. ".tmp", path)
+                    return res, is_leg
+                end
+            end
+        end
+        return nil, false
+    end
     content = content:match("^%s*(.-)%s*$")
     return unpackProtected(content)
 end
@@ -543,7 +618,12 @@ function save.loadCheatOptions()
 end
 
 function save.loadHighScore(mode)
-    local path = save.getPath(mode)
+    local m = mode or "classic"
+    if high_score_cache[m] ~= nil then
+        return high_score_cache[m]
+    end
+
+    local path = save.getPath(m)
     local plain, is_legacy = readProtectedFile(path)
     if plain then
         local score = math.floor(tonumber(plain) or 0)
@@ -551,9 +631,11 @@ function save.loadHighScore(mode)
             if is_legacy then
                 writeProtectedFile(path, tostring(score))
             end
+            high_score_cache[m] = score
             return score
         end
     end
+    high_score_cache[m] = 0
     return 0
 end
 
@@ -563,12 +645,18 @@ function save.saveHighScore(score, mode)
         return
     end
 
-    local current_score = save.loadHighScore(mode) or 0
+    local m = mode or "classic"
+    local current_score = high_score_cache[m]
+    if current_score == nil then
+        current_score = save.loadHighScore(m) or 0
+    end
+
     if new_score <= current_score then
         return
     end
 
-    local path = save.getPath(mode)
+    high_score_cache[m] = new_score
+    local path = save.getPath(m)
     writeProtectedFile(path, tostring(new_score))
 end
 
@@ -635,9 +723,11 @@ function save.clearState(mode)
     cached_has_last_active_game = nil
     local path = save.getStatePath(mode)
     os.remove(path)
+    os.remove(path .. ".tmp")
     if love and love.filesystem and love.filesystem.remove then
         local basename = path:match("[^/\\]+$") or path
         pcall(love.filesystem.remove, basename)
+        pcall(love.filesystem.remove, basename .. ".tmp")
     end
 end
 
