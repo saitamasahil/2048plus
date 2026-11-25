@@ -2519,7 +2519,7 @@ function renderer.getWebThemePayload(theme_id)
         accent = accent_hex,
         text = text_hex,
         is_dark = is_dark,
-        tiles = tiles_map,
+        tiles = next(tiles_map) ~= nil and tiles_map or nil,
     }
 
     local hash = id .. "|" .. bg_hex .. "|" .. board_hex .. "|" .. accent_hex
@@ -2533,7 +2533,7 @@ function renderer.getWebThemePayload(theme_id)
             payload.end_hue = cfg.end_hue or 330
             payload.sat = cfg.sat or 80
             payload.base_tone = cfg.base_tone or 1
-            hash = hash .. "|" .. tostring(payload.backdrop_fx) .. "|" .. tostring(payload.start_hue) .. "|" .. tostring(payload.end_hue) .. "|" .. tostring(payload.sat)
+            hash = hash .. "|" .. tostring(payload.backdrop_fx) .. "|" .. tostring(payload.start_hue) .. "|" .. tostring(payload.end_hue) .. "|" .. tostring(payload.sat) .. "|" .. tostring(cfg.style or 1) .. "|" .. tostring(cfg.tile_contrast or 1) .. "|" .. tostring(cfg.board_tone or 1) .. "|" .. tostring(cfg.ui_accent or 1) .. "|" .. tostring(payload.base_tone)
         end
     end
     payload.hash = hash
@@ -10993,8 +10993,6 @@ function renderer.startCustomizationTabTransition(from_tab, to_tab, dir)
     _G.studio_anim_target_y = nil
     _G.studio_scroll_y = nil
     _G.studio_scroll_target = nil
-    _G.studio_scroll_y = nil
-    _G.studio_scroll_target = nil
     if to_tab == 3 then
         _G.custom_pet_start_time = love.timer.getTime()
     end
@@ -11709,19 +11707,6 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 for r_idx, r_item in ipairs(rows_data) do
                     local ry = deck_py + (r_idx - 1) * row_step - scroll_y
                     if ry + row_h >= deck_py - 2 * scale and ry <= deck_py + deck_view_h + 2 * scale then
-                        local vis_top = math.max(ry, deck_py)
-                        local vis_bot = math.min(ry + row_h, deck_py + deck_view_h)
-                        if vis_bot > vis_top + 4 * scale then
-                            table.insert(_G.studio_row_bounds, {
-                                idx = r_idx,
-                                x = right_x,
-                                y = vis_top,
-                                w = right_w,
-                                h = vis_bot - vis_top,
-                                split_x = right_x + right_w * 0.72
-                            })
-                        end
-
                         local is_sel = (cur == r_idx)
                         love.graphics.setFont(font_help_label)
                         local lbl_col = is_sel and ui_text or {ui_text[1], ui_text[2], ui_text[3], 0.70}
@@ -11729,6 +11714,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                         love.graphics.print(r_item.label, right_x + math.floor(14 * scale), ry + math.floor((row_h - font_help_label:getHeight()) / 2))
 
                         local val_col = is_sel and ui_text or {ui_text[1], ui_text[2], ui_text[3], 0.85}
+                        local row_split_x = right_x + right_w * 0.78
                         if r_item.hue then
                             -- Color pill placed between navigation arrows
                             local arrow_left = "◄"
@@ -11746,6 +11732,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                             local ar_x = right_edge - ar_w
                             local pill_x = ar_x - gap - pill_w
                             local al_x = pill_x - gap - al_w
+                            row_split_x = (al_x + right_edge) / 2
 
                             local arrow_y = ry + math.floor((row_h - arrow_h) / 2)
                             local arrow_center_y = arrow_y + arrow_h * 0.54
@@ -11766,8 +11753,24 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
                             roundedRect("line", pill_x, cpill_y, pill_w, pill_h, pill_cr)
                         else
+                            local right_edge = right_x + right_w - math.floor(14 * scale)
+                            local val_w = font_help_label:getWidth(r_item.val)
+                            row_split_x = right_edge - val_w / 2
                             love.graphics.setColor(val_col[1], val_col[2], val_col[3], cur_a)
                             love.graphics.printf(r_item.val, right_x, ry + math.floor((row_h - font_help_label:getHeight()) / 2), right_w - math.floor(14 * scale), "right")
+                        end
+
+                        local vis_top = math.max(ry, deck_py)
+                        local vis_bot = math.min(ry + row_h, deck_py + deck_view_h)
+                        if vis_bot > vis_top + 4 * scale then
+                            table.insert(_G.studio_row_bounds, {
+                                idx = r_idx,
+                                x = right_x,
+                                y = vis_top,
+                                w = right_w,
+                                h = vis_bot - vis_top,
+                                split_x = row_split_x
+                            })
                         end
                     end
                 end
