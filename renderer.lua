@@ -2182,7 +2182,7 @@ function renderer.adjustStudioParameter(delta)
         s_data.end_hue = (s_data.end_hue + delta * 15) % 360
     elseif cur == 6 then
         local old_sat = s_data.sat or 80
-        local new_sat = math.max(40, math.min(100, old_sat + delta * 5))
+        local new_sat = math.max(0, math.min(100, old_sat + delta * 5))
         if new_sat == old_sat then
             return false
         end
@@ -2219,9 +2219,9 @@ function renderer.randomizeStudioSlot()
 
     s_data.base_tone = love.math.random(1, 3)
     s_data.start_hue = love.math.random(0, 23) * 15
-    s_data.end_hue = (s_data.start_hue + love.math.random(4, 16) * 15) % 360
+    s_data.end_hue = love.math.random(0, 23) * 15
     s_data.style = love.math.random(1, 7)
-    s_data.sat = love.math.random(14, 20) * 5
+    s_data.sat = love.math.random(0, 20) * 5
     s_data.board_tone = love.math.random(1, 3)
     s_data.grid_slots = love.math.random(1, 3)
     s_data.backdrop_fx = love.math.random(1, 12)
