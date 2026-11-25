@@ -1,5 +1,16 @@
 # Changelog
 
+## [9.0.1]
+### Added
+- Expanded Theme Studio with Grid Slots, Backdrop Effects, Tile Contrast, UI Accents, and new color styles
+- Added live Theme Studio syncing in the Jukebox web manager
+
+### Changed
+- Small UI changes
+
+### Fixed
+- Fixed accidental button presses on Android and minor bug fixes
+
 ## [9.0.0]
 ### Added
 - Added Theme Studio to design and save custom palettes in Customization
