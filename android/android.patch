@@ -27,7 +27,7 @@ index 8b3ce51..aa06c77 100644
      t.modules.sound = true
      t.modules.touch = true
 diff --git a/main.lua b/main.lua
-index cff0129..119d26d 100644
+index 2e03883..e3f2502 100644
 --- a/main.lua
 +++ b/main.lua
 @@ -110,6 +110,12 @@ local function queueTransitionAction(key, delay, action, direction)
@@ -43,17 +43,17 @@ index cff0129..119d26d 100644
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -2606,6 +2612,9 @@ function love.draw()
+@@ -2608,6 +2614,9 @@ function love.draw()
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
 +    if _G.is_console_active and _G.is_console_active() and not istouch and button == 1 then
 +        _G.android_console.mousereleased(x, y, button)
 +    end
-     if button == 1 then
+     if button == 1 and not istouch and not (_G.is_console_active and _G.is_console_active()) then
          -- Customization tab click
          if _G.appState == "THEME_SELECT" then
-@@ -2920,6 +2929,18 @@ function love.wheelmoved(x, y)
+@@ -2922,6 +2931,18 @@ function love.wheelmoved(x, y)
      end
  end
  
@@ -71,4 +71,4 @@ index cff0129..119d26d 100644
 +
  -- Resize handler for orientation changes
  function love.resize(w, h)
-     if _G.android_console and _G.android_console.updateLayout then
+     if input and input.resetTouch then

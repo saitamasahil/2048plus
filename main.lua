@@ -1125,16 +1125,14 @@ function love.update(dt)
                             if _G.rebuildUnlockedThemes then _G.rebuildUnlockedThemes() end
                             if renderer and renderer.startThemeTransition then
                                 renderer.startThemeTransition(function()
-                                    _G.theme = t_name
-                                    if renderer and renderer.applyTheme then renderer.applyTheme() end
-                                    if save and save.saveTheme then save.saveTheme(_G.theme) end
-                                    return function() renderer.drawStoreMenu(_G.store_selection or 1, true) end
+                                    renderer.drawStoreMenu(_G.store_selection or 1, true)
                                 end)
-                            else
-                                _G.theme = t_name
-                                if renderer and renderer.applyTheme then renderer.applyTheme() end
-                                if save and save.saveTheme then save.saveTheme(_G.theme) end
                             end
+                            _G.theme = t_name
+                            _G.themeSelectInitialTheme = t_name
+                            if renderer and renderer.syncCustomThemeIndex then renderer.syncCustomThemeIndex() end
+                            if renderer and renderer.applyTheme then renderer.applyTheme() end
+                            if save and save.saveTheme then save.saveTheme(_G.theme) end
                         end
                     else
                         renderer.showToast("Not enough Coins!")
@@ -2065,12 +2063,14 @@ function love.update(dt)
                     end
                     local next_idx = (cur_idx % #un_themes) + 1
                     local next_theme = un_themes[next_idx]
-                    renderer.startThemeTransition(function()
-                        _G.theme = next_theme
-                        if renderer.applyTheme then renderer.applyTheme(true) end
-                        if save and save.saveTheme then save.saveTheme(_G.theme) end
-                        return function() if game then renderer.draw(game) end end
-                    end)
+                    if renderer and renderer.startThemeTransition then
+                        renderer.startThemeTransition(function()
+                            if game then renderer.draw(game) end
+                        end)
+                    end
+                    _G.theme = next_theme
+                    if renderer.applyTheme then renderer.applyTheme(true) end
+                    if save and save.saveTheme then save.saveTheme(_G.theme) end
                 end
             -- Undo
             elseif event == input.events.BACK then
@@ -2236,12 +2236,14 @@ function love.update(dt)
                     end
                     local next_idx = (cur_idx % #un_themes) + 1
                     local next_theme = un_themes[next_idx]
-                    renderer.startThemeTransition(function()
-                        _G.theme = next_theme
-                        if renderer.applyTheme then renderer.applyTheme(true) end
-                        if save and save.saveTheme then save.saveTheme(_G.theme) end
-                        return function() if game then renderer.draw(game) end end
-                    end)
+                    if renderer and renderer.startThemeTransition then
+                        renderer.startThemeTransition(function()
+                            if game then renderer.draw(game) end
+                        end)
+                    end
+                    _G.theme = next_theme
+                    if renderer.applyTheme then renderer.applyTheme(true) end
+                    if save and save.saveTheme then save.saveTheme(_G.theme) end
                 end
             elseif event == input.events.R1 or event == input.events.L1 then
                 if game and (game.timesUp or (game.mode == "timeattack" and game.timeLeft and game.timeLeft <= 0)) then
@@ -2606,7 +2608,7 @@ function love.draw()
 end
 
 function love.mousereleased(x, y, button, istouch, presses)
-    if button == 1 then
+    if button == 1 and not istouch and not (_G.is_console_active and _G.is_console_active()) then
         -- Customization tab click
         if _G.appState == "THEME_SELECT" then
             if _G.customization_tab_bounds then
@@ -2689,8 +2691,8 @@ function love.mousereleased(x, y, button, istouch, presses)
                 local b = _G.achievements_l1_bounds
                 if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
                     local input_mod = require("input")
-                    if input_mod and input_mod.handleInput then
-                        input_mod.handleInput(input_mod.events.L1)
+                    if input_mod and input_mod.emit then
+                        input_mod.emit(input_mod.events.L1, false)
                     end
                     return
                 end
@@ -2699,8 +2701,8 @@ function love.mousereleased(x, y, button, istouch, presses)
                 local b = _G.achievements_r1_bounds
                 if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
                     local input_mod = require("input")
-                    if input_mod and input_mod.handleInput then
-                        input_mod.handleInput(input_mod.events.R1)
+                    if input_mod and input_mod.emit then
+                        input_mod.emit(input_mod.events.R1, false)
                     end
                     return
                 end
@@ -2922,11 +2924,17 @@ end
 
 -- Resize handler for orientation changes
 function love.resize(w, h)
+    if input and input.resetTouch then
+        input.resetTouch()
+    end
     if _G.android_console and _G.android_console.updateLayout then
         _G.android_console.updateLayout()
     end
     if _G.update_ui_scale then
         _G.update_ui_scale()
+    end
+    if dino_game and dino_game.resize then
+        dino_game.resize(w, h)
     end
     if renderer and renderer.init then
         renderer.init()

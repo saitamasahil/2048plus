@@ -575,6 +575,19 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
     end
 end
 
+function input.resetTouch()
+    active_touch_id = nil
+end
+
+function love.touchcancelled(id, x, y, dx, dy, pressure)
+    if _G.android_console and _G.android_console.touchcancelled then
+        _G.android_console.touchcancelled(id)
+    end
+    if active_touch_id == id then
+        active_touch_id = nil
+    end
+end
+
 function love.touchmoved(id, x, y, dx, dy, pressure)
     if _G.is_console_active and _G.is_console_active() then
         _G.android_console.touchmoved(id, x, y, dx, dy, pressure)

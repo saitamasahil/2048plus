@@ -560,6 +560,32 @@ end
 function android_console.updateLayout()
     local real_w, real_h = love.graphics.getDimensions()
     if real_w > real_h then
+        -- Clear active touches and transitions on orientation change
+        for id, touch in pairs(active_touches) do
+            if touch.event and (touch.type ~= "button" or touch.immediate) then releaseEvent(touch.event) end
+            if touch.type == "dpad" then
+                releaseEvent(input.events.UP)
+                releaseEvent(input.events.DOWN)
+                releaseEvent(input.events.LEFT)
+                releaseEvent(input.events.RIGHT)
+            end
+            active_touches[id] = nil
+        end
+        for id, touch in pairs(fs_active_touches) do
+            if touch.btn and touch.btn.event then releaseEvent(touch.btn.event) end
+            if touch.event then releaseEvent(touch.event) end
+            fs_active_touches[id] = nil
+        end
+        for k in pairs(button_states) do button_states[k] = nil end
+        for id, sw in pairs(swipe_track) do swipe_track[id] = nil end
+        for id, sw in pairs(fs_swipe_track) do
+            if sw and sw.event then releaseEvent(sw.event) end
+            fs_swipe_track[id] = nil
+        end
+        fs_button_pressed = nil
+        transition_active = false
+        if input and input.resetTouch then input.resetTouch() end
+
         -- In landscape orientation, console is inactive and fullscreen resets
         _G.android_fullscreen = false
         _G.hide_game_footer = false
@@ -1266,8 +1292,38 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
 end
 
 
+function android_console.touchcancelled(id)
+    local touch = active_touches[id]
+    if touch then
+        if touch.event and (touch.type ~= "button" or touch.immediate) then releaseEvent(touch.event) end
+        if touch.name then button_states[touch.name] = nil end
+        if touch.type == "dpad" then
+            button_states["dpad"] = nil
+            releaseEvent(input.events.UP)
+            releaseEvent(input.events.DOWN)
+            releaseEvent(input.events.LEFT)
+            releaseEvent(input.events.RIGHT)
+        end
+        active_touches[id] = nil
+    end
+    local fs_touch = fs_active_touches[id]
+    if fs_touch then
+        if fs_touch.type == "fs_button" then fs_button_pressed = nil end
+        if fs_touch.btn and fs_touch.btn.event then releaseEvent(fs_touch.btn.event) end
+        if fs_touch.event then releaseEvent(fs_touch.event) end
+        fs_active_touches[id] = nil
+    end
+    swipe_track[id] = nil
+    local fsw = fs_swipe_track[id]
+    if fsw and fsw.event then releaseEvent(fsw.event) end
+    fs_swipe_track[id] = nil
+end
+
 function android_console.touchreleased(id, x, y, dx, dy, pressure)
-    if fs_button_pressed then fs_button_pressed = nil end
+    local fs_touch_curr = fs_active_touches[id]
+    if fs_button_pressed and ((fs_touch_curr and fs_touch_curr.type == "fs_button") or next(fs_active_touches) == nil) then
+        fs_button_pressed = nil
+    end
 
     if transition_active then
         if fs_active_touches[id] then
@@ -1396,10 +1452,26 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                         local col = math.floor((sw.vx - bx - gap) / (csize + gap)) + 1
                         local row = math.floor((sw.vy - by - gap) / (csize + gap)) + 1
                         if col >= 1 and col <= size and row >= 1 and row <= size then
-                            _G.target_col = col
-                            _G.target_row = row
+                            if _G.game then
+                                if _G.game.state == Game.STATE_TARGETING_SHIELD then
+                                    if _G.game.shield_mode == "col" then
+                                        _G.game.shield_index = col
+                                    else
+                                        _G.game.shield_index = row
+                                    end
+                                else
+                                    _G.game.cursorX = col
+                                    _G.game.cursorY = row
+                                end
+                            end
                             emitEvent(input.events.CONFIRM)
                             triggerHaptic(0.02)
+                            pcall(function()
+                                local timer = require("timer")
+                                timer.after(0.08, function()
+                                    releaseEvent(input.events.CONFIRM)
+                                end)
+                            end)
                         end
                     end
                 end
@@ -1490,10 +1562,26 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                 local row = math.floor((gy - _G.grid_y) / _G.cell_size) + 1
                 local size = _G.grid_size or 4
                 if col >= 1 and col <= size and row >= 1 and row <= size then
-                    _G.target_col = col
-                    _G.target_row = row
+                    if _G.game then
+                        if _G.game.state == Game.STATE_TARGETING_SHIELD then
+                            if _G.game.shield_mode == "col" then
+                                _G.game.shield_index = col
+                            else
+                                _G.game.shield_index = row
+                            end
+                        else
+                            _G.game.cursorX = col
+                            _G.game.cursorY = row
+                        end
+                    end
                     emitEvent(input.events.CONFIRM)
                     triggerHaptic(0.02)
+                    pcall(function()
+                        local timer = require("timer")
+                        timer.after(0.08, function()
+                            releaseEvent(input.events.CONFIRM)
+                        end)
+                    end)
                     swipe_track[id] = nil
                     return
                 end
@@ -3405,6 +3493,8 @@ function android_console.drawModeTransition(game_draw_fn, dt, progress)
             local fade_out = fs_p ^ 1.3
             local fs_slide_y = (1.0 - fs_p) * -16
             android_console.drawFullscreen(game_draw_fn, dt, fs_p, true)
+            _G.android_fullscreen = false
+            _G.hide_game_footer = false
 
             love.graphics.setColor(1, 1, 1, fade_out)
             if crt then
@@ -3432,10 +3522,22 @@ local function reconcileActiveTouches()
             if id == "mouse" then
                 if not mouse_down then
                     if touch.event and (touch.type ~= "button" or touch.immediate) then releaseEvent(touch.event) end
+                    if touch.type == "dpad" then
+                        releaseEvent(input.events.UP)
+                        releaseEvent(input.events.DOWN)
+                        releaseEvent(input.events.LEFT)
+                        releaseEvent(input.events.RIGHT)
+                    end
                     active_touches[id] = nil
                 end
             elseif not live[id] then
                 if touch.event and (touch.type ~= "button" or touch.immediate) then releaseEvent(touch.event) end
+                if touch.type == "dpad" then
+                    releaseEvent(input.events.UP)
+                    releaseEvent(input.events.DOWN)
+                    releaseEvent(input.events.LEFT)
+                    releaseEvent(input.events.RIGHT)
+                end
                 active_touches[id] = nil
             end
         end

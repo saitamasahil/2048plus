@@ -164,15 +164,18 @@ local play_select_sel_current = nil
 local arcade_sel_col_current = nil
 local arcade_sel_row_current = nil
 
-function renderer.setArcadeMenuOpen(open)
-    local scale = _G.scale or 1
-    local card_h = math.floor((_G.text_size == "large" and 124 or 120) * scale)
-    local card_gap = math.floor(12 * scale)
-    local panel_pad_y = math.floor(16 * scale)
-    local header_h = math.floor(74 * scale)
-    local footer_h = math.floor(44 * scale)
+local function getArcadePanelHeight(scale)
+    local card_h = math.floor((_G.text_size == "large" and 138 or 132) * (scale or 1))
+    local card_gap = math.floor(12 * (scale or 1))
+    local panel_pad_y = math.floor(16 * (scale or 1))
+    local header_h = math.floor(74 * (scale or 1))
+    local footer_h = math.floor(44 * (scale or 1))
     local num_rows = 2
-    local panel_h = header_h + panel_pad_y + num_rows * card_h + (num_rows - 1) * card_gap + panel_pad_y + footer_h
+    return header_h + panel_pad_y + num_rows * card_h + (num_rows - 1) * card_gap + panel_pad_y + footer_h
+end
+
+function renderer.setArcadeMenuOpen(open)
+    local panel_h = getArcadePanelHeight(_G.scale or 1)
 
     if open then
         arcade_panel_target = 0
@@ -378,14 +381,37 @@ function renderer.resetMenuAnimation()
 end
 
 function renderer.captureOldTutorialSlide(page)
-    local w, h = love.graphics.getDimensions()
-    if not tutorial_old_canvas then
+    local is_console = _G.is_console_active and _G.is_console_active() and not _G.android_fullscreen
+    local w = is_console and 640 or love.graphics.getWidth()
+    local h = is_console and 480 or love.graphics.getHeight()
+    if not tutorial_old_canvas or tutorial_old_canvas:getWidth() ~= w or tutorial_old_canvas:getHeight() ~= h then
         tutorial_old_canvas = love.graphics.newCanvas(w, h)
     end
+    local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({tutorial_old_canvas, stencil = true})
     love.graphics.clear()
-    renderer.drawTutorial(page, true, true)
-    love.graphics.setCanvas()
+    if is_console then
+        local real_getDims = love.graphics.getDimensions
+        local real_getW = love.graphics.getWidth
+        local real_getH = love.graphics.getHeight
+        love.graphics.getDimensions = function() return 640, 480 end
+        love.graphics.getWidth = function() return 640 end
+        love.graphics.getHeight = function() return 480 end
+        local prev_scale = _G.scale
+        _G.scale = 1.0
+        renderer.drawTutorial(page, true, true)
+        _G.scale = prev_scale
+        love.graphics.getDimensions = real_getDims
+        love.graphics.getWidth = real_getW
+        love.graphics.getHeight = real_getH
+    else
+        renderer.drawTutorial(page, true, true)
+    end
+    if prev_canvas then
+        love.graphics.setCanvas({prev_canvas, stencil = true})
+    else
+        love.graphics.setCanvas()
+    end
 end
 
 function renderer.captureOldAchievementsSlide(tab)
@@ -3442,7 +3468,7 @@ function renderer.drawDynamicBackground(themeName)
         -- Layer 2: RGB channel-split bars
         local num_splits = rng_slow:random(1, 2)
         for i = 1, num_splits do
-            local sy = rng_slow:random(0, h - 30)
+            local sy = rng_slow:random(0, math.max(0, h - 30))
             local sh = rng_slow:random(3, 14) * scale
             local drift = rng_slow:random(4, 14) * scale
             love.graphics.setColor(1.0, 0.0, 0.0, 0.05)
@@ -4837,16 +4863,15 @@ function renderer.init()
 
     renderer.loadTextures()
 
-    -- Set arcade panel to start fully closed
-    local card_h = math.floor((_G.text_size == "large" and 124 or 120) * scale)
-    local card_gap = math.floor(12 * scale)
-    local panel_pad_y = math.floor(16 * scale)
-    local header_h = math.floor(74 * scale)
-    local footer_h = math.floor(44 * scale)
-    local num_rows = 2
-    local panel_h = header_h + panel_pad_y + num_rows * card_h + (num_rows - 1) * card_gap + panel_pad_y + footer_h
-    arcade_panel_y_offset = panel_h
-    arcade_panel_target = panel_h
+    -- Keep active arcade panel visible across window resize
+    local panel_h = getArcadePanelHeight(scale)
+    if _G.appState == "PLAY_SELECT" or _G.appState == "ARCADE_MENU" then
+        arcade_panel_y_offset = 0
+        arcade_panel_target = 0
+    else
+        arcade_panel_y_offset = panel_h
+        arcade_panel_target = panel_h
+    end
 end
 
 -- ============================================================================
@@ -6447,7 +6472,7 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
     local cur_kb = renderer.isKeyboardMode and renderer.isKeyboardMode() or false
     local old_prompt = is_transitioning and (
         (old_text and renderer.getButtonPrompt(old_text, cur_kb)) or
-        (footer_prompt_prev_kb_mode and renderer.getButtonPrompt(original_text, footer_prompt_prev_kb_mode)) or
+        (footer_prompt_prev_kb_mode ~= nil and renderer.getButtonPrompt(original_text, footer_prompt_prev_kb_mode)) or
         text
     ) or text
     local new_prompt = is_transitioning and renderer.getButtonPrompt(original_text, cur_kb) or text
@@ -9338,6 +9363,12 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
     local header_h = f_title and f_title:getHeight() or math.floor(36 * scale)
     local start_y = math.floor(renderer.MENU_TITLE_Y * scale)
     local menu_start_y = start_y + header_h + math.floor(renderer.TITLE_CONTENT_GAP * scale)
+    if #options > 1 then
+        local max_gap = math.floor((badge_y - math.floor(6 * scale) - font_message:getHeight() - menu_start_y) / (#options - 1))
+        if max_gap < gap then
+            gap = math.max(math.floor(22 * scale), max_gap)
+        end
+    end
 
     local margin = math.floor(20 * scale)
     local max_options = {
@@ -9582,6 +9613,7 @@ function renderer.drawMainMenu(selection, skip_transition)
     local scale = _G.scale
 
     local options = renderer.getMainMenuOptions()
+    selection = math.max(1, math.min(#options, selection or 1))
     love.graphics.setFont(font_message)
     local gap = (_G.text_size == "large" and 35 or 31) * scale
     local menu_h = (#options - 1) * gap + font_message:getHeight()
@@ -11256,6 +11288,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             love.graphics.print(cur_subtitle, (w - cur_sw) / 2 + off + b_dir * text_slide * (1 - bp), subtitle_y)
 
             -- Outgoing board canvas
+            love.graphics.setBlendMode("alpha", "premultiplied")
             if board_preview_canvas_prev then
                 love.graphics.setColor(1, 1, 1, (1 - bp) * a)
                 love.graphics.draw(board_preview_canvas_prev, board_x - b_dir * b_slide * bp, board_y)
@@ -11266,6 +11299,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 love.graphics.setColor(1, 1, 1, bp * a)
                 love.graphics.draw(board_preview_canvas_curr, board_x + b_dir * b_slide * (1 - bp), board_y)
             end
+            love.graphics.setBlendMode("alpha", "alphamultiply")
 
             -- Outgoing status badge
             local prev_is_owned = (prev_skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. prev_skin.id])
@@ -11301,8 +11335,10 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 board_preview_rendered_theme = _G.theme
             end
 
+            love.graphics.setBlendMode("alpha", "premultiplied")
             love.graphics.setColor(1, 1, 1, a)
             love.graphics.draw(board_preview_canvas_curr, board_x, board_y)
+            love.graphics.setBlendMode("alpha", "alphamultiply")
 
             local is_owned = (skin.id == "default") or (_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["skin_" .. skin.id])
             local is_equipped = ((_G.board_skin or "default") == skin.id)
@@ -12387,6 +12423,9 @@ function renderer.drawAchievementsTabContent(tab, scroll)
     local item_h = math.floor(85 * scale)
     local total_items = #achievementsList
     _G.achievements_max_scroll = math.max(0, math.ceil((total_items * item_h - avail_h) / item_h))
+    if _G.achievements_scroll_target and _G.achievements_scroll_target > _G.achievements_max_scroll then
+        _G.achievements_scroll_target = _G.achievements_max_scroll
+    end
     -- Helper to format numbers with commas
     local function formatNum(n)
         local formatted = tostring(math.floor(n or 0))
@@ -13319,6 +13358,10 @@ function renderer.drawAbout(skip_transition)
     -- Calculate total content height & max scroll
     local total_content_height = (cur_y + scroll) - viewport_top
     _G.about_max_scroll = math.max(0, total_content_height - viewport_h)
+    if _G.about_scroll_target and _G.about_scroll_target > _G.about_max_scroll then
+        _G.about_scroll_target = _G.about_max_scroll
+    end
+    local clamped_scroll = math.min(scroll, _G.about_max_scroll)
 
     -- Reset Scissor
     love.graphics.setScissor()
@@ -13329,7 +13372,7 @@ function renderer.drawAbout(skip_transition)
         local bar_x = w - bar_w - math.floor(5 * scale)
         local bar_ratio = viewport_h / total_content_height
         local thumb_h = math.max(math.floor(16 * scale), math.floor(viewport_h * bar_ratio))
-        local thumb_y = viewport_top + (scroll / _G.about_max_scroll) * (viewport_h - thumb_h)
+        local thumb_y = viewport_top + (clamped_scroll / _G.about_max_scroll) * (viewport_h - thumb_h)
 
         -- Track background
         love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.1)
@@ -13392,14 +13435,7 @@ function renderer.drawAbout(skip_transition)
 end
 
 function renderer.isArcadeMenuClosed()
-    local scale = _G.scale or 1
-    local card_h = math.floor((_G.text_size == "large" and 124 or 120) * scale)
-    local card_gap = math.floor(12 * scale)
-    local panel_pad_y = math.floor(16 * scale)
-    local header_h = math.floor(74 * scale)
-    local footer_h = math.floor(44 * scale)
-    local num_rows = 2
-    local panel_h = header_h + panel_pad_y + num_rows * card_h + (num_rows - 1) * card_gap + panel_pad_y + footer_h
+    local panel_h = getArcadePanelHeight(_G.scale or 1)
 
     return (arcade_panel_target == panel_h) and (arcade_panel_y_offset >= panel_h - 1)
 end
@@ -15004,8 +15040,8 @@ function renderer.drawJukebox(selection, skip_transition)
                     end
                 end
 
-                -- Clip to row so bars don't bleed outside
-                love.graphics.setScissor(card_x, ry, card_w, row_inner_h + math.floor(2 * scale))
+                -- Clip to row inside playlist viewport
+                love.graphics.intersectScissor(card_x, ry, card_w, row_inner_h + math.floor(2 * scale))
 
                 for mb = 1, bar_count do
                     local phase
@@ -15439,7 +15475,7 @@ function renderer.drawJukebox(selection, skip_transition)
                 local pw = prompt_font:getWidth(pref)
                 local sw = prompt_font:getWidth(suff)
                 local badge_h = math.floor(26 * scale)
-                local key_w = badge_h
+                local key_w = renderer.getHelpBadgeWidth("A", prompt_font)
                 local total_w = pw + key_w + math.floor(8 * scale) + sw
                 local start_x = qr_x + math.floor((qr_box_size - total_w) / 2)
                 local badge_y = qr_y + math.floor(96 * scale)

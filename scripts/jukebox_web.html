@@ -4412,7 +4412,7 @@ function togglePlayPause() {
     audioCtx.resume();
   }
   if (audio.paused) {
-    audio.play().then(() => updatePlayState(true));
+    audio.play().then(() => updatePlayState(true)).catch(() => updatePlayState(false));
   } else {
     audio.pause();
     updatePlayState(false);
@@ -4456,19 +4456,26 @@ function toggleRepeat() {
 }
 
 function changeVolume(val) {
-  audio.volume = val;
-  if (val > 0) isMuted = false;
-  volBtn.innerHTML = (val == 0) ? renderM3Icon('volume_off', 'm3-icon-sm') : renderM3Icon('volume_up', 'm3-icon-sm');
+  const numVal = parseFloat(val);
+  audio.volume = numVal;
+  if (numVal > 0) {
+    isMuted = false;
+    previousVolume = numVal;
+  } else {
+    isMuted = true;
+  }
+  volBtn.innerHTML = (numVal === 0) ? renderM3Icon('volume_off', 'm3-icon-sm') : renderM3Icon('volume_up', 'm3-icon-sm');
 }
 
 function toggleMute() {
   if (isMuted) {
-    audio.volume = previousVolume;
-    volSlider.value = previousVolume;
+    const restoreVol = previousVolume > 0 ? previousVolume : 0.75;
+    audio.volume = restoreVol;
+    volSlider.value = restoreVol;
     isMuted = false;
     volBtn.innerHTML = renderM3Icon('volume_up', 'm3-icon-sm');
   } else {
-    previousVolume = audio.volume;
+    if (audio.volume > 0) previousVolume = audio.volume;
     audio.volume = 0;
     volSlider.value = 0;
     isMuted = true;
@@ -4489,10 +4496,13 @@ audio.addEventListener("loadedmetadata", () => {
   timeDuration.textContent = formatTime(audio.duration);
 });
 
+audio.addEventListener("play", () => updatePlayState(true));
+audio.addEventListener("pause", () => updatePlayState(false));
+
 audio.addEventListener("ended", () => {
   if (isRepeat) {
     audio.currentTime = 0;
-    audio.play();
+    audio.play().catch(() => {});
   } else {
     playNextTrack();
   }
@@ -4508,6 +4518,7 @@ scrubberBar.addEventListener("click", (e) => {
 
 // ─── Playlist & Storage Management ───────────────────────────────
 function loadTracks() {
+  const activeFilename = (currentIndex >= 0 && allTracks[currentIndex]) ? allTracks[currentIndex].filename : null;
   fetch("/api/tracks")
     .then(r => r.json())
     .then(data => {
@@ -4523,6 +4534,11 @@ function loadTracks() {
           size_formatted: sf || ""
         };
       });
+      if (activeFilename) {
+        currentIndex = allTracks.findIndex(t => t.filename === activeFilename);
+      } else {
+        currentIndex = -1;
+      }
       document.getElementById("trackCountBadge").textContent = allTracks.length;
       filterTracks();
       updateStorage();
@@ -4719,12 +4735,16 @@ function submitEditTrack(e) {
     btn.textContent = "Save Changes";
     if (data.success) {
       showToast(data.message || "Track updated successfully!");
-      closeEditModal();
-      
-      if (allTracks[editingTrackIndex] && allTracks[editingTrackIndex].filename === old_filename) {
-        deckTitle.textContent = title || data.new_filename;
-        deckArtist.textContent = artist || "Custom Track";
+      const editedIdx = editingTrackIndex;
+      const updatedFilename = data.new_filename || new_filename || old_filename;
+      if (editedIdx >= 0 && allTracks[editedIdx] && allTracks[editedIdx].filename === old_filename) {
+        allTracks[editedIdx].filename = updatedFilename;
+        if (editedIdx === currentIndex) {
+          deckTitle.textContent = title || updatedFilename;
+          deckArtist.textContent = artist || "Custom Track";
+        }
       }
+      closeEditModal();
       loadTracks();
     } else {
       showToast(data.error || "Failed to update track");
@@ -4797,7 +4817,7 @@ function showToast(msg) {
 }
 
 function escapeHtml(str) {
-  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 // ─── Drag & Drop Upload Engine ────────────────────────────────────
