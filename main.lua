@@ -1770,7 +1770,8 @@ function love.update(dt)
                     local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
                     if is_unlocked then
                         sound.playMenuMove()
-                        _G.studio_cursor = ((_G.studio_cursor or 1) - 2) % 7 + 1
+                        local max_rows = (renderer.getStudioRowCount and renderer.getStudioRowCount()) or 11
+                        _G.studio_cursor = ((_G.studio_cursor or 1) - 2) % max_rows + 1
                     end
                 elseif tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
@@ -1787,7 +1788,8 @@ function love.update(dt)
                     local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
                     if is_unlocked then
                         sound.playMenuMove()
-                        _G.studio_cursor = ((_G.studio_cursor or 1) % 7) + 1
+                        local max_rows = (renderer.getStudioRowCount and renderer.getStudioRowCount()) or 11
+                        _G.studio_cursor = ((_G.studio_cursor or 1) % max_rows) + 1
                     end
                 elseif tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
@@ -1803,8 +1805,9 @@ function love.update(dt)
                 if tab == 4 then
                     local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
                     if is_unlocked then
-                        sound.playMenuMove()
-                        renderer.adjustStudioParameter(-1)
+                        if renderer.adjustStudioParameter and renderer.adjustStudioParameter(-1) then
+                            sound.playMenuMove()
+                        end
                     end
                 elseif tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
@@ -1820,8 +1823,9 @@ function love.update(dt)
                 if tab == 4 then
                     local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
                     if is_unlocked then
-                        sound.playMenuMove()
-                        renderer.adjustStudioParameter(1)
+                        if renderer.adjustStudioParameter and renderer.adjustStudioParameter(1) then
+                            sound.playMenuMove()
+                        end
                     end
                 elseif tab == 1 then
                     if sound and sound.playMenuMove then sound.playMenuMove() end
@@ -2658,6 +2662,26 @@ function love.mousereleased(x, y, button, istouch, presses)
                 end
                 return
             end
+            if (_G.customization_tab or 1) == 4 and _G.studio_row_bounds then
+                local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                if is_unlocked then
+                    for _, b in ipairs(_G.studio_row_bounds) do
+                        if x >= b.x and x <= (b.x + b.w) and y >= b.y and y <= (b.y + b.h) then
+                            local sound = require("sound")
+                            if (_G.studio_cursor or 1) == b.idx then
+                                local delta = (x < (b.split_x or (b.x + b.w * 0.72))) and -1 or 1
+                                if renderer.adjustStudioParameter and renderer.adjustStudioParameter(delta) then
+                                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                                end
+                            else
+                                if sound and sound.playMenuMove then sound.playMenuMove() end
+                                _G.studio_cursor = b.idx
+                            end
+                            return
+                        end
+                    end
+                end
+            end
         end
         -- Achievements tab and shoulder button click
         if _G.appState == "ACHIEVEMENTS" and not (_G.is_console_active and _G.is_console_active()) then
@@ -2804,7 +2828,16 @@ function love.wheelmoved(x, y)
     elseif _G.appState == "THEME_SELECT" then
         local tab = _G.customization_tab or 1
         if y > 0 then
-            if tab == 1 then
+            if tab == 4 then
+                local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                if is_unlocked then
+                    local cur = _G.studio_cursor or 1
+                    if cur > 1 then
+                        _G.studio_cursor = cur - 1
+                        sound.playMenuMove()
+                    end
+                end
+            elseif tab == 1 then
                 sound.playMenuMove()
                 if renderer.cycleCustomTheme then renderer.cycleCustomTheme(-1) end
             elseif tab == 2 then
@@ -2815,7 +2848,17 @@ function love.wheelmoved(x, y)
                 if renderer.cyclePet then renderer.cyclePet(-1) end
             end
         elseif y < 0 then
-            if tab == 1 then
+            if tab == 4 then
+                local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                if is_unlocked then
+                    local max_rows = (renderer.getStudioRowCount and renderer.getStudioRowCount()) or 11
+                    local cur = _G.studio_cursor or 1
+                    if cur < max_rows then
+                        _G.studio_cursor = cur + 1
+                        sound.playMenuMove()
+                    end
+                end
+            elseif tab == 1 then
                 sound.playMenuMove()
                 if renderer.cycleCustomTheme then renderer.cycleCustomTheme(1) end
             elseif tab == 2 then

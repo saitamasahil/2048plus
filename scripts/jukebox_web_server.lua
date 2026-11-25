@@ -319,10 +319,17 @@ local function handle_client(client, sound_module)
 
         if html then
             local t_theme = _G.theme or "light"
-            local t_name = (renderer and renderer.getThemeDisplayName) and renderer.getThemeDisplayName(t_theme, false) or t_theme
-            html = html:gsub("__DEVICE_IP__", string.format("%s:%d", server_ip, server_port))
-            html = html:gsub("__INITIAL_THEME__", t_theme)
-            html = html:gsub("__INITIAL_THEME_NAME__", t_name)
+            local payload = (renderer and renderer.getWebThemePayload) and renderer.getWebThemePayload(t_theme) or {
+                theme = t_theme,
+                name = (renderer and renderer.getThemeDisplayName) and renderer.getThemeDisplayName(t_theme, false) or t_theme,
+            }
+            payload.timestamp = os.time()
+            local t_name = payload.name or t_theme
+            local payload_json = json_encode(payload)
+            html = html:gsub("__DEVICE_IP__", function() return string.format("%s:%d", server_ip, server_port) end)
+            html = html:gsub("__INITIAL_THEME__", function() return t_theme end)
+            html = html:gsub("__INITIAL_THEME_NAME__", function() return t_name end)
+            html = html:gsub("__INITIAL_THEME_DATA__", function() return payload_json end)
             send_response(client, 200, "text/html; charset=utf-8", html)
         else
             send_response(client, 404, "text/plain", "Jukebox dashboard HTML not found")
@@ -334,12 +341,12 @@ local function handle_client(client, sound_module)
     -- 2. Theme info: GET /api/theme
     if path == "/api/theme" then
         local t_theme = _G.theme or "light"
-        local t_name = (renderer and renderer.getThemeDisplayName) and renderer.getThemeDisplayName(t_theme, false) or t_theme
-        local json = json_encode({
+        local payload = (renderer and renderer.getWebThemePayload) and renderer.getWebThemePayload(t_theme) or {
             theme = t_theme,
-            name = t_name,
-            timestamp = os.time()
-        })
+            name = (renderer and renderer.getThemeDisplayName) and renderer.getThemeDisplayName(t_theme, false) or t_theme,
+        }
+        payload.timestamp = os.time()
+        local json = json_encode(payload)
         send_response(client, 200, "application/json; charset=utf-8", json)
         client:close()
         return
