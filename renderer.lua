@@ -386,6 +386,7 @@ function renderer.captureOldTutorialSlide(page)
     local h = is_console and 480 or love.graphics.getHeight()
     if not tutorial_old_canvas or tutorial_old_canvas:getWidth() ~= w or tutorial_old_canvas:getHeight() ~= h then
         tutorial_old_canvas = love.graphics.newCanvas(w, h)
+        tutorial_old_canvas:setFilter("linear", "linear")
     end
     local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({tutorial_old_canvas, stencil = true})
@@ -436,6 +437,7 @@ function renderer.captureOldStoreScreen()
     local h = is_console and 480 or love.graphics.getHeight()
     if not store_sort_old_canvas or store_sort_old_canvas:getWidth() ~= w or store_sort_old_canvas:getHeight() ~= h then
         store_sort_old_canvas = love.graphics.newCanvas(w, h)
+        store_sort_old_canvas:setFilter("linear", "linear")
     end
     local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({store_sort_old_canvas, stencil = true})
@@ -5672,11 +5674,12 @@ function renderer.drawTiles(game)
     else
         local p = game:getAnimationProgress()
         if _G.screen_transitions then
-            local ease_p = p * (2 - p)
+            local inv = 1 - p
+            local ease_p = 1 - inv * inv * inv
             slideProgress = ease_p
             gooseProgress = ease_p
             spawnProgress = ease_p
-            mergePopProgress = p
+            mergePopProgress = 1 - inv * inv
         else
             slideProgress = p
             gooseProgress = p
@@ -5734,6 +5737,10 @@ function renderer.drawTiles(game)
 
     if game.swapAnimation then
         local p = 1 - (game.swapAnimation.timer / game.swapAnimation.duration)
+        if _G.screen_transitions then
+            local inv = 1 - p
+            p = 1 - inv * inv * inv
+        end
         local s_dummy = renderer._anim.swap_dummy
         local s_prev = renderer._anim.swap_prev_pos
 
@@ -8007,7 +8014,7 @@ function renderer.updateTransition(dt)
                 end
                 local lerp_factor = 1 - math.exp(-25 * dt)
                 menu_anim_y = menu_anim_y + (menu_anim_target_y - menu_anim_y) * lerp_factor
-                if math.abs(menu_anim_y - menu_anim_target_y) < 0.5 then
+                if math.abs(menu_anim_y - menu_anim_target_y) < 0.1 then
                     menu_anim_y = menu_anim_target_y
                 end
             end
@@ -8022,7 +8029,7 @@ function renderer.updateTransition(dt)
                 end
                 local lerp_factor = 1 - math.exp(-25 * dt)
                 menu_anim_x = menu_anim_x + (menu_anim_target_x - menu_anim_x) * lerp_factor
-                if math.abs(menu_anim_x - menu_anim_target_x) < 0.5 then
+                if math.abs(menu_anim_x - menu_anim_target_x) < 0.1 then
                     menu_anim_x = menu_anim_target_x
                 end
             end
@@ -8037,7 +8044,7 @@ function renderer.updateTransition(dt)
                 end
                 local lerp_factor = 1 - math.exp(-25 * dt)
                 menu_anim_w = menu_anim_w + (menu_anim_target_w - menu_anim_w) * lerp_factor
-                if math.abs(menu_anim_w - menu_anim_target_w) < 0.5 then
+                if math.abs(menu_anim_w - menu_anim_target_w) < 0.1 then
                     menu_anim_w = menu_anim_target_w
                 end
             end
@@ -8052,7 +8059,7 @@ function renderer.updateTransition(dt)
                 end
                 local lerp_factor = 1 - math.exp(-25 * dt)
                 menu_anim_h = menu_anim_h + (menu_anim_target_h - menu_anim_h) * lerp_factor
-                if math.abs(menu_anim_h - menu_anim_target_h) < 0.5 then
+                if math.abs(menu_anim_h - menu_anim_target_h) < 0.1 then
                     menu_anim_h = menu_anim_target_h
                 end
             end
@@ -8068,7 +8075,7 @@ function renderer.updateTransition(dt)
             end
             local lerp_factor = 1 - math.exp(-25 * dt)
             _G.studio_anim_y = _G.studio_anim_y + (_G.studio_anim_target_y - _G.studio_anim_y) * lerp_factor
-            if math.abs(_G.studio_anim_y - _G.studio_anim_target_y) < 0.5 then
+            if math.abs(_G.studio_anim_y - _G.studio_anim_target_y) < 0.1 then
                 _G.studio_anim_y = _G.studio_anim_target_y
             end
         end
@@ -8083,7 +8090,7 @@ function renderer.updateTransition(dt)
             end
             local lerp_factor = 1 - math.exp(-25 * dt)
             _G.studio_scroll_y = _G.studio_scroll_y + (_G.studio_scroll_target - _G.studio_scroll_y) * lerp_factor
-            if math.abs(_G.studio_scroll_y - _G.studio_scroll_target) < 0.5 then
+            if math.abs(_G.studio_scroll_y - _G.studio_scroll_target) < 0.1 then
                 _G.studio_scroll_y = _G.studio_scroll_target
             end
         end
@@ -8095,7 +8102,7 @@ function renderer.updateTransition(dt)
     else
         local panel_lerp = 1 - math.exp(-20 * dt)
         arcade_panel_y_offset = arcade_panel_y_offset + (arcade_panel_target - arcade_panel_y_offset) * panel_lerp
-        if math.abs(arcade_panel_y_offset - arcade_panel_target) < 0.5 then
+        if math.abs(arcade_panel_y_offset - arcade_panel_target) < 0.1 then
             arcade_panel_y_offset = arcade_panel_target
         end
     end
@@ -9110,6 +9117,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
         if not _G.tutorial_slide_ready then
             if not tutorial_new_canvas then
                 tutorial_new_canvas = love.graphics.newCanvas(w, h)
+                tutorial_new_canvas:setFilter("linear", "linear")
             end
             local prev_canvas = love.graphics.getCanvas()
             love.graphics.setCanvas({tutorial_new_canvas, stencil = true})
@@ -9124,31 +9132,25 @@ function renderer.drawTutorial(page, skip_transition, static_only)
         end
 
         if dir == 1 then
-            -- Forward page slide
-            -- Parallax shift for old page
-            local old_x = math.floor(-0.3 * w * p)
-            local new_x = math.floor(w * (1 - p))
+            local old_x = -0.3 * w * p
+            local new_x = w * (1 - p)
 
-            -- Draw old page
             if tutorial_old_canvas then
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(tutorial_old_canvas, old_x, 0)
                 love.graphics.setBlendMode("alpha", "alphamultiply")
 
-                -- Dim the old page
                 love.graphics.setColor(0, 0, 0, 0.5 * p)
                 love.graphics.rectangle("fill", old_x, 0, w, h)
             end
 
-            -- 2. Draw shadow to the left of the new page
             for i = 0, shadow_w - 1 do
                 local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
                 love.graphics.setColor(0, 0, 0, alpha)
                 love.graphics.rectangle("fill", new_x - shadow_w + i, 0, 1, h)
             end
 
-            -- Draw new page
             if tutorial_new_canvas then
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
@@ -9156,10 +9158,8 @@ function renderer.drawTutorial(page, skip_transition, static_only)
                 love.graphics.setBlendMode("alpha", "alphamultiply")
             end
         else
-            -- Backward page slide
-            -- Parallax shift for new page
-            local new_x = math.floor(-0.3 * w * (1 - p))
-            local old_x = math.floor(w * p)
+            local new_x = -0.3 * w * (1 - p)
+            local old_x = w * p
 
             -- Draw new page
             if tutorial_new_canvas then
@@ -13083,9 +13083,11 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
             local prev_canvas = love.graphics.getCanvas()
             if not achievements_old_canvas or achievements_old_canvas:getWidth() ~= w or achievements_old_canvas:getHeight() ~= h then
                 achievements_old_canvas = love.graphics.newCanvas(w, h)
+                achievements_old_canvas:setFilter("linear", "linear")
             end
             if not achievements_new_canvas or achievements_new_canvas:getWidth() ~= w or achievements_new_canvas:getHeight() ~= h then
                 achievements_new_canvas = love.graphics.newCanvas(w, h)
+                achievements_new_canvas:setFilter("linear", "linear")
             end
 
             local from_tab = _G.achievements_tab_prev
@@ -13110,13 +13112,13 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
         end
 
         local t = 1 - (_G.achievements_tab_timer / 0.24)
-        local tp = t * t * (3 - 2 * t)
+        local tp = 1 - math.pow(1 - t, 3)
         local from_tab = _G.achievements_tab_prev
         local to_tab = active_tab
         local t_dir = _G.achievements_tab_dir or (to_tab > from_tab and 1 or -1)
         local slide_dist = w
-        local old_x = math.floor(-t_dir * slide_dist * tp)
-        local new_x = math.floor(t_dir * slide_dist * (1 - tp))
+        local old_x = -t_dir * slide_dist * tp
+        local new_x = t_dir * slide_dist * (1 - tp)
 
         love.graphics.setScissor(0, list_y - math.floor(5 * scale), w, avail_h + math.floor(10 * scale))
 
@@ -14113,7 +14115,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
             local sort_prog = math.max(0, math.min(1, 1 - (store_sort_transition_timer / STORE_SORT_TRANSITION_DURATION)))
             local old_alpha = math.max(0, 1 - sort_prog * 2.2)
             if old_alpha > 0.005 then
-                local old_drift_y = -math.floor(14 * scale * sort_prog)
+                local old_drift_y = -14 * scale * sort_prog
                 love.graphics.setColor(old_alpha, old_alpha, old_alpha, old_alpha)
                 love.graphics.setBlendMode("alpha", "premultiplied")
                 love.graphics.draw(store_sort_old_canvas, 0, old_drift_y)
@@ -14861,15 +14863,15 @@ function renderer.drawJukebox(selection, skip_transition)
         _G.jukebox_scroll_offset = _G.jukebox_scroll_offset or target_scroll
         _G.jukebox_anim_sel_idx  = _G.jukebox_anim_sel_idx or selection
 
-        local lerp_spd = 24
+        local juke_lerp = 1 - math.exp(-24 * dt)
         if math.abs(_G.jukebox_scroll_offset - target_scroll) > 0.0005 then
-            _G.jukebox_scroll_offset = _G.jukebox_scroll_offset + (target_scroll - _G.jukebox_scroll_offset) * dt * lerp_spd
+            _G.jukebox_scroll_offset = _G.jukebox_scroll_offset + (target_scroll - _G.jukebox_scroll_offset) * juke_lerp
         else
             _G.jukebox_scroll_offset = target_scroll
         end
 
         if math.abs(_G.jukebox_anim_sel_idx - selection) > 0.0005 then
-            _G.jukebox_anim_sel_idx = _G.jukebox_anim_sel_idx + (selection - _G.jukebox_anim_sel_idx) * dt * lerp_spd
+            _G.jukebox_anim_sel_idx = _G.jukebox_anim_sel_idx + (selection - _G.jukebox_anim_sel_idx) * juke_lerp
         else
             _G.jukebox_anim_sel_idx = selection
         end

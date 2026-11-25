@@ -34,6 +34,24 @@ local konami_progress = 1
 local transition_delay_timer = 0
 local transition_delay_action = nil
 local transition_delay_key = nil
+local transition_capture_frame = false
+local shadow_grad_img = nil
+
+local function drawTransitionEdgeShadow(edge_x, h, shadow_w, to_left)
+    if not shadow_grad_img then
+        local gw = 32
+        local img_data = love.image.newImageData(gw, 1)
+        for i = 0, gw - 1 do
+            local alpha = 0.35 * math.pow((gw - i) / gw, 2)
+            img_data:setPixel(i, 0, 0, 0, 0, alpha)
+        end
+        shadow_grad_img = love.graphics.newImage(img_data)
+        shadow_grad_img:setFilter("linear", "linear")
+    end
+    love.graphics.setColor(1, 1, 1, 1)
+    local sx = (to_left and -shadow_w or shadow_w) / shadow_grad_img:getWidth()
+    love.graphics.draw(shadow_grad_img, edge_x, 0, 0, sx, h)
+end
 -- Direction hint set before queueing a transition: +1 forward, -1 backward
 local transition_next_direction = 1
 local arcade_menu_closing_action = nil
@@ -67,7 +85,9 @@ local function captureOldScreen()
     end
     if not old_screen_canvas or old_screen_canvas:getWidth() ~= w or old_screen_canvas:getHeight() ~= h then
         old_screen_canvas = love.graphics.newCanvas(w, h)
+        old_screen_canvas:setFilter("linear", "linear")
     end
+    transition_capture_frame = true
     local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({old_screen_canvas, stencil = true})
     love.graphics.clear()
@@ -99,13 +119,13 @@ local function queueTransitionAction(key, delay, action, direction)
     if not _G.screen_transitions then
         transition_next_direction = direction or 1
         transition_delay_key = key
-        transition_delay_timer = 0.08 -- short delay to let the button tactile animation render
+        transition_delay_timer = 0.04
         transition_delay_action = action
         return
     end
     transition_next_direction = direction or 1
     transition_delay_key = key
-    transition_delay_timer = 0.12 -- Extended visual hold duration for a satisfying physical button click
+    transition_delay_timer = 0.05
     transition_delay_action = action
 end
 
@@ -593,6 +613,9 @@ function love.load(args)
         w, h = love.graphics.getDimensions()
     end
     screen_canvas = love.graphics.newCanvas(w, h)
+    screen_canvas:setFilter("linear", "linear")
+    old_screen_canvas = love.graphics.newCanvas(w, h)
+    old_screen_canvas:setFilter("linear", "linear")
 
     -- Initialize dino game
     if dino_game and dino_game.init then
@@ -604,8 +627,13 @@ function love.load(args)
 end
 
 function love.update(dt)
-    -- Cap dt to prevent animation glitches on frame drops
-    dt = math.min(dt, 0.05)
+    -- Clamp first frame after canvas capture to avoid jumping past slide start
+    if transition_capture_frame then
+        dt = math.min(dt, 1 / 60)
+        transition_capture_frame = false
+    else
+        dt = math.min(dt, 0.05)
+    end
 
     -- Screen slide transitions
     if _G.appState ~= last_app_state then
@@ -2392,6 +2420,7 @@ local function draw_internal()
 
         if not screen_canvas or screen_canvas:getWidth() ~= sc_w or screen_canvas:getHeight() ~= sc_h then
             screen_canvas = love.graphics.newCanvas(sc_w, sc_h)
+            screen_canvas:setFilter("linear", "linear")
         end
 
         -- Only render the new screen to the canvas ONCE at the start of the transition
@@ -2406,6 +2435,7 @@ local function draw_internal()
                 love.graphics.setCanvas()
             end
             _G.screen_canvas_ready = true
+            transition_capture_frame = true
         end
 
         -- Draw background fill to avoid any gaps
@@ -2416,87 +2446,62 @@ local function draw_internal()
 
         if dir == 1 then
             -- Forward screen slide
-            -- Parallax shift for old screen
-            local old_x = math.floor(-0.3 * w * p)
-            local new_x = math.floor(w * (1 - p))
+            local old_x = -0.3 * w * p
+            local new_x = w * (1 - p)
 
-            -- Draw old screen
             if old_screen_canvas then
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(old_screen_canvas, old_x, 0)
                 love.graphics.setBlendMode("alpha", "alphamultiply")
 
-                -- Dim old screen overlay
                 love.graphics.setColor(0, 0, 0, 0.5 * p)
                 love.graphics.rectangle("fill", old_x, 0, w, h)
             end
 
-            -- 2. Draw shadow to the left of the new screen
-            for i = 0, shadow_w - 1 do
-                local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                love.graphics.setColor(0, 0, 0, alpha)
-                love.graphics.rectangle("fill", new_x - shadow_w + i, 0, 1, h)
-            end
+            drawTransitionEdgeShadow(new_x, h, shadow_w, true)
 
-            -- Draw new screen
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.setBlendMode("replace", "premultiplied")
             love.graphics.draw(screen_canvas, new_x, 0)
             love.graphics.setBlendMode("alpha", "alphamultiply")
         elseif dir == 2 then
             -- Left side forward screen slide
-            local old_x = math.floor(0.3 * w * p)
-            local new_x = math.floor(-w * (1 - p))
+            local old_x = 0.3 * w * p
+            local new_x = -w * (1 - p)
 
-            -- Draw old screen
             if old_screen_canvas then
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(old_screen_canvas, old_x, 0)
                 love.graphics.setBlendMode("alpha", "alphamultiply")
 
-                -- Dim old screen overlay
                 love.graphics.setColor(0, 0, 0, 0.5 * p)
                 love.graphics.rectangle("fill", old_x, 0, w, h)
             end
 
-            -- Draw shadow to the right of the new screen
-            for i = 0, shadow_w - 1 do
-                local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                love.graphics.setColor(0, 0, 0, alpha)
-                love.graphics.rectangle("fill", new_x + w + i, 0, 1, h)
-            end
+            drawTransitionEdgeShadow(new_x + w, h, shadow_w, false)
 
-            -- Draw new screen
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.setBlendMode("replace", "premultiplied")
             love.graphics.draw(screen_canvas, new_x, 0)
             love.graphics.setBlendMode("alpha", "alphamultiply")
         elseif dir == -2 then
             -- Left side backward screen slide
-            local new_x = math.floor(0.3 * w * (1 - p))
-            local old_x = math.floor(-w * p)
+            local new_x = 0.3 * w * (1 - p)
+            local old_x = -w * p
 
-            -- Draw new screen
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.setBlendMode("replace", "premultiplied")
             love.graphics.draw(screen_canvas, new_x, 0)
             love.graphics.setBlendMode("alpha", "alphamultiply")
 
-            -- Dim overlay
             love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
             love.graphics.rectangle("fill", new_x, 0, w, h)
 
             if old_screen_canvas then
-                -- Draw edge shadow
-                for i = 0, shadow_w - 1 do
-                    local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                    love.graphics.setColor(0, 0, 0, alpha)
-                    love.graphics.rectangle("fill", old_x + w + i, 0, 1, h)
-                end
+                drawTransitionEdgeShadow(old_x + w, h, shadow_w, false)
 
-                -- Draw old screen
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(old_screen_canvas, old_x, 0)
@@ -2504,29 +2509,20 @@ local function draw_internal()
             end
         else
             -- Backward screen slide
-            -- Parallax shift for new screen
-            local new_x = math.floor(-0.3 * w * (1 - p))
-            local old_x = math.floor(w * p)
+            local new_x = -0.3 * w * (1 - p)
+            local old_x = w * p
 
-            -- Draw new screen
             love.graphics.setColor(1, 1, 1, 1)
             love.graphics.setBlendMode("replace", "premultiplied")
             love.graphics.draw(screen_canvas, new_x, 0)
             love.graphics.setBlendMode("alpha", "alphamultiply")
 
-            -- Dim overlay
             love.graphics.setColor(0, 0, 0, 0.5 * (1 - p))
             love.graphics.rectangle("fill", new_x, 0, w, h)
 
             if old_screen_canvas then
-                -- Draw edge shadow
-                for i = 0, shadow_w - 1 do
-                    local alpha = 0.35 * math.pow((shadow_w - i) / shadow_w, 2)
-                    love.graphics.setColor(0, 0, 0, alpha)
-                    love.graphics.rectangle("fill", old_x - shadow_w + i, 0, 1, h)
-                end
+                drawTransitionEdgeShadow(old_x, h, shadow_w, true)
 
-                -- Draw old screen
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setBlendMode("replace", "premultiplied")
                 love.graphics.draw(old_screen_canvas, old_x, 0)
