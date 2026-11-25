@@ -6496,15 +6496,15 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
             love.graphics.rectangle("fill", x + (w - aw) / 2, y + sh, aw, h, cr)
 
             -- D-Pad body shifted by press_shift_y
-            love.graphics.setColor(help_key_color)
+            love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
             love.graphics.rectangle("fill", x, y + (h - aw) / 2 + press_shift_y, w, aw, cr)
             love.graphics.rectangle("fill", x + (w - aw) / 2, y + press_shift_y, aw, h, cr)
 
             -- Center core circle to blend the intersection
-            love.graphics.circle("fill", x + w/2, y + h/2 + press_shift_y, aw * 0.7)
+            love.graphics.circle("fill", x + w/2, y + h/2 + press_shift_y, aw * 0.7, 32)
 
             -- Draw four small direction dots inside in help_key_text
-            love.graphics.setColor(help_key_text)
+            love.graphics.setColor(help_key_text[1], help_key_text[2], help_key_text[3], (help_key_text[4] or 1.0) * cur_badge_a)
             local dot_r = math.max(1.2 * scale, 1)
             local offset = w * 0.35
 
@@ -6513,10 +6513,10 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
             local dot_u = is_up and math.max(2.5 * scale, 2) or dot_r
             local dot_d = is_down and math.max(2.5 * scale, 2) or dot_r
 
-            love.graphics.circle("fill", x + w/2 - offset, y + h/2 + press_shift_y, dot_l)
-            love.graphics.circle("fill", x + w/2 + offset, y + h/2 + press_shift_y, dot_r_active)
-            love.graphics.circle("fill", x + w/2, y + h/2 - offset + press_shift_y, dot_u)
-            love.graphics.circle("fill", x + w/2, y + h/2 + offset + press_shift_y, dot_d)
+            love.graphics.circle("fill", x + w/2 - offset, y + h/2 + press_shift_y, dot_l, 20)
+            love.graphics.circle("fill", x + w/2 + offset, y + h/2 + press_shift_y, dot_r_active, 20)
+            love.graphics.circle("fill", x + w/2, y + h/2 - offset + press_shift_y, dot_u, 20)
+            love.graphics.circle("fill", x + w/2, y + h/2 + offset + press_shift_y, dot_d, 20)
             return
         end
 
@@ -6531,12 +6531,12 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
             if _G.theme == "matrix" then
                 -- Black background circle
                 love.graphics.setColor(0, 0, 0, cur_badge_a)
-                love.graphics.circle("fill", cx, cy + press_shift_y, r)
+                love.graphics.circle("fill", cx, cy + press_shift_y, r, 48)
 
                 -- Green outline circle
                 love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
                 love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
-                love.graphics.circle("line", cx, cy + press_shift_y, r)
+                love.graphics.circle("line", cx, cy + press_shift_y, r, 48)
 
                 -- Text letter
                 love.graphics.setFont(key_font)
@@ -6548,16 +6548,16 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
             -- Button shadow shrinks when pressed
             love.graphics.setColor(0, 0, 0, 0.25 * cur_badge_a)
             local sh = math.max(1, math.floor(1.5 * scale)) * shadow_shrink
-            love.graphics.circle("fill", cx, cy + sh, r)
+            love.graphics.circle("fill", cx, cy + sh, r, 48)
 
             -- Button body shifted by press_shift_y
             love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], (help_key_color[4] or 1.0) * cur_badge_a)
-            love.graphics.circle("fill", cx, cy + press_shift_y, r)
+            love.graphics.circle("fill", cx, cy + press_shift_y, r, 48)
 
             -- Button border
             love.graphics.setColor(1, 1, 1, 0.15 * cur_badge_a)
             love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
-            love.graphics.circle("line", cx, cy + press_shift_y, r)
+            love.graphics.circle("line", cx, cy + press_shift_y, r, 48)
 
             -- Text letter
             love.graphics.setFont(key_font)
@@ -6654,11 +6654,6 @@ local function drawKeyBadge(text, x, y, w, h, alpha_override, font_override, old
         else
             drawBadgeContent(text, badge_a)
         end
-    end
-
-    if not is_transitioning then
-        drawBadgeContent(text, badge_a)
-        return
     end
 
     -- Canvas supersampling wrapper

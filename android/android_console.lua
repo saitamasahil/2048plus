@@ -896,6 +896,18 @@ local function getSwipeThreshold(w, h)
     return math.max(48, math.floor(42 * scale))
 end
 
+local function isPointInConsoleButton(btn, px, py, circle_mult, rect_pad)
+    if not btn then return false end
+    if btn.cx and btn.cy then
+        local dx = px - btn.cx
+        local dy = py - btn.cy
+        local r = btn.w * (circle_mult or 0.50)
+        return (dx * dx + dy * dy) <= (r * r)
+    end
+    local pad = rect_pad or 0
+    return px >= btn.x - pad and px <= btn.x + btn.w + pad and py >= btn.y - pad and py <= btn.y + btn.h + pad
+end
+
 function android_console.touchpressed(id, x, y, dx, dy, pressure)
     if transition_active then
         return
@@ -1025,23 +1037,37 @@ function android_console.touchpressed(id, x, y, dx, dy, pressure)
         end
     end
 
-    -- Check action & shoulder buttons
+    -- Check action and shoulder buttons
+    local is_dino = (_G.appState == "DINO")
     for name, btn in pairs(geo.buttons) do
-        if btn.cx and btn.cy then
-            local dx = x - btn.cx
-            local dy = y - btn.cy
-            if (dx * dx + dy * dy) <= (btn.w * 0.58) ^ 2 then
-                button_states[name] = true
-                active_touches[id] = {type = "button", name = name, event = btn.event}
+        if isPointInConsoleButton(btn, x, y, 0.50, 0) then
+            button_states[name] = true
+            if is_dino then
+                active_touches[id] = {type = "button", name = name, btn = btn, event = btn.event, immediate = true}
                 emitEvent(btn.event)
                 triggerHaptic(0.018)
-                return
+            else
+                active_touches[id] = {
+                    type = "button",
+                    name = name,
+                    btn = btn,
+                    event = btn.event,
+                    start_x = x,
+                    start_y = y,
+                    time = love.timer.getTime(),
+                    immediate = false,
+                }
+                if is_gameplay then
+                    swipe_track[id] = {
+                        start_x = x,
+                        start_y = y,
+                        fired = false,
+                        time = love.timer.getTime(),
+                        in_screen = false,
+                        from_button = true,
+                    }
+                end
             end
-        elseif x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
-            button_states[name] = true
-            active_touches[id] = {type = "button", name = name, event = btn.event}
-            emitEvent(btn.event)
-            triggerHaptic(0.018)
             return
         end
     end
@@ -1164,6 +1190,16 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
         return
     end
 
+    if touch and touch.type == "button" and not touch.immediate then
+        local diff_x = x - touch.start_x
+        local diff_y = y - touch.start_y
+        local tap_max = math.floor(getSwipeThreshold(w, h) * 0.45)
+        if (diff_x * diff_x + diff_y * diff_y) > (tap_max * tap_max) then
+            button_states[touch.name] = nil
+            active_touches[id] = nil
+        end
+    end
+
     local sw = swipe_track[id]
 
 
@@ -1174,7 +1210,7 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             return
         end
         local nav_margin = getBottomNavMargin(w, h)
-        if sw.start_y >= h - nav_margin then
+        if not sw.from_button and sw.start_y >= h - nav_margin then
             return
         end
         local diff_x = x - sw.start_x
@@ -1189,6 +1225,10 @@ function android_console.touchmoved(id, x, y, dx, dy, pressure)
             sw.fired = true
             console_has_swiped = true
             screen_overlay_visible = false
+            if active_touches[id] and active_touches[id].type == "button" and not active_touches[id].immediate then
+                button_states[active_touches[id].name] = nil
+                active_touches[id] = nil
+            end
             console_swipe_count = console_swipe_count + 1
             if not fs_tutorial_seen and not fs_tutorial_active and console_swipe_count >= 8 then
                 fs_tutorial_active = true
@@ -1405,9 +1445,32 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
     -- Handle button release
     if touch and touch.type == "button" then
         button_states[touch.name] = nil
-        releaseEvent(touch.event)
         active_touches[id] = nil
-        return
+        if touch.immediate then
+            releaseEvent(touch.event)
+            return
+        end
+
+        local dur = love.timer.getTime() - (touch.time or 0)
+        local diff_x = x - (touch.start_x or x)
+        local diff_y = y - (touch.start_y or y)
+        local dist_sq = diff_x * diff_x + diff_y * diff_y
+        local tap_max = math.floor(getSwipeThreshold(w, h) * 0.45)
+        local inside = isPointInConsoleButton(touch.btn, x, y, 0.54, 4)
+
+        if dur < 0.35 and dist_sq <= (tap_max * tap_max) and inside then
+            local ev = touch.event
+            emitEvent(ev)
+            triggerHaptic(0.018)
+            pcall(function()
+                local timer = require("timer")
+                timer.after(0.08, function()
+                    releaseEvent(ev)
+                end)
+            end)
+            swipe_track[id] = nil
+            return
+        end
     end
 
     -- Direct tap inside virtual screen
@@ -1501,6 +1564,30 @@ function android_console.touchreleased(id, x, y, dx, dy, pressure)
                     triggerHaptic(0.015)
                     swipe_track[id] = nil
                     return
+                end
+                if (_G.customization_tab or 1) == 4 and _G.studio_row_bounds then
+                    local is_unlocked = _G.stats and _G.stats.purchased_items and (_G.stats.purchased_items["theme_studio"] == 1 or _G.stats.purchased_items["theme_studio"] == true)
+                    if is_unlocked then
+                        for _, b in ipairs(_G.studio_row_bounds) do
+                            if gx >= b.x and gx <= (b.x + b.w) and gy >= b.y and gy <= (b.y + b.h) then
+                                local renderer = require("renderer")
+                                local sound = require("sound")
+                                if (_G.studio_cursor or 1) == b.idx then
+                                    local delta = (gx < (b.split_x or (b.x + b.w * 0.72))) and -1 or 1
+                                    if renderer.adjustStudioParameter and renderer.adjustStudioParameter(delta) then
+                                        if sound and sound.playMenuMove then sound.playMenuMove() end
+                                        triggerHaptic(0.015)
+                                    end
+                                else
+                                    if sound and sound.playMenuMove then sound.playMenuMove() end
+                                    _G.studio_cursor = b.idx
+                                    triggerHaptic(0.015)
+                                end
+                                swipe_track[id] = nil
+                                return
+                            end
+                        end
+                    end
                 end
             end
 
@@ -3344,11 +3431,11 @@ local function reconcileActiveTouches()
         for id, touch in pairs(active_touches) do
             if id == "mouse" then
                 if not mouse_down then
-                    if touch.event then releaseEvent(touch.event) end
+                    if touch.event and (touch.type ~= "button" or touch.immediate) then releaseEvent(touch.event) end
                     active_touches[id] = nil
                 end
             elseif not live[id] then
-                if touch.event then releaseEvent(touch.event) end
+                if touch.event and (touch.type ~= "button" or touch.immediate) then releaseEvent(touch.event) end
                 active_touches[id] = nil
             end
         end
