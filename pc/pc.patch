@@ -98,7 +98,7 @@ index 86a06aa..1137a89 100644
      end
  
      sound.init()
-@@ -525,6 +528,7 @@ function love.load(args)
+@@ -519,6 +522,7 @@ function love.load(args)
      _G.button_vibration = save.loadButtonVibration()
      _G.console_haptics = _G.button_vibration
      _G.crt_filter = save.loadCrtFilter()
@@ -106,7 +106,7 @@ index 86a06aa..1137a89 100644
      _G.merge_fx = "default"
      _G.board_skin = save.loadBoardSkin() or "default"
  
-@@ -1986,7 +1990,19 @@ function love.update(dt)
+@@ -1980,7 +1984,19 @@ function love.update(dt)
                          end
                          _G.crt_filter = new_crt
                          save.saveCrtFilter(_G.crt_filter)
