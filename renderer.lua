@@ -8784,10 +8784,10 @@ renderer._tutorial = {
                 "Keep merging to reach 2048!"
             },
             tiles = {
-                {0, 0, 2, 0},
+                {0, 0, 0, 2},
                 {0, 0, 0, 0},
-                {0, 2, 0, 4},
-                {2, 0, 2, 8}
+                {0, 2, 0, 2},
+                {0, 0, 4, 8}
             },
             highlight = {
                 {col = 1, row = 4, r = 0.3, g = 1, b = 0.3},
@@ -8797,11 +8797,10 @@ renderer._tutorial = {
         {
             title = "GAME MODES",
             lines = {
-                "Classic Mode:",
-                "  Unlimited undo with B button.",
-                "Plus Mode:",
-                "  Limited powerups: Undo, Bomb, Swap.",
-                "  Earn more at tile milestones!"
+                "Classic Mode: Classic 2048 rules.",
+                "  Undo with B button, changeable in Settings.",
+                "Plus Mode: Earn & spend powerup charges.",
+                "  Undo, Swap & Bomb at 256+ milestones or Store!"
             },
             tiles = {
                 {0, 0, 0, 0},
@@ -8830,9 +8829,9 @@ renderer._tutorial = {
             lines = {
                 "Made a mistake? Press B to undo!",
                 "",
-                "Classic: Unlimited undos.",
-                "Plus: Limited undo powerups.",
-                "Using undo counts as a powerup."
+                "Classic & Huge: 1-Move default, more in Settings.",
+                "Plus Mode: Costs 1 Undo charge per use.",
+                "Time Attack, No Mercy & Goose: Disabled."
             },
             tiles = {
                 {0, 0, 0, 2},
@@ -8851,10 +8850,10 @@ renderer._tutorial = {
                 "and set up big merges!"
             },
             tiles = {
+                {0, 0, 0, 2},
                 {0, 0, 0, 0},
-                {0, 0, 0, 0},
-                {0, 0, 4, 0},
-                {2, 0, 8, 16}
+                {0, 0, 4, 8},
+                {0, 0, 0, 16}
             },
             highlight = {
                 {col = 3, row = 3, r = 0.3, g = 0.7, b = 1},
@@ -8883,11 +8882,11 @@ renderer._tutorial = {
         {
             title = "STORE & COINS",
             lines = {
-                "Visit the Store to buy items.",
+                "Spend Coins on themes, skins, pets & upgrades.",
                 "",
                 "How to Earn Coins:",
-                " • Merge high-tier tiles",
-                " • Complete Achievements"
+                " • Earn Coins for every 200 score points",
+                " • Complete Achievements for bonus Coins"
             },
             tiles = {
                 {0, 0, 0, 0},
@@ -8905,8 +8904,8 @@ renderer._tutorial = {
         {
             title = "SECOND CHANCE SHIELD",
             lines = {
-                "Got a Game Over? Use a Shield to continue!",
-                "Press R1 on the Game Over screen to use it.",
+                "Buy Shields in Store to survive Game Over!",
+                "Press R1 on Game Over, except in No Mercy.",
                 "",
                 "Controls:",
                 " • Up/Down D-Pad: Select Row to clear",
@@ -8928,10 +8927,10 @@ renderer._tutorial = {
         {
             title = "THEMES",
             lines = {
-                "Press Y anytime to change theme!",
+                "Press Y anytime to cycle unlocked themes!",
                 "",
-                "Unlock new themes by earning",
-                "achievements & purchasing from store."
+                "Unlock themes via Achievements & the Store,",
+                "or craft custom palettes in Theme Studio."
             },
 
             tiles = {

@@ -195,7 +195,7 @@ index 40600d0..14c8956 100644
      end
      return text
  end
-@@ -9115,7 +9147,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
+@@ -9114,7 +9146,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
  
          -- Capture the new page to tutorial_new_canvas ONCE at the start of transition
          if not _G.tutorial_slide_ready then
@@ -204,7 +204,7 @@ index 40600d0..14c8956 100644
                  tutorial_new_canvas = love.graphics.newCanvas(w, h)
                  tutorial_new_canvas:setFilter("linear", "linear")
              end
-@@ -9261,7 +9293,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
+@@ -9260,7 +9292,7 @@ function renderer.drawTutorial(page, skip_transition, static_only)
  
              -- Badge
              right_x = right_x - label_gap
@@ -213,7 +213,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -9336,6 +9368,8 @@ function renderer.getSettingsOptions()
+@@ -9335,6 +9367,8 @@ function renderer.getSettingsOptions()
      local undo_lbl = "Undo Limit (Classic/Huge): " .. undo_val
      local ta_lbl = "Time Attack Max Limit: " .. _G.time_attack_time .. "s"
      local crt_lbl = "CRT Shader: " .. (_G.crt_filter and "On" or "Off")
@@ -222,7 +222,7 @@ index 40600d0..14c8956 100644
  
      return {
          "Audio & Haptics",
-@@ -9345,6 +9379,7 @@ function renderer.getSettingsOptions()
+@@ -9344,6 +9378,7 @@ function renderer.getSettingsOptions()
          undo_lbl,
          ta_lbl,
          crt_lbl,
@@ -230,7 +230,7 @@ index 40600d0..14c8956 100644
          "Back"
      }
  end
-@@ -9379,6 +9414,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
+@@ -9378,6 +9413,7 @@ function renderer.calculateSettingsLayout(selection, w, h, scale)
          "Undo Limit (Classic/Huge): Unlimited",
          "Time Attack Max Limit: 90s",
          "CRT Shader: Off",
@@ -238,7 +238,7 @@ index 40600d0..14c8956 100644
          "Back"
      }
      local max_ow = 0
-@@ -9475,7 +9511,7 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
+@@ -9474,7 +9510,7 @@ function renderer.drawSettingsElements(selection, w, h, scale, layout)
              love.graphics.print(action.label, right_x, lbl_y)
  
              right_x = right_x - label_gap
@@ -247,7 +247,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, layout.badge_y, key_w, layout.badge_h)
  
-@@ -9787,7 +9823,7 @@ function renderer.drawMainMenu(selection, skip_transition)
+@@ -9786,7 +9822,7 @@ function renderer.drawMainMenu(selection, skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -256,7 +256,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -10258,7 +10294,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
+@@ -10257,7 +10293,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x0, lbl_y)
              right_x0 = right_x0 - label_gap
@@ -265,7 +265,7 @@ index 40600d0..14c8956 100644
              right_x0 = right_x0 - key_w
              drawKeyBadge(action.key, right_x0, badge_y_foot, key_w, badge_h_foot)
              right_x0 = right_x0 - item_gap
-@@ -10536,7 +10572,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
+@@ -10535,7 +10571,7 @@ function renderer.drawPlaySelectMenu(play_select_selection, arcade_selection, sk
              love.graphics.setColor(0.7, 0.75, 0.8, 1.0)
              love.graphics.print(action.label, right_x1, lbl_y)
              right_x1 = right_x1 - label_gap
@@ -274,7 +274,7 @@ index 40600d0..14c8956 100644
              right_x1 = right_x1 - key_w
              drawKeyBadge(action.key, right_x1, badge_y_foot, key_w, badge_h_foot)
              right_x1 = right_x1 - item_gap
-@@ -10688,7 +10724,7 @@ function renderer.drawSecretMenu(selection, skip_transition)
+@@ -10687,7 +10723,7 @@ function renderer.drawSecretMenu(selection, skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -283,7 +283,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -12042,8 +12078,9 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
+@@ -12041,8 +12077,9 @@ function renderer.drawThemeSelect(skip_transition, explicit_tab)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, lbl_y)
  
@@ -294,7 +294,7 @@ index 40600d0..14c8956 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13177,7 +13214,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -13176,7 +13213,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
              -- Badge
              right_x = right_x - label_gap
@@ -303,7 +303,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13415,7 +13452,7 @@ function renderer.drawAbout(skip_transition)
+@@ -13414,7 +13451,7 @@ function renderer.drawAbout(skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -312,7 +312,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -14436,7 +14473,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -14435,7 +14472,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -321,7 +321,7 @@ index 40600d0..14c8956 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -15265,7 +15302,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -15264,7 +15301,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap
