@@ -2696,7 +2696,37 @@ renderer._bg = {
             w = 0.9, a = 0.22, halo = 0,
             pts = { 0.02, 0.86,  0.16, 0.91,  0.31, 0.87,  0.41, 0.98 }
         },
-    }
+    },
+    obsidian_veins = {
+        {
+            w = 1.5, a = 0.45, ember = true,
+            pts = { 0.03, 0.24,  0.18, 0.31,  0.29, 0.22,  0.48, 0.36,  0.64, 0.30,  0.84, 0.44,  0.98, 0.38 }
+        },
+        {
+            w = 1.1, a = 0.35,
+            pts = { 0.29, 0.22,  0.36, 0.09,  0.51, 0.02 }
+        },
+        {
+            w = 1.4, a = 0.40, ember = true,
+            pts = { 0.06, 0.78,  0.25, 0.68,  0.42, 0.74,  0.60, 0.62,  0.77, 0.71,  0.95, 0.60 }
+        },
+        {
+            w = 1.0, a = 0.30,
+            pts = { 0.60, 0.62,  0.67, 0.81,  0.76, 0.97 }
+        },
+    },
+    brass_rivets = {
+        { 0.035, 0.035 },
+        { 0.965, 0.035 },
+        { 0.035, 0.965 },
+        { 0.965, 0.965 },
+    },
+    chess_light_sq = { 0.84, 0.76, 0.60, 1.0 },
+    chess_dark_sq = { 0.30, 0.19, 0.11, 1.0 },
+    chess_light_cell = { 0.74, 0.65, 0.49, 0.92 },
+    chess_dark_cell = { 0.22, 0.14, 0.08, 0.94 },
+    chess_light_rim = { 0.58, 0.47, 0.31, 0.55 },
+    chess_dark_rim = { 0.46, 0.32, 0.19, 0.55 }
 }
 
 function renderer.drawStudioBackdropFX(cfg, ox, oy, w, h, scale, alpha_mult, is_preview)
@@ -4842,7 +4872,7 @@ function renderer.loadTextures()
     -- Load store item icons and achievement icons
     item_icons = {}
     achievement_icons = {}
-    local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "coin_rush", "ticket", "cat", "dog", "theme" }
+    local item_names = { "undo", "swap", "bomb", "cosmic", "cherry", "jukebox", "music", "128", "256", "512", "multiplier", "powerup_undo", "powerup_swap", "powerup_bomb", "shield", "gold_luxe", "cyber_grid", "synthwave", "key", "skin_wood", "skin_glass", "skin_matrix", "skin_marble", "skin_bamboo", "skin_obsidian", "skin_blueprint", "skin_carbon", "skin_neon_grid", "skin_brass", "skin_chess", "coin_rush", "ticket", "cat", "dog", "theme" }
     for _, name in ipairs(item_names) do
         local ok_item, item_img = pcall(love.graphics.newImage, "assets/icon/" .. name .. ".png")
         if ok_item then
@@ -5303,6 +5333,258 @@ function renderer.drawBoard(game, override_skin, override_layout)
         love.graphics.setLineWidth(math.max(2, math.floor(3 * _G.scale)))
         roundedRect("line", bx, by, bs, bs, cr * 2)
 
+    elseif skin == "obsidian" then
+        local scale = _G.scale or 1
+        love.graphics.setColor(0.08, 0.08, 0.11, 1.0)
+        roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        -- Subtle angular basalt facets and mineral haze
+        love.graphics.setColor(0.13, 0.13, 0.18, 0.45)
+        love.graphics.polygon("fill", bx, by, bx + bs * 0.58, by, bx + bs * 0.34, by + bs * 0.48, bx, by + bs * 0.32)
+        love.graphics.setColor(0.04, 0.04, 0.06, 0.50)
+        love.graphics.polygon("fill", bx + bs, by + bs, bx + bs * 0.44, by + bs, bx + bs * 0.62, by + bs * 0.52, bx + bs, by + bs * 0.64)
+
+        for _, vein in ipairs(renderer._bg.obsidian_veins) do
+            local pts = vein.pts
+            if vein.ember then
+                love.graphics.setColor(0.72, 0.38, 0.16, 0.22)
+                love.graphics.setLineWidth(math.max(2, vein.w * 2.2 * scale))
+                for k = 1, #pts - 3, 2 do
+                    love.graphics.line(bx + pts[k] * bs, by + pts[k + 1] * bs, bx + pts[k + 2] * bs, by + pts[k + 3] * bs)
+                end
+            end
+            love.graphics.setColor(0.38, 0.40, 0.50, vein.a)
+            love.graphics.setLineWidth(math.max(1, vein.w * scale))
+            for k = 1, #pts - 3, 2 do
+                love.graphics.line(bx + pts[k] * bs, by + pts[k + 1] * bs, bx + pts[k + 2] * bs, by + pts[k + 3] * bs)
+            end
+        end
+
+        love.graphics.setStencilTest()
+
+        love.graphics.setColor(0.30, 0.32, 0.40, 0.50)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        roundedRect("line", bx + 2 * scale, by + 2 * scale, bs - 4 * scale, bs - 4 * scale, math.max(1, cr * 2 - 2 * scale))
+        love.graphics.setColor(0.22, 0.23, 0.30, 0.95)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        roundedRect("line", bx, by, bs, bs, cr * 2)
+
+    elseif skin == "blueprint" then
+        local scale = _G.scale or 1
+        love.graphics.setColor(0.07, 0.22, 0.44, 1.0)
+        roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        -- Fine drafting sub-grid aligned with cell pitch
+        local sub_step = math.max(8, (cs + cg) * 0.25)
+        love.graphics.setColor(0.75, 0.92, 1.0, 0.08)
+        love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
+        for gx = bx + sub_step, bx + bs - 1, sub_step do
+            love.graphics.line(gx, by, gx, by + bs)
+        end
+        for gy = by + sub_step, by + bs - 1, sub_step do
+            love.graphics.line(bx, gy, bx + bs, gy)
+        end
+
+        -- Major grid axes and intersection crosshairs
+        local tick = math.max(3, math.floor(4 * scale))
+        love.graphics.setColor(0.75, 0.92, 1.0, 0.20)
+        for i = 0, size do
+            local lx = bx + cg * 0.5 + i * (cs + cg)
+            local ly = by + cg * 0.5 + i * (cs + cg)
+            love.graphics.line(lx, by, lx, by + bs)
+            love.graphics.line(bx, ly, bx + bs, ly)
+        end
+        love.graphics.setColor(0.85, 0.96, 1.0, 0.50)
+        for ix = 0, size do
+            local px = bx + cg * 0.5 + ix * (cs + cg)
+            for iy = 0, size do
+                local py = by + cg * 0.5 + iy * (cs + cg)
+                love.graphics.line(px - tick, py, px + tick, py)
+                love.graphics.line(px, py - tick, px, py + tick)
+            end
+        end
+
+        love.graphics.setStencilTest()
+
+        love.graphics.setColor(0.75, 0.92, 1.0, 0.50)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.4 * scale)))
+        roundedRect("line", bx + 2.5 * scale, by + 2.5 * scale, bs - 5 * scale, bs - 5 * scale, math.max(1, cr * 2 - 2.5 * scale))
+        love.graphics.setColor(0.55, 0.84, 1.0, 0.92)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        roundedRect("line", bx, by, bs, bs, cr * 2)
+
+    elseif skin == "carbon" then
+        local scale = _G.scale or 1
+        love.graphics.setColor(0.08, 0.09, 0.11, 1.0)
+        roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        -- Staggered 2x2 twill weave scaled relative to board size
+        local step = math.max(6, math.floor(bs / 24))
+        local cols = math.ceil(bs / step)
+        love.graphics.setColor(0.16, 0.17, 0.20, 0.85)
+        for r = 0, cols - 1 do
+            local ry = by + r * step
+            for c = 0, cols - 1 do
+                if (c + r) % 2 == 0 then
+                    love.graphics.rectangle("fill", bx + c * step, ry, step * 0.9, step * 0.45)
+                else
+                    love.graphics.rectangle("fill", bx + c * step, ry + step * 0.45, step * 0.45, step * 0.9)
+                end
+            end
+        end
+
+        -- Subtle diagonal gloss sheen
+        love.graphics.setColor(1, 1, 1, 0.045)
+        love.graphics.polygon("fill", bx, by, bx + bs * 0.72, by, bx, by + bs * 0.72)
+
+        love.graphics.setStencilTest()
+
+        love.graphics.setColor(0.42, 0.45, 0.52, 0.45)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        roundedRect("line", bx + 2 * scale, by + 2 * scale, bs - 4 * scale, bs - 4 * scale, math.max(1, cr * 2 - 2 * scale))
+        love.graphics.setColor(0.26, 0.28, 0.34, 0.95)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        roundedRect("line", bx, by, bs, bs, cr * 2)
+
+    elseif skin == "neon_grid" then
+        local scale = _G.scale or 1
+        local t = love.timer.getTime()
+        local pulse = 0.78 + 0.22 * math.sin(t * 2.4)
+        love.graphics.setColor(0.06, 0.03, 0.13, 1.0)
+        roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        -- Synthwave horizon glow and drifting scan band
+        love.graphics.setColor(0.95, 0.18, 0.65, 0.10 * pulse)
+        love.graphics.rectangle("fill", bx, by + bs * 0.55, bs, bs * 0.45)
+        love.graphics.setColor(0.10, 0.85, 0.98, 0.08 * pulse)
+        love.graphics.rectangle("fill", bx, by, bs, bs * 0.38)
+
+        local scan_y = by + ((t * 0.22) % 1) * (bs + bs * 0.20) - bs * 0.10
+        love.graphics.setColor(0.15, 0.92, 1.0, 0.10)
+        love.graphics.rectangle("fill", bx, scan_y, bs, bs * 0.08)
+
+        love.graphics.setLineWidth(math.max(1, math.floor(1.4 * scale)))
+        for i = 0, size do
+            local gx = bx + cg * 0.5 + i * (cs + cg)
+            local gy = by + cg * 0.5 + i * (cs + cg)
+            love.graphics.setColor(1.0, 0.18, 0.68, 0.26 * pulse)
+            love.graphics.line(gx, by, gx, by + bs)
+            love.graphics.setColor(0.10, 0.90, 1.0, 0.30 * pulse)
+            love.graphics.line(bx, gy, bx + bs, gy)
+        end
+
+        love.graphics.setStencilTest()
+
+        love.graphics.setColor(0.15, 0.92, 1.0, 0.55 * pulse)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        roundedRect("line", bx + 2.5 * scale, by + 2.5 * scale, bs - 5 * scale, bs - 5 * scale, math.max(1, cr * 2 - 2.5 * scale))
+        love.graphics.setColor(1.0, 0.22, 0.72, 0.92)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        roundedRect("line", bx, by, bs, bs, cr * 2)
+
+    elseif skin == "brass" then
+        local scale = _G.scale or 1
+        love.graphics.setColor(0.54, 0.40, 0.14, 1.0)
+        roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        -- Diagonal metallic sheen bands and horizontal brush grain
+        love.graphics.setColor(0.86, 0.70, 0.32, 0.24)
+        love.graphics.polygon("fill", bx, by + bs * 0.15, bx + bs * 0.62, by, bx + bs, by + bs * 0.38, bx + bs * 0.38, by + bs)
+        love.graphics.setColor(0.98, 0.88, 0.52, 0.15)
+        love.graphics.polygon("fill", bx + bs * 0.10, by, bx + bs * 0.32, by, bx + bs * 0.92, by + bs * 0.60, bx + bs * 0.70, by + bs * 0.60)
+
+        local brush_step = math.max(4, math.floor(bs / 28))
+        love.graphics.setLineWidth(math.max(1, math.floor(1 * scale)))
+        for idx = 1, math.floor(bs / brush_step) do
+            local by_line = by + idx * brush_step
+            if idx % 2 == 0 then
+                love.graphics.setColor(0.76, 0.60, 0.24, 0.22)
+            else
+                love.graphics.setColor(0.32, 0.22, 0.06, 0.20)
+            end
+            love.graphics.line(bx, by_line, bx + bs, by_line)
+        end
+
+        love.graphics.setStencilTest()
+
+        love.graphics.setColor(0.95, 0.82, 0.44, 0.62)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        roundedRect("line", bx + 2.5 * scale, by + 2.5 * scale, bs - 5 * scale, bs - 5 * scale, math.max(1, cr * 2 - 2.5 * scale))
+        love.graphics.setColor(0.76, 0.58, 0.22, 0.96)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        roundedRect("line", bx, by, bs, bs, cr * 2)
+
+        -- Machined corner rivets
+        local rr = math.max(2.2, math.floor(bs * 0.015))
+        for _, rv in ipairs(renderer._bg.brass_rivets) do
+            local rx = bx + rv[1] * bs
+            local ry = by + rv[2] * bs
+            love.graphics.setColor(0.24, 0.16, 0.04, 0.85)
+            love.graphics.circle("fill", rx, ry, rr + 0.8 * scale)
+            love.graphics.setColor(0.88, 0.72, 0.34, 0.95)
+            love.graphics.circle("fill", rx, ry, rr)
+            love.graphics.setColor(1.0, 0.95, 0.72, 0.75)
+            love.graphics.circle("fill", rx - rr * 0.28, ry - rr * 0.28, rr * 0.35)
+        end
+
+    elseif skin == "chess" then
+        local scale = _G.scale or 1
+        love.graphics.setColor(0.22, 0.14, 0.08, 1.0)
+        roundedRect("fill", bx, by, bs, bs, cr * 2)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        -- Inlaid maple and walnut checkerboard squares aligned to cell grid
+        local pitch = cs + cg
+        local gx0 = bx + cg * 0.5
+        local gy0 = by + cg * 0.5
+        for col = 1, size do
+            for row = 1, size do
+                local is_light_sq = ((col + row) % 2 == 0)
+                love.graphics.setColor(is_light_sq and renderer._bg.chess_light_sq or renderer._bg.chess_dark_sq)
+                love.graphics.rectangle("fill", gx0 + (col - 1) * pitch, gy0 + (row - 1) * pitch, pitch + 0.5, pitch + 0.5)
+            end
+        end
+
+        love.graphics.setStencilTest()
+
+        -- Inner brass inlay fillet and walnut outer trim
+        love.graphics.setColor(0.84, 0.72, 0.45, 0.60)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.4 * scale)))
+        roundedRect("line", gx0, gy0, bs - cg, bs - cg, math.max(1, cr))
+
+        love.graphics.setColor(0.44, 0.29, 0.17, 0.95)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
+        roundedRect("line", bx, by, bs, bs, cr * 2)
+
     else
         -- Default theme board
         love.graphics.setColor(board_color)
@@ -5310,26 +5592,65 @@ function renderer.drawBoard(game, override_skin, override_layout)
     end
 
     -- Draw cell cutouts
+    local cell_fill, rim_col, rim_lw
+    local is_chess = (skin == "chess")
     if skin == "wood" then
-        love.graphics.setColor(0.19, 0.11, 0.06, 0.90)
+        cell_fill = {0.19, 0.11, 0.06, 0.90}
+        rim_col = {0.45, 0.30, 0.18, 0.50}
+        rim_lw = math.max(1, math.floor(1.4 * _G.scale))
+    elseif is_chess then
+        rim_lw = math.max(1, math.floor(1.2 * _G.scale))
     elseif skin == "glass" then
         local r_bg, g_bg, b_bg = (bg_color and bg_color[1]) or 0.95, (bg_color and bg_color[2]) or 0.95, (bg_color and bg_color[3]) or 0.9
         local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
         if bg_lum > 0.45 then
-            love.graphics.setColor(0.12, 0.16, 0.22, 0.15)
+            cell_fill = {0.12, 0.16, 0.22, 0.15}
+            rim_col = {0.15, 0.25, 0.35, 0.25}
         else
-            love.graphics.setColor(1, 1, 1, 0.07)
+            cell_fill = {1, 1, 1, 0.07}
+            rim_col = {1, 1, 1, 0.20}
         end
+        rim_lw = math.max(1, math.floor(1 * _G.scale))
     elseif skin == "matrix" then
-        love.graphics.setColor(0.04, 0.14, 0.06, 0.9)
+        cell_fill = {0.04, 0.14, 0.06, 0.9}
+        rim_col = {0.1, 0.9, 0.3, 0.25}
+        rim_lw = math.max(1, math.floor(1.5 * _G.scale))
     elseif skin == "marble" then
-        love.graphics.setColor(0.82, 0.80, 0.76, 0.95)
+        cell_fill = {0.82, 0.80, 0.76, 0.95}
+        rim_col = {0.72, 0.70, 0.66, 0.45}
+        rim_lw = math.max(1, math.floor(1.2 * _G.scale))
     elseif skin == "bamboo" then
-        love.graphics.setColor(0.16, 0.24, 0.10, 0.92)
+        cell_fill = {0.16, 0.24, 0.10, 0.92}
+        rim_col = {0.42, 0.58, 0.28, 0.55}
+        rim_lw = math.max(1, math.floor(1.5 * _G.scale))
+    elseif skin == "obsidian" then
+        cell_fill = {0.04, 0.04, 0.06, 0.94}
+        rim_col = {0.26, 0.28, 0.36, 0.55}
+        rim_lw = math.max(1, math.floor(1.3 * _G.scale))
+    elseif skin == "blueprint" then
+        cell_fill = {0.05, 0.16, 0.34, 0.90}
+        rim_col = {0.48, 0.84, 1.0, 0.55}
+        rim_lw = math.max(1, math.floor(1.3 * _G.scale))
+    elseif skin == "carbon" then
+        cell_fill = {0.05, 0.05, 0.07, 0.94}
+        rim_col = {0.34, 0.37, 0.44, 0.55}
+        rim_lw = math.max(1, math.floor(1.3 * _G.scale))
+    elseif skin == "neon_grid" then
+        local pulse = 0.78 + 0.22 * math.sin(love.timer.getTime() * 2.4)
+        cell_fill = {0.04, 0.02, 0.09, 0.92}
+        rim_col = {0.12, 0.88, 1.0, 0.45 * pulse}
+        rim_lw = math.max(1, math.floor(1.4 * _G.scale))
+    elseif skin == "brass" then
+        cell_fill = {0.22, 0.15, 0.05, 0.92}
+        rim_col = {0.82, 0.64, 0.26, 0.60}
+        rim_lw = math.max(1, math.floor(1.4 * _G.scale))
     elseif _G.theme == "matrix" then
-        love.graphics.setColor(board_color)
+        cell_fill = board_color
     else
-        love.graphics.setColor(tile_colors[0])
+        cell_fill = tile_colors[0]
+    end
+    if not is_chess then
+        love.graphics.setColor(cell_fill)
     end
 
     local is_trans = _G.screen_transitions and game_start_transition and game_start_transition.active
@@ -5365,42 +5686,21 @@ function renderer.drawBoard(game, override_skin, override_layout)
                     love.graphics.translate(-(cx + cs / 2), -(cy + cs / 2))
                 end
 
-                roundedRect("fill", cx, cy, cs, cs, cr)
-                if skin == "wood" then
-                    love.graphics.setColor(0.45, 0.30, 0.18, 0.50)
-                    love.graphics.setLineWidth(math.max(1, math.floor(1.4 * _G.scale)))
+                if is_chess then
+                    local is_light_sq = ((col + row) % 2 == 0)
+                    love.graphics.setColor(is_light_sq and renderer._bg.chess_light_cell or renderer._bg.chess_dark_cell)
+                    roundedRect("fill", cx, cy, cs, cs, cr)
+                    love.graphics.setColor(is_light_sq and renderer._bg.chess_light_rim or renderer._bg.chess_dark_rim)
+                    love.graphics.setLineWidth(rim_lw)
                     roundedRect("line", cx, cy, cs, cs, cr)
-                    love.graphics.setColor(0.19, 0.11, 0.06, 0.90)
-                elseif skin == "glass" then
-                    local r_bg, g_bg, b_bg = (bg_color and bg_color[1]) or 0.95, (bg_color and bg_color[2]) or 0.95, (bg_color and bg_color[3]) or 0.9
-                    local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
-                    if bg_lum > 0.45 then
-                        love.graphics.setColor(0.15, 0.25, 0.35, 0.25)
-                    else
-                        love.graphics.setColor(1, 1, 1, 0.20)
+                else
+                    roundedRect("fill", cx, cy, cs, cs, cr)
+                    if rim_col then
+                        love.graphics.setColor(rim_col)
+                        love.graphics.setLineWidth(rim_lw)
+                        roundedRect("line", cx, cy, cs, cs, cr)
+                        love.graphics.setColor(cell_fill)
                     end
-                    love.graphics.setLineWidth(math.max(1, math.floor(1 * _G.scale)))
-                    roundedRect("line", cx, cy, cs, cs, cr)
-                    if bg_lum > 0.45 then
-                        love.graphics.setColor(0.12, 0.16, 0.22, 0.15)
-                    else
-                        love.graphics.setColor(1, 1, 1, 0.07)
-                    end
-                elseif skin == "matrix" then
-                    love.graphics.setColor(0.1, 0.9, 0.3, 0.25)
-                    love.graphics.setLineWidth(math.max(1, math.floor(1.5 * _G.scale)))
-                    roundedRect("line", cx, cy, cs, cs, cr)
-                    love.graphics.setColor(0.04, 0.14, 0.06, 0.9)
-                elseif skin == "marble" then
-                    love.graphics.setColor(0.72, 0.70, 0.66, 0.45)
-                    love.graphics.setLineWidth(math.max(1, math.floor(1.2 * _G.scale)))
-                    roundedRect("line", cx, cy, cs, cs, cr)
-                    love.graphics.setColor(0.82, 0.80, 0.76, 0.95)
-                elseif skin == "bamboo" then
-                    love.graphics.setColor(0.42, 0.58, 0.28, 0.55)
-                    love.graphics.setLineWidth(math.max(1, math.floor(1.5 * _G.scale)))
-                    roundedRect("line", cx, cy, cs, cs, cr)
-                    love.graphics.setColor(0.16, 0.24, 0.10, 0.92)
                 end
 
                 if needs_scale then
@@ -10880,12 +11180,18 @@ local themes_catalog = {
 }
 
 local board_skins_catalog = {
-    { id = "default", name = "Dynamic Board" },
-    { id = "wood",    name = "Wood Board" },
-    { id = "bamboo",  name = "Bamboo Board" },
-    { id = "glass",   name = "Glassmorphism Board" },
-    { id = "marble",  name = "Marble Board" },
-    { id = "matrix",  name = "Matrix Board" },
+    { id = "default",   name = "Dynamic Board" },
+    { id = "wood",      name = "Wood Board" },
+    { id = "bamboo",    name = "Bamboo Board" },
+    { id = "glass",     name = "Glassmorphism Board" },
+    { id = "marble",    name = "Marble Board" },
+    { id = "matrix",    name = "Matrix Board" },
+    { id = "obsidian",  name = "Obsidian Board" },
+    { id = "blueprint", name = "Blueprint Board" },
+    { id = "carbon",    name = "Carbon Fiber Board" },
+    { id = "neon_grid", name = "Neon Grid Board" },
+    { id = "brass",     name = "Brushed Brass Board" },
+    { id = "chess",     name = "Chess Board" },
 }
 
 local pets_catalog = {
@@ -11105,7 +11411,7 @@ function renderer.prepareBoardTransition(prev_idx, cur_idx, bs, reuse_curr)
     local prev_skin = board_skins_catalog[prev_idx] or board_skins_catalog[1]
     local cur_skin = board_skins_catalog[cur_idx] or board_skins_catalog[1]
 
-    if reuse_curr and board_preview_rendered_skin_id == prev_skin.id and board_preview_rendered_theme == _G.theme and prev_skin.id ~= "matrix" then
+    if reuse_curr and board_preview_rendered_skin_id == prev_skin.id and board_preview_rendered_theme == _G.theme and prev_skin.id ~= "matrix" and prev_skin.id ~= "neon_grid" then
         board_preview_canvas_prev, board_preview_canvas_curr = board_preview_canvas_curr, board_preview_canvas_prev
     else
         renderBoardPreviewToCanvas(board_preview_canvas_prev, prev_skin.id, target_bs)
@@ -11461,7 +11767,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
                 renderBoardPreviewToCanvas(board_preview_canvas_curr, skin.id, board_size)
                 board_preview_rendered_skin_id = skin.id
                 board_preview_rendered_theme = _G.theme
-            elseif board_preview_rendered_skin_id ~= skin.id or skin.id == "matrix" or theme_changed then
+            elseif board_preview_rendered_skin_id ~= skin.id or skin.id == "matrix" or skin.id == "neon_grid" or theme_changed then
                 renderBoardPreviewToCanvas(board_preview_canvas_curr, skin.id, board_size)
                 board_preview_rendered_skin_id = skin.id
                 board_preview_rendered_theme = _G.theme
@@ -13780,6 +14086,51 @@ local function drawStoreItemIcon(item_id, cx, cy, radius, is_selected, alpha_ove
         roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
         love.graphics.line(cx - sr * 0.3, cy - sr, cx - sr * 0.3, cy + sr)
         love.graphics.line(cx + sr * 0.3, cy - sr, cx + sr * 0.3, cy + sr)
+    elseif item_id == "skin_obsidian" then
+        local sr = radius * 0.45
+        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
+        love.graphics.setColor(0.55, 0.58, 0.70, 0.9 * a_mul)
+        roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
+        love.graphics.line(cx - sr * 0.6, cy - sr * 0.2, cx, cy + sr * 0.2, cx + sr * 0.6, cy - sr * 0.4)
+    elseif item_id == "skin_blueprint" then
+        local sr = radius * 0.45
+        love.graphics.setLineWidth(math.max(1.6, math.floor(1.8 * scale)))
+        love.graphics.setColor(0.45, 0.84, 1.0, 0.9 * a_mul)
+        roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
+        love.graphics.line(cx - sr, cy, cx + sr, cy)
+        love.graphics.line(cx, cy - sr, cx, cy + sr)
+    elseif item_id == "skin_carbon" then
+        local sr = radius * 0.45
+        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
+        love.graphics.setColor(0.55, 0.58, 0.65, 0.9 * a_mul)
+        roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
+        love.graphics.line(cx - sr * 0.6, cy + sr * 0.6, cx + sr * 0.6, cy - sr * 0.6)
+        love.graphics.line(cx - sr * 0.6, cy, cx, cy - sr * 0.6)
+    elseif item_id == "skin_neon_grid" then
+        local sr = radius * 0.45
+        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
+        love.graphics.setColor(1.0, 0.22, 0.72, 0.9 * a_mul)
+        roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
+        love.graphics.setColor(0.12, 0.90, 1.0, 0.9 * a_mul)
+        love.graphics.line(cx - sr * 0.7, cy, cx + sr * 0.7, cy)
+        love.graphics.line(cx, cy - sr * 0.7, cx, cy + sr * 0.7)
+    elseif item_id == "skin_brass" then
+        local sr = radius * 0.45
+        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
+        love.graphics.setColor(0.88, 0.72, 0.34, 0.95 * a_mul)
+        roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
+        love.graphics.circle("fill", cx - sr * 0.5, cy - sr * 0.5, 2 * scale)
+        love.graphics.circle("fill", cx + sr * 0.5, cy + sr * 0.5, 2 * scale)
+    elseif item_id == "skin_chess" then
+        local sr = radius * 0.45
+        love.graphics.setLineWidth(math.max(1.8, math.floor(2 * scale)))
+        love.graphics.setColor(0.84, 0.76, 0.60, 0.95 * a_mul)
+        love.graphics.rectangle("fill", cx - sr, cy - sr, sr, sr)
+        love.graphics.rectangle("fill", cx, cy, sr, sr)
+        love.graphics.setColor(0.44, 0.29, 0.17, 0.95 * a_mul)
+        love.graphics.rectangle("fill", cx, cy - sr, sr, sr)
+        love.graphics.rectangle("fill", cx - sr, cy, sr, sr)
+        roundedRect("line", cx - sr, cy - sr, sr * 2, sr * 2, sr * 0.2)
     elseif item_id == "coin_rush" then
         -- Golden Ticket Icon
         local tw = radius * 0.85
@@ -13977,11 +14328,17 @@ function renderer.getStoreItems()
         {id="second_chance", category="booster",   cost=200,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col in your next game", consumable=true, ckey="second_chance_count"},
 
         -- Board Grid Skins
-        {id="skin_wood",     category="skin",      cost=100,  name="Wood Board",           desc="Classic arcade cabinet wooden grid texture"},
-        {id="skin_bamboo",   category="skin",      cost=150,  name="Bamboo Board",         desc="Natural woven bamboo grid texture"},
-        {id="skin_glass",    category="skin",      cost=200,  name="Glassmorphism Board",  desc="Sleek translucent glass grid"},
-        {id="skin_marble",   category="skin",      cost=200,  name="Marble Board",         desc="Polished white marble texture"},
-        {id="skin_matrix",   category="skin",      cost=250,  name="Matrix Board",         desc="Animated green digital code grid"},
+        {id="skin_wood",      category="skin",     cost=100,  name="Wood Board",           desc="Classic arcade cabinet wooden grid texture"},
+        {id="skin_bamboo",    category="skin",     cost=150,  name="Bamboo Board",         desc="Natural woven bamboo grid texture"},
+        {id="skin_glass",     category="skin",     cost=200,  name="Glassmorphism Board",  desc="Sleek translucent glass grid"},
+        {id="skin_marble",    category="skin",     cost=200,  name="Marble Board",         desc="Polished white marble texture"},
+        {id="skin_matrix",    category="skin",     cost=250,  name="Matrix Board",         desc="Animated green digital code grid"},
+        {id="skin_blueprint", category="skin",     cost=200,  name="Blueprint Board",      desc="Technical cyan drafting blueprint grid"},
+        {id="skin_chess",     category="skin",     cost=200,  name="Chess Board",          desc="Inlaid maple and walnut chessboard grid"},
+        {id="skin_obsidian",  category="skin",     cost=250,  name="Obsidian Board",       desc="Carved volcanic slate with ember veins"},
+        {id="skin_carbon",    category="skin",     cost=250,  name="Carbon Fiber Board",   desc="Woven carbon fiber grid with gunmetal trim"},
+        {id="skin_neon_grid", category="skin",     cost=300,  name="Neon Grid Board",      desc="Animated synthwave magenta and cyan grid"},
+        {id="skin_brass",     category="skin",     cost=350,  name="Brushed Brass Board",  desc="Brushed gold plate with machined rivets"},
 
 
 
