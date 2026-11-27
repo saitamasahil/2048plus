@@ -312,7 +312,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -14926,7 +14963,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -14934,7 +14971,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -321,7 +321,7 @@ index 40600d0..14c8956 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -15755,7 +15792,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -15763,7 +15800,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap

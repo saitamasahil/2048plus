@@ -11183,15 +11183,15 @@ local board_skins_catalog = {
     { id = "default",   name = "Dynamic Board" },
     { id = "wood",      name = "Wood Board" },
     { id = "bamboo",    name = "Bamboo Board" },
+    { id = "brass",     name = "Brushed Brass Board" },
+    { id = "carbon",    name = "Carbon Fiber Board" },
     { id = "glass",     name = "Glassmorphism Board" },
     { id = "marble",    name = "Marble Board" },
-    { id = "matrix",    name = "Matrix Board" },
     { id = "obsidian",  name = "Obsidian Board" },
     { id = "blueprint", name = "Blueprint Board" },
-    { id = "carbon",    name = "Carbon Fiber Board" },
-    { id = "neon_grid", name = "Neon Grid Board" },
-    { id = "brass",     name = "Brushed Brass Board" },
     { id = "chess",     name = "Chess Board" },
+    { id = "matrix",    name = "Matrix Board" },
+    { id = "neon_grid", name = "Neon Grid Board" },
 }
 
 local pets_catalog = {
@@ -14306,48 +14306,46 @@ function renderer.getStoreItems()
 
     local items = {
         -- Mascots & Companions
-        {id="mascot_cat",   category="companion", cost=800,  name="Cat Companion",   desc="Animated cat companion Luna!"},
-        {id="mascot_dog",   category="companion", cost=1600, name="Dog Companion",   desc="Animated dog companion with 4 dog pals!"},
+        {id="mascot_cat",   category="companion", cost=200,  name="Cat Companion",   desc="Animated cat companion Luna!"},
+        {id="mascot_dog",   category="companion", cost=800,  name="Dog Companion",   desc="Animated dog companion with 4 dog pals!"},
 
         -- Permanent Upgrades
         {id="extra_undo",    category="upgrade",   cost=200,  name="Extra Starting Undo",  desc="Permanently start Plus Mode with +1 Undo"},
         {id="extra_swap",    category="upgrade",   cost=350,  name="Extra Starting Swap",  desc="Permanently start Plus Mode with +1 Swap"},
-        {id="extra_bomb",    category="upgrade",   cost=500,  name="Extra Starting Bomb",  desc="Permanently start Plus Mode with +1 Bomb"},
-        {id="jukebox",       category="upgrade",   cost=1000, name="Jukebox",              desc="Music Player & Manager"},
-        {id="theme_studio",  category="upgrade",   cost=1000, name="Theme Studio",         desc="Custom Theme Creator in Customization"},
-        {id="coin_multiplier",category="upgrade",  cost=1200,name="2x Coin Multiplier",    desc="Permanently double all earned Coins"},
+        {id="extra_bomb",    category="upgrade",   cost=400,  name="Extra Starting Bomb",  desc="Permanently start Plus Mode with +1 Bomb"},
+        {id="jukebox",       category="upgrade",   cost=800,  name="Jukebox",              desc="Music Player & Manager"},
+        {id="theme_studio",  category="upgrade",   cost=800,  name="Theme Studio",         desc="Custom Theme Creator in Customization"},
+        {id="coin_multiplier",category="upgrade",  cost=1000, name="2x Coin Multiplier",   desc="Permanently double all earned Coins"},
 
         -- Boosters & Powerups
         {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",             desc="+1 Undo charge in your next Plus Mode game", consumable=true, ckey="powerup_undo_count"},
         {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",             desc="+1 Swap charge in your next Plus Mode game", consumable=true, ckey="powerup_swap_count"},
         {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",             desc="+1 Bomb charge in your next Plus Mode game", consumable=true, ckey="powerup_bomb_count"},
         {id="start_128",     category="booster",   cost=60,   name="128 High-Tile Booster (x" .. booster_128 .. " owned)", desc="Classic only. Next game starts with a 128 tile", consumable=true, ckey="start_128_count"},
-        {id="start_256",     category="booster",   cost=120,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Classic only. Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
-        {id="start_512",     category="booster",   cost=250,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Classic only. Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
-        {id="coin_rush",     category="booster",   cost=100,  name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles all Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
-        {id="second_chance", category="booster",   cost=200,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col in your next game", consumable=true, ckey="second_chance_count"},
+        {id="coin_rush",     category="booster",   cost=80,   name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles all Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
+        {id="start_256",     category="booster",   cost=100,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Classic only. Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
+        {id="second_chance", category="booster",   cost=150,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col in your next game", consumable=true, ckey="second_chance_count"},
+        {id="start_512",     category="booster",   cost=200,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Classic only. Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
 
         -- Board Grid Skins
-        {id="skin_wood",      category="skin",     cost=100,  name="Wood Board",           desc="Classic arcade cabinet wooden grid texture"},
-        {id="skin_bamboo",    category="skin",     cost=150,  name="Bamboo Board",         desc="Natural woven bamboo grid texture"},
-        {id="skin_glass",     category="skin",     cost=200,  name="Glassmorphism Board",  desc="Sleek translucent glass grid"},
-        {id="skin_marble",    category="skin",     cost=200,  name="Marble Board",         desc="Polished white marble texture"},
-        {id="skin_matrix",    category="skin",     cost=250,  name="Matrix Board",         desc="Animated green digital code grid"},
-        {id="skin_blueprint", category="skin",     cost=200,  name="Blueprint Board",      desc="Technical cyan drafting blueprint grid"},
-        {id="skin_chess",     category="skin",     cost=200,  name="Chess Board",          desc="Inlaid maple and walnut chessboard grid"},
-        {id="skin_obsidian",  category="skin",     cost=250,  name="Obsidian Board",       desc="Carved volcanic slate with ember veins"},
-        {id="skin_carbon",    category="skin",     cost=250,  name="Carbon Fiber Board",   desc="Woven carbon fiber grid with gunmetal trim"},
-        {id="skin_neon_grid", category="skin",     cost=300,  name="Neon Grid Board",      desc="Animated synthwave magenta and cyan grid"},
-        {id="skin_brass",     category="skin",     cost=350,  name="Brushed Brass Board",  desc="Brushed gold plate with machined rivets"},
-
-
+        {id="skin_wood",      category="skin",     cost=40,   name="Wood Board",           desc="Classic arcade cabinet wooden grid texture"},
+        {id="skin_bamboo",    category="skin",     cost=50,   name="Bamboo Board",         desc="Natural woven bamboo grid texture"},
+        {id="skin_brass",     category="skin",     cost=100,  name="Brushed Brass Board",  desc="Brushed gold plate with machined rivets"},
+        {id="skin_carbon",    category="skin",     cost=100,  name="Carbon Fiber Board",   desc="Woven carbon fiber grid with gunmetal trim"},
+        {id="skin_glass",     category="skin",     cost=100,  name="Glassmorphism Board",  desc="Sleek translucent glass grid"},
+        {id="skin_marble",    category="skin",     cost=100,  name="Marble Board",         desc="Polished white marble texture"},
+        {id="skin_obsidian",  category="skin",     cost=100,  name="Obsidian Board",       desc="Carved volcanic slate with ember veins"},
+        {id="skin_blueprint", category="skin",     cost=150,  name="Blueprint Board",      desc="Technical cyan drafting blueprint grid"},
+        {id="skin_chess",     category="skin",     cost=150,  name="Chess Board",          desc="Inlaid maple and walnut chessboard grid"},
+        {id="skin_matrix",    category="skin",     cost=200,  name="Matrix Board",         desc="Animated green digital code grid"},
+        {id="skin_neon_grid", category="skin",     cost=200,  name="Neon Grid Board",      desc="Animated synthwave magenta and cyan grid"},
 
         -- Themes
-        {id="theme_cosmic",  category="theme",     cost=1000, name="Cosmic Theme",           desc="Unlock deep space theme"},
-        {id="theme_cherry",  category="theme",     cost=1000, name="Cherry Theme",           desc="Unlock sakura blossom theme"},
-        {id="theme_gold_luxe",category="theme",    cost=1500,name="Gold Luxe Theme",         desc="Unlock ultra-luxurious gold theme"},
-        {id="theme_cyber_grid",category="theme",   cost=1800,name="Cyber Neon Grid Theme",   desc="Unlock futuristic cyber grid theme"},
-        {id="theme_synthwave",category="theme",    cost=2000,name="Synthwave 80s Theme",     desc="Unlock retro 80s retrowave theme"},
+        {id="theme_cosmic",  category="theme",     cost=200,  name="Cosmic Theme",           desc="Unlock deep space theme"},
+        {id="theme_cherry",  category="theme",     cost=250,  name="Cherry Theme",           desc="Unlock sakura blossom theme"},
+        {id="theme_gold_luxe",category="theme",    cost=300,  name="Gold Luxe Theme",        desc="Unlock ultra-luxurious gold theme"},
+        {id="theme_cyber_grid",category="theme",   cost=400,  name="Cyber Neon Grid Theme",  desc="Unlock futuristic cyber grid theme"},
+        {id="theme_synthwave",category="theme",    cost=500,  name="Synthwave 80s Theme",    desc="Unlock retro 80s retrowave theme"},
 
         -- Secret Master Code
         {id="secret_key",    category="secret",    cost=10000, name="Secret Passcode Reveal",desc=(_G.stats and _G.stats.purchased_items and _G.stats.purchased_items["secret_key"]) and "Enter code on Main Menu" or "Unlock master code to access Secret Menu"}
@@ -14408,12 +14406,22 @@ function renderer.getStoreItems()
         local filtered = {}
         for _, itm in ipairs(items) do if itm.category == "booster" then table.insert(filtered, itm) end end
         items = filtered
-    elseif sort_mode == 8 then
-        -- Price Low -> High
-        table.sort(items, function(a, b) return a.cost < b.cost end)
-    elseif sort_mode == 9 then
-        -- Price High -> Low
-        table.sort(items, function(a, b) return a.cost > b.cost end)
+    elseif sort_mode == 8 or sort_mode == 9 then
+        local order_idx = {}
+        for idx, itm in ipairs(items) do
+            order_idx[itm] = idx
+        end
+        if sort_mode == 8 then
+            table.sort(items, function(a, b)
+                if a.cost ~= b.cost then return a.cost < b.cost end
+                return order_idx[a] < order_idx[b]
+            end)
+        else
+            table.sort(items, function(a, b)
+                if a.cost ~= b.cost then return a.cost > b.cost end
+                return order_idx[a] < order_idx[b]
+            end)
+        end
     end
 
     sc.items = items
