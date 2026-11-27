@@ -2660,7 +2660,43 @@ renderer._bg = {
         {0.35, 0.10, 0.95},
         {0.75, 0.05, 0.95},
     },
-    bamboo_node_offsets = { 0.15, 0.45, 0.25, 0.70, 0.35, 0.60, 0.20, 0.80, 0.40 }
+    bamboo_node_offsets = { 0.15, 0.45, 0.25, 0.70, 0.35, 0.60, 0.20, 0.80, 0.40 },
+    wood_plank_shades = { 0.018, -0.014, 0.008, -0.020, 0.015 },
+    wood_knots = {
+        { x = 0.22, y = 0.10, rx = 0.055, ry = 0.022 },
+        { x = 0.74, y = 0.50, rx = 0.048, ry = 0.020 },
+        { x = 0.36, y = 0.90, rx = 0.060, ry = 0.022 },
+    },
+    marble_veins = {
+        {
+            w = 1.6, a = 0.42, halo = 0.14, gold = true,
+            pts = { 0.02, 0.18,  0.19, 0.26,  0.34, 0.42,  0.52, 0.49,  0.71, 0.68,  0.88, 0.76,  0.99, 0.89 }
+        },
+        {
+            w = 1.1, a = 0.30, halo = 0.08,
+            pts = { 0.34, 0.42,  0.43, 0.59,  0.48, 0.78,  0.60, 0.97 }
+        },
+        {
+            w = 1.5, a = 0.38, halo = 0.13,
+            pts = { 0.04, 0.74,  0.22, 0.69,  0.39, 0.56,  0.61, 0.45,  0.78, 0.27,  0.96, 0.14 }
+        },
+        {
+            w = 1.0, a = 0.26, halo = 0,
+            pts = { 0.61, 0.45,  0.74, 0.48,  0.89, 0.41,  0.99, 0.46 }
+        },
+        {
+            w = 1.2, a = 0.32, halo = 0.10, gold = true,
+            pts = { 0.46, 0.01,  0.54, 0.16,  0.68, 0.23,  0.78, 0.27 }
+        },
+        {
+            w = 0.9, a = 0.24, halo = 0,
+            pts = { 0.14, 0.02,  0.21, 0.15,  0.19, 0.26 }
+        },
+        {
+            w = 0.9, a = 0.22, halo = 0,
+            pts = { 0.02, 0.86,  0.16, 0.91,  0.31, 0.87,  0.41, 0.98 }
+        },
+    }
 }
 
 function renderer.drawStudioBackdropFX(cfg, ox, oy, w, h, scale, alpha_mult, is_preview)
@@ -4996,22 +5032,71 @@ function renderer.drawBoard(game, override_skin, override_layout)
     local skin = override_skin or _G.board_skin or "default"
 
     if skin == "wood" then
-        -- Retro Wood Board
+        local scale = _G.scale or 1
         love.graphics.setColor(0.32, 0.20, 0.12, 1.0)
         roundedRect("fill", bx, by, bs, bs, cr * 2)
-        
-        -- Wood grain lines
-        love.graphics.setColor(0.24, 0.14, 0.08, 0.5)
-        love.graphics.setLineWidth(math.max(1.5, math.floor(2 * _G.scale)))
-        local grain_step = math.floor(18 * _G.scale)
-        for gy = by + grain_step, by + bs - grain_step, grain_step do
-            local wave = math.sin(gy * 0.05) * 6 * _G.scale
-            love.graphics.line(bx + 4 * _G.scale, gy + wave, bx + bs - 4 * _G.scale, gy - wave)
+
+        love.graphics.stencil(function()
+            roundedRect("fill", bx, by, bs, bs, cr * 2)
+        end, "replace", 1)
+        love.graphics.setStencilTest("greater", 0)
+
+        local shades = renderer._bg.wood_plank_shades
+        local num_planks = #shades
+        local plank_h = bs / num_planks
+        for p = 1, num_planks do
+            local py = by + (p - 1) * plank_h
+            local sh = shades[p]
+            love.graphics.setColor(0.32 + sh, 0.20 + sh * 0.7, 0.12 + sh * 0.4, 1.0)
+            love.graphics.rectangle("fill", bx, py, bs, plank_h + 1)
+
+            local grain_count = 3
+            for g = 1, grain_count do
+                local gy = py + (g / (grain_count + 1)) * plank_h
+                local amp = (1.6 + ((p + g) % 2) * 1.1) * scale
+                local freq = 0.045 + g * 0.01
+                local segs = 6
+                love.graphics.setColor(0.21, 0.12, 0.06, 0.38)
+                love.graphics.setLineWidth(math.max(1, math.floor(1.4 * scale)))
+                for s = 0, segs - 1 do
+                    local x1 = bx + (s / segs) * bs
+                    local x2 = bx + ((s + 1) / segs) * bs
+                    local y1 = gy + math.sin(s * 1.3 + p * 2.1 + gy * freq) * amp
+                    local y2 = gy + math.sin((s + 1) * 1.3 + p * 2.1 + gy * freq) * amp
+                    love.graphics.line(x1, y1, x2, y2)
+                end
+            end
+
+            if p < num_planks then
+                local seam_y = py + plank_h
+                love.graphics.setColor(0.17, 0.09, 0.05, 0.70)
+                love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+                love.graphics.line(bx, seam_y, bx + bs, seam_y)
+                love.graphics.setColor(0.45, 0.30, 0.18, 0.25)
+                love.graphics.line(bx, seam_y + 1.5 * scale, bx + bs, seam_y + 1.5 * scale)
+            end
         end
-        
-        -- Dark wood border outline
-        love.graphics.setColor(0.48, 0.32, 0.20, 0.9)
-        love.graphics.setLineWidth(math.max(2, math.floor(3 * _G.scale)))
+
+        for _, knot in ipairs(renderer._bg.wood_knots) do
+            local kx = bx + knot.x * bs
+            local ky = by + knot.y * bs
+            local rx = knot.rx * bs
+            local ry = knot.ry * bs
+            love.graphics.setColor(0.20, 0.11, 0.06, 0.42)
+            love.graphics.setLineWidth(math.max(1, math.floor(1.3 * scale)))
+            love.graphics.ellipse("line", kx, ky, rx, ry)
+            love.graphics.setColor(0.18, 0.10, 0.05, 0.35)
+            love.graphics.ellipse("fill", kx, ky, rx * 0.45, ry * 0.45)
+        end
+
+        love.graphics.setStencilTest()
+
+        love.graphics.setColor(0.54, 0.37, 0.23, 0.35)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        roundedRect("line", bx + 2 * scale, by + 2 * scale, bs - 4 * scale, bs - 4 * scale, math.max(1, cr * 2 - 2 * scale))
+
+        love.graphics.setColor(0.48, 0.32, 0.20, 0.95)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
         roundedRect("line", bx, by, bs, bs, cr * 2)
         
     elseif skin == "glass" then
@@ -5105,26 +5190,55 @@ function renderer.drawBoard(game, override_skin, override_layout)
         love.graphics.pop()
 
     elseif skin == "marble" then
-        -- Pristine Polished Carrara Marble Board
-        love.graphics.setColor(0.95, 0.94, 0.92, 1.0)
+        local scale = _G.scale or 1
+        love.graphics.setColor(0.94, 0.93, 0.90, 1.0)
         roundedRect("fill", bx, by, bs, bs, cr * 2)
 
-        -- Clip cloud haze to board boundary
         love.graphics.stencil(function()
             roundedRect("fill", bx, by, bs, bs, cr * 2)
         end, "replace", 1)
         love.graphics.setStencilTest("greater", 0)
 
-        -- Soft cloud-like marble haze
-        love.graphics.setColor(0.88, 0.86, 0.82, 0.35)
-        love.graphics.circle("fill", bx + bs * 0.3, by + bs * 0.35, bs * 0.35)
-        love.graphics.circle("fill", bx + bs * 0.7, by + bs * 0.65, bs * 0.40)
+        -- Soft mineral clouds beneath the veins
+        love.graphics.setColor(0.86, 0.85, 0.81, 0.26)
+        love.graphics.circle("fill", bx + bs * 0.26, by + bs * 0.30, bs * 0.34)
+        love.graphics.circle("fill", bx + bs * 0.74, by + bs * 0.70, bs * 0.38)
+        love.graphics.setColor(0.99, 0.99, 0.98, 0.32)
+        love.graphics.circle("fill", bx + bs * 0.65, by + bs * 0.25, bs * 0.28)
+
+        -- Branching mineral veins scaled to current board size
+        for _, vein in ipairs(renderer._bg.marble_veins) do
+            local pts = vein.pts
+            if vein.halo > 0 then
+                love.graphics.setColor(0.76, 0.74, 0.70, vein.halo)
+                love.graphics.setLineWidth(math.max(2, vein.w * 2.8 * scale))
+                for k = 1, #pts - 3, 2 do
+                    love.graphics.line(bx + pts[k] * bs, by + pts[k + 1] * bs, bx + pts[k + 2] * bs, by + pts[k + 3] * bs)
+                end
+            end
+            if vein.gold then
+                love.graphics.setColor(0.78, 0.70, 0.54, vein.a * 0.55)
+                love.graphics.setLineWidth(math.max(1.2, vein.w * 1.4 * scale))
+                for k = 1, #pts - 3, 2 do
+                    love.graphics.line(bx + pts[k] * bs + scale, by + pts[k + 1] * bs + scale, bx + pts[k + 2] * bs + scale, by + pts[k + 3] * bs + scale)
+                end
+            end
+            love.graphics.setColor(0.62, 0.61, 0.58, vein.a)
+            love.graphics.setLineWidth(math.max(1, vein.w * scale))
+            for k = 1, #pts - 3, 2 do
+                love.graphics.line(bx + pts[k] * bs, by + pts[k + 1] * bs, bx + pts[k + 2] * bs, by + pts[k + 3] * bs)
+            end
+        end
 
         love.graphics.setStencilTest()
 
-        -- Polished silver trim outline
-        love.graphics.setColor(0.80, 0.82, 0.85, 0.95)
-        love.graphics.setLineWidth(math.max(2, math.floor(3 * _G.scale)))
+        -- Polished bevel and silver trim outline
+        love.graphics.setColor(1.0, 1.0, 1.0, 0.55)
+        love.graphics.setLineWidth(math.max(1, math.floor(1.5 * scale)))
+        roundedRect("line", bx + 2 * scale, by + 2 * scale, bs - 4 * scale, bs - 4 * scale, math.max(1, cr * 2 - 2 * scale))
+
+        love.graphics.setColor(0.78, 0.80, 0.84, 0.95)
+        love.graphics.setLineWidth(math.max(2, math.floor(3 * scale)))
         roundedRect("line", bx, by, bs, bs, cr * 2)
 
     elseif skin == "bamboo" then
@@ -5197,7 +5311,7 @@ function renderer.drawBoard(game, override_skin, override_layout)
 
     -- Draw cell cutouts
     if skin == "wood" then
-        love.graphics.setColor(0.20, 0.12, 0.07, 0.85)
+        love.graphics.setColor(0.19, 0.11, 0.06, 0.90)
     elseif skin == "glass" then
         local r_bg, g_bg, b_bg = (bg_color and bg_color[1]) or 0.95, (bg_color and bg_color[2]) or 0.95, (bg_color and bg_color[3]) or 0.9
         local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
@@ -5252,7 +5366,12 @@ function renderer.drawBoard(game, override_skin, override_layout)
                 end
 
                 roundedRect("fill", cx, cy, cs, cs, cr)
-                if skin == "glass" then
+                if skin == "wood" then
+                    love.graphics.setColor(0.45, 0.30, 0.18, 0.50)
+                    love.graphics.setLineWidth(math.max(1, math.floor(1.4 * _G.scale)))
+                    roundedRect("line", cx, cy, cs, cs, cr)
+                    love.graphics.setColor(0.19, 0.11, 0.06, 0.90)
+                elseif skin == "glass" then
                     local r_bg, g_bg, b_bg = (bg_color and bg_color[1]) or 0.95, (bg_color and bg_color[2]) or 0.95, (bg_color and bg_color[3]) or 0.9
                     local bg_lum = 0.299 * r_bg + 0.587 * g_bg + 0.114 * b_bg
                     if bg_lum > 0.45 then
@@ -10935,8 +11054,10 @@ local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
 
     local prev_canvas = love.graphics.getCanvas()
     love.graphics.setCanvas({target_canvas, stencil = true})
-    love.graphics.push()
+    love.graphics.push("all")
     love.graphics.origin()
+    love.graphics.setScissor()
+    love.graphics.setBlendMode("alpha", "alphamultiply")
     love.graphics.clear(0, 0, 0, 0)
 
     renderer.drawBoard({size = 4}, skin_id, p_layout)
@@ -10969,18 +11090,26 @@ local function renderBoardPreviewToCanvas(target_canvas, skin_id, bs)
     end
 end
 
-function renderer.prepareBoardTransition(prev_idx, cur_idx, bs)
+function renderer.prepareBoardTransition(prev_idx, cur_idx, bs, reuse_curr)
     local target_bs = bs or getBoardPreviewSize()
-    if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= target_bs then
+    local size_changed = not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= target_bs
+    if size_changed then
         board_preview_canvas_curr = love.graphics.newCanvas(target_bs, target_bs)
+        board_preview_canvas_curr:setFilter("linear", "linear")
         board_preview_canvas_prev = love.graphics.newCanvas(target_bs, target_bs)
+        board_preview_canvas_prev:setFilter("linear", "linear")
         board_preview_canvas_size = target_bs
+        reuse_curr = false
     end
 
     local prev_skin = board_skins_catalog[prev_idx] or board_skins_catalog[1]
     local cur_skin = board_skins_catalog[cur_idx] or board_skins_catalog[1]
 
-    renderBoardPreviewToCanvas(board_preview_canvas_prev, prev_skin.id, target_bs)
+    if reuse_curr and board_preview_rendered_skin_id == prev_skin.id and board_preview_rendered_theme == _G.theme and prev_skin.id ~= "matrix" then
+        board_preview_canvas_prev, board_preview_canvas_curr = board_preview_canvas_curr, board_preview_canvas_prev
+    else
+        renderBoardPreviewToCanvas(board_preview_canvas_prev, prev_skin.id, target_bs)
+    end
     renderBoardPreviewToCanvas(board_preview_canvas_curr, cur_skin.id, target_bs)
     board_preview_rendered_skin_id = cur_skin.id
     board_preview_rendered_theme = _G.theme
@@ -10991,13 +11120,14 @@ function renderer.cycleBoardSkin(dir)
     local prev = _G.custom_board_idx or 1
     local cur = prev + dir
     if cur > count then cur = 1 elseif cur < 1 then cur = count end
+    local was_animating = _G.custom_board_anim_timer and _G.custom_board_anim_timer > 0
     _G.custom_board_prev_idx = prev
     _G.custom_board_idx = cur
     if _G.screen_transitions then
         _G.custom_board_anim_timer = 0.24
         _G.custom_board_anim_dir = dir
         local bs = board_preview_canvas_size or getBoardPreviewSize()
-        renderer.prepareBoardTransition(prev, cur, bs)
+        renderer.prepareBoardTransition(prev, cur, bs, not was_animating)
     else
         _G.custom_board_anim_timer = 0
     end
@@ -11270,32 +11400,33 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local t = 1 - (_G.custom_board_anim_timer / 0.24)
             local bp = t * t * (3 - 2 * t)
             local b_dir = _G.custom_board_anim_dir or 1
-            local b_slide = math.floor(board_size * 0.45)
+            local b_slide = board_size * 0.45
             local text_slide = math.floor(25 * scale)
 
             -- Outgoing board subtitle
-            local prev_subtitle = prev_skin.name .. " (" .. prev_idx .. "/" .. #board_skins_catalog .. ")"
+            local prev_subtitle = "◄  " .. prev_skin.name .. " (" .. prev_idx .. "/" .. #board_skins_catalog .. ")  ►"
             local prev_sw = font_help_label:getWidth(prev_subtitle)
             love.graphics.setFont(font_help_label)
             love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * (1 - bp) * a)
             love.graphics.print(prev_subtitle, (w - prev_sw) / 2 + off - b_dir * text_slide * bp, subtitle_y)
 
             -- Incoming board subtitle
-            local cur_subtitle = skin.name .. " (" .. cur_idx .. "/" .. #board_skins_catalog .. ")"
+            local cur_subtitle = "◄  " .. skin.name .. " (" .. cur_idx .. "/" .. #board_skins_catalog .. ")  ►"
             local cur_sw = font_help_label:getWidth(cur_subtitle)
             love.graphics.setColor(ui_text[1], ui_text[2], ui_text[3], 0.85 * bp * a)
             love.graphics.print(cur_subtitle, (w - cur_sw) / 2 + off + b_dir * text_slide * (1 - bp), subtitle_y)
 
-            -- Outgoing board canvas
+            -- Premultiplied fade scales all RGBA channels together
             love.graphics.setBlendMode("alpha", "premultiplied")
             if board_preview_canvas_prev then
-                love.graphics.setColor(1, 1, 1, (1 - bp) * a)
+                local pa = (1 - bp) * a
+                love.graphics.setColor(pa, pa, pa, pa)
                 love.graphics.draw(board_preview_canvas_prev, board_x - b_dir * b_slide * bp, board_y)
             end
 
-            -- Incoming board canvas
             if board_preview_canvas_curr then
-                love.graphics.setColor(1, 1, 1, bp * a)
+                local ca = bp * a
+                love.graphics.setColor(ca, ca, ca, ca)
                 love.graphics.draw(board_preview_canvas_curr, board_x + b_dir * b_slide * (1 - bp), board_y)
             end
             love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -11323,7 +11454,9 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             local theme_changed = (board_preview_rendered_theme ~= _G.theme)
             if not board_preview_canvas_curr or not board_preview_canvas_prev or board_preview_canvas_curr:getWidth() ~= board_size then
                 board_preview_canvas_curr = love.graphics.newCanvas(board_size, board_size)
+                board_preview_canvas_curr:setFilter("linear", "linear")
                 board_preview_canvas_prev = love.graphics.newCanvas(board_size, board_size)
+                board_preview_canvas_prev:setFilter("linear", "linear")
                 board_preview_canvas_size = board_size
                 renderBoardPreviewToCanvas(board_preview_canvas_curr, skin.id, board_size)
                 board_preview_rendered_skin_id = skin.id
@@ -11335,7 +11468,7 @@ function renderer.drawCustomizationTabContent(tab, off_x, alpha_val, skip_transi
             end
 
             love.graphics.setBlendMode("alpha", "premultiplied")
-            love.graphics.setColor(1, 1, 1, a)
+            love.graphics.setColor(a, a, a, a)
             love.graphics.draw(board_preview_canvas_curr, board_x, board_y)
             love.graphics.setBlendMode("alpha", "alphamultiply")
 
