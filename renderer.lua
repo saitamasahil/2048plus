@@ -14315,14 +14315,14 @@ function renderer.getStoreItems()
         {id="extra_bomb",    category="upgrade",   cost=400,  name="Extra Starting Bomb",  desc="Permanently start Plus Mode with +1 Bomb"},
         {id="jukebox",       category="upgrade",   cost=800,  name="Jukebox",              desc="Music Player & Manager"},
         {id="theme_studio",  category="upgrade",   cost=800,  name="Theme Studio",         desc="Custom Theme Creator in Customization"},
-        {id="coin_multiplier",category="upgrade",  cost=1000, name="2x Coin Multiplier",   desc="Permanently double gameplay Coins"},
+        {id="coin_multiplier",category="upgrade",  cost=1000, name="2x Coin Multiplier",   desc="Permanently double score Coins earned"},
 
         -- Boosters & Powerups
         {id="powerup_undo",  category="booster",   cost=40,   name="Purchase Undo (x" .. pu_undo .. " owned)",             desc="+1 Undo charge in your next Plus Mode game", consumable=true, ckey="powerup_undo_count"},
         {id="powerup_swap",  category="booster",   cost=50,   name="Purchase Swap (x" .. pu_swap .. " owned)",             desc="+1 Swap charge in your next Plus Mode game", consumable=true, ckey="powerup_swap_count"},
         {id="powerup_bomb",  category="booster",   cost=60,   name="Purchase Bomb (x" .. pu_bomb .. " owned)",             desc="+1 Bomb charge in your next Plus Mode game", consumable=true, ckey="powerup_bomb_count"},
         {id="start_128",     category="booster",   cost=60,   name="128 High-Tile Booster (x" .. booster_128 .. " owned)", desc="Classic only. Next game starts with a 128 tile", consumable=true, ckey="start_128_count"},
-        {id="coin_rush",     category="booster",   cost=80,   name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles gameplay Coins in your next game", consumable=true, ckey="coin_rush_count"},
+        {id="coin_rush",     category="booster",   cost=80,   name="Coin Rush Ticket (x" .. coin_rush_count .. " owned)",  desc="Doubles score Coins earned in your next game", consumable=true, ckey="coin_rush_count"},
         {id="start_256",     category="booster",   cost=100,  name="256 High-Tile Booster (x" .. booster_256 .. " owned)", desc="Classic only. Next game starts with a 256 tile", consumable=true, ckey="start_256_count"},
         {id="second_chance", category="booster",   cost=150,  name="Second Chance Shield (x" .. shield_count .. " owned)", desc="Clear any row or col in your next game", consumable=true, ckey="second_chance_count"},
         {id="start_512",     category="booster",   cost=200,  name="512 High-Tile Booster (x" .. booster_512 .. " owned)", desc="Classic only. Next game starts with a 512 tile", consumable=true, ckey="start_512_count"},
