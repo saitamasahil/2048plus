@@ -43,7 +43,7 @@ index 86a06aa..bdbabfc 100644
      love.math.setRandomSeed(os.time())
  
      -- Parse resolution arguments
-@@ -2604,6 +2610,9 @@ function love.draw()
+@@ -2605,6 +2611,9 @@ function love.draw()
  end
  
  function love.mousereleased(x, y, button, istouch, presses)
@@ -53,7 +53,7 @@ index 86a06aa..bdbabfc 100644
      if button == 1 and not istouch and not (_G.is_console_active and _G.is_console_active()) then
          -- Customization tab click
          if _G.appState == "THEME_SELECT" then
-@@ -2918,6 +2927,18 @@ function love.wheelmoved(x, y)
+@@ -2919,6 +2928,18 @@ function love.wheelmoved(x, y)
      end
  end
  

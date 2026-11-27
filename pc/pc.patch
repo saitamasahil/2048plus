@@ -98,7 +98,7 @@ index 86a06aa..1137a89 100644
      end
  
      sound.init()
-@@ -524,6 +527,7 @@ function love.load(args)
+@@ -525,6 +528,7 @@ function love.load(args)
      _G.button_vibration = save.loadButtonVibration()
      _G.console_haptics = _G.button_vibration
      _G.crt_filter = save.loadCrtFilter()
@@ -106,7 +106,7 @@ index 86a06aa..1137a89 100644
      _G.merge_fx = "default"
      _G.board_skin = save.loadBoardSkin() or "default"
  
-@@ -1985,7 +1989,19 @@ function love.update(dt)
+@@ -1986,7 +1990,19 @@ function love.update(dt)
                          end
                          _G.crt_filter = new_crt
                          save.saveCrtFilter(_G.crt_filter)
@@ -294,7 +294,7 @@ index 40600d0..14c8956 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13176,7 +13213,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -13177,7 +13214,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
              -- Badge
              right_x = right_x - label_gap
@@ -303,7 +303,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13414,7 +13451,7 @@ function renderer.drawAbout(skip_transition)
+@@ -13415,7 +13452,7 @@ function renderer.drawAbout(skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -312,7 +312,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -14435,7 +14472,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -14436,7 +14473,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -321,7 +321,7 @@ index 40600d0..14c8956 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -15264,7 +15301,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -15265,7 +15302,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap

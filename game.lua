@@ -1617,24 +1617,18 @@ function Game:confirmShieldTarget()
 
     -- Clear chosen row or column
     local cleared = 0
-    if self.shield_mode == "row" then
-        local y = self.shield_index
-        for x = 1, self.size do
-            local cell = self.grid.cells[x] and self.grid.cells[x][y]
-            if cell and cell.value ~= "goose" then
-                self.grid.cells[x][y] = nil
+    local hit_goose = false
+    local is_row = (self.shield_mode == "row")
+    for i = 1, self.size do
+        local gx = is_row and i or self.shield_index
+        local gy = is_row and self.shield_index or i
+        local cell = self.grid.cells[gx] and self.grid.cells[gx][gy]
+        if cell then
+            if cell.value == "goose" then
+                hit_goose = true
+            else
+                self.grid.cells[gx][gy] = nil
                 cleared = cleared + 1
-            end
-        end
-    else
-        local x = self.shield_index
-        if self.grid.cells[x] then
-            for y = 1, self.size do
-                local cell = self.grid.cells[x][y]
-                if cell and cell.value ~= "goose" then
-                    self.grid.cells[x][y] = nil
-                    cleared = cleared + 1
-                end
             end
         end
     end
@@ -1648,9 +1642,16 @@ function Game:confirmShieldTarget()
 
     if _G.unlockAchievement then
         _G.unlockAchievement("ach_first_shield")
+        if hit_goose then
+            _G.unlockAchievement("ach_goose_shield")
+        end
     end
 
-    if sound and sound.playBomb then sound.playBomb() end
+    if hit_goose and sound and sound.playGooseHonk then
+        sound.playGooseHonk()
+    elseif sound and sound.playBomb then
+        sound.playBomb()
+    end
     local rend = _G.renderer or package.loaded["renderer"]
     if rend and rend.showToast then
         local lbl = (self.shield_mode == "row" and "Row " or "Column ") .. tostring(self.shield_index)

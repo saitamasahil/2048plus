@@ -114,6 +114,7 @@ _G.achievements = {
     ach_huge_2048 = false,       -- Spacious Giant -- Reach 2048 in Huge Mode -> unlocks 'nebula'
     ach_nomercy_512 = false,      -- No Escape -- Reach 512 in No Mercy Mode -> unlocks 'inferno'
     ach_goose_2048 = false,      -- Honk Honk! -- Reach 2048 in Goose Mode -> unlocks 'honk'
+    ach_goose_shield = false,    -- You Can't Kill Me -- Shield across Goose tile -> unlocks 1000 coins
 
     -- High-Tier Challenges
     ach_merge_8192 = false,      -- The Chosen One -> unlocks 'quantum'

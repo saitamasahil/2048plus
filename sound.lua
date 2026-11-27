@@ -4,6 +4,7 @@ local save = require("save")
 local enabled = true
 local achSource = nil
 local splashSource = nil
+local honkSource = nil
 local victorySource = nil
 local gameOverSource = nil
 local menuMoveSource = nil
@@ -109,6 +110,13 @@ function sound.init()
         if success then
             splashSource = src
             splashSource:setVolume(1.0)
+        end
+
+        -- Goose honk sound
+        local ok_honk, honk_src = pcall(love.audio.newSource, "assets/sfx/honk.mp3", "static")
+        if ok_honk then
+            honkSource = honk_src
+            honkSource:setVolume(1.0)
         end
 
         -- Victory sound
@@ -313,6 +321,13 @@ function sound.refreshSources()
             if success and src then
                 splashSource = src
                 splashSource:setVolume(1.0)
+            end
+        end
+        if not honkSource then
+            local ok_honk, honk_src = pcall(love.audio.newSource, "assets/sfx/honk.mp3", "static")
+            if ok_honk and honk_src then
+                honkSource = honk_src
+                honkSource:setVolume(1.0)
             end
         end
         if victorySoundData then
@@ -1178,31 +1193,45 @@ function sound.playAchievement()
     sound.vibrate(0.15)
 end
 
+local function playAudioFileSfx(cached, path)
+    if cached then
+        local ok = pcall(function()
+            cached:seek(0)
+            cached:play()
+        end)
+        if ok then return cached end
+    end
+    if love.audio then
+        local loaded = nil
+        pcall(function()
+            local s, src = pcall(love.audio.newSource, path, "static")
+            if s and src then
+                src:setVolume(1.0)
+                src:play()
+                loaded = src
+            end
+        end)
+        return loaded or cached
+    end
+    return cached
+end
+
 function sound.playSplash()
     if enabled then
-        local ok = false
-        if splashSource then
-            ok = pcall(function()
-                splashSource:seek(0)
-                splashSource:play()
-            end)
-        end
-        if not ok and love.audio then
-            pcall(function()
-                local s, src = pcall(love.audio.newSource, "assets/sfx/logo_pop.wav", "static")
-                if s and src then
-                    splashSource = src
-                    splashSource:setVolume(1.0)
-                    splashSource:play()
-                end
-            end)
-        end
+        splashSource = playAudioFileSfx(splashSource, "assets/sfx/logo_pop.wav")
     end
 end
 
 function sound.stopSplash()
     if splashSource then
         pcall(function() splashSource:stop() end)
+    end
+end
+
+function sound.playGooseHonk()
+    if enabled then
+        honkSource = playAudioFileSfx(honkSource, "assets/sfx/honk.mp3")
+        duckTimer = 1.0
     end
 end
 

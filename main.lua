@@ -347,6 +347,7 @@ function love.load(args)
                 ach_huge_2048 = "Spacious Giant",
                 ach_nomercy_512 = "No Escape",
                 ach_goose_2048 = "Honk Honk!",
+                ach_goose_shield = "You Can't Kill Me",
                 ach_merge_8192 = "The Chosen One",
                 ach_score_250k = "Infinity Legend",
                 ach_speedrun_2048 = "Speed Demon",

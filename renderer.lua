@@ -12329,7 +12329,8 @@ achievementsList = {
     -- Companions & Economy
     { id = "ach_coin_hoarder",     name = "Coin Hoarder",      desc = "Earn 10,000 total coins",                                        reward = "Pastel Theme",     coins = 250 },
     { id = "ach_best_friend",      name = "Best Friend",       desc = "Play with all 4 dog pals",                                       reward = "Pawprint Theme",   coins = 200 },
-    { id = "ach_purrfect_run",     name = "Purrfect Run",      desc = "Create a 2048 tile with the cat companion active",               reward = "Neko Night Theme", coins = 250 }
+    { id = "ach_purrfect_run",     name = "Purrfect Run",      desc = "Create a 2048 tile with the cat companion active",               reward = "Neko Night Theme", coins = 250 },
+    { id = "ach_goose_shield",     name = "You Can't Kill Me",  desc = "Try to erase something that refuses to leave",                    coins = 1000 }
 }
 
 function renderer.getAchievementsList()
