@@ -1,5 +1,22 @@
 # Changelog
 
+## [9.0.2]
+### Added
+- Added 6 new board skins: Obsidian, Blueprint, Carbon Fiber, Neon Grid, Brushed Brass, and Chess
+- Added a new "You Can't Kill Me" achievement
+- Added automatic marquee scrolling for overflowing Store item descriptions on low-resolution displays
+
+### Changed
+- Enhanced Wood and Marble board skins
+- Rebalanced Store prices
+- Reordered Store items
+- Scoped 2x Coin Multiplier and Coin Rush Ticket bonuses strictly to gameplay score coins
+- Updated interactive Tutorial slides and board examples
+
+### Fixed
+- Fixed Dog companions pill text contrast, border contrast, and optical label centering across all themes in the Store
+- Fixed Customization board preview transition
+
 ## [9.0.1]
 ### Added
 - Expanded Theme Studio with Grid Slots, Backdrop Effects, Tile Contrast, UI Accents, and new color styles
