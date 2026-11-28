@@ -23,7 +23,7 @@ index 8b3ce51..94814dd 100644
      t.modules.sound = true
      t.modules.touch = true
 diff --git a/globals.lua b/globals.lua
-index f5d7cfc..d646503 100644
+index e8b9401..de2b092 100644
 --- a/globals.lua
 +++ b/globals.lua
 @@ -79,6 +79,8 @@ _G.time_attack_time = 60
@@ -74,7 +74,7 @@ index 1a0e585..4df4578 100644
      if event then
          input.state[event] = true
 diff --git a/main.lua b/main.lua
-index 86a06aa..1137a89 100644
+index 6d93e66..46bfcb4 100644
 --- a/main.lua
 +++ b/main.lua
 @@ -130,6 +130,9 @@ local function queueTransitionAction(key, delay, action, direction)
@@ -128,7 +128,7 @@ index 86a06aa..1137a89 100644
                          sound.playMenuBack()
                          queueTransitionAction(event, 0.08, function()
 diff --git a/renderer.lua b/renderer.lua
-index 40600d0..14c8956 100644
+index 1d96eb1..ff3d702 100644
 --- a/renderer.lua
 +++ b/renderer.lua
 @@ -417,7 +417,7 @@ end
@@ -312,7 +312,7 @@ index 40600d0..14c8956 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -14934,7 +14971,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -14952,7 +14989,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -321,7 +321,7 @@ index 40600d0..14c8956 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -15763,7 +15800,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -15781,7 +15818,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap

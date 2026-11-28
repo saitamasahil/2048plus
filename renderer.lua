@@ -14709,9 +14709,23 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                     local curr_px = start_px
                     local gap = math.floor(8 * scale)
                     local pill_h = math.floor(28 * scale)
-                    local font_h = font_help_label:getHeight()
 
                     love.graphics.setFont(font_help_label)
+
+                    local pill_bg_inactive = {
+                        (board_color[1] or 0.15) * 0.84 + (ui_text[1] or 1) * 0.16,
+                        (board_color[2] or 0.15) * 0.84 + (ui_text[2] or 1) * 0.16,
+                        (board_color[3] or 0.15) * 0.84 + (ui_text[3] or 1) * 0.16
+                    }
+                    local inactive_text_col = renderer.getContrastTextColor(pill_bg_inactive, ui_text, dark_text)
+                    local inactive_is_light = (0.299 * (inactive_text_col[1] or 1) + 0.587 * (inactive_text_col[2] or 1) + 0.114 * (inactive_text_col[3] or 1)) > 0.45
+                    local hr = hl_col[1] or 1
+                    local hg = hl_col[2] or 1
+                    local hb = hl_col[3] or 1
+                    hr = (hr <= 0.04045) and (hr / 12.92) or math.pow((hr + 0.055) / 1.055, 2.4)
+                    hg = (hg <= 0.04045) and (hg / 12.92) or math.pow((hg + 0.055) / 1.055, 2.4)
+                    hb = (hb <= 0.04045) and (hb / 12.92) or math.pow((hb + 0.055) / 1.055, 2.4)
+                    local hl_wcag_lum = 0.2126 * hr + 0.7152 * hg + 0.0722 * hb
 
                     for p_idx, breed in ipairs(_G.DOG_BREEDS) do
                         local is_active = (_G.active_dog_breed == breed.id)
@@ -14731,7 +14745,11 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                         if is_active then
                             love.graphics.setColor(hl_col[1], hl_col[2], hl_col[3], 0.95 * card_alpha)
                             roundedRect("fill", px, pill_y, pill_w, pill_h, math.floor(8 * scale))
-                            love.graphics.setColor(1, 1, 1, 0.9 * card_alpha)
+                            if hl_wcag_lum > 0.50 then
+                                love.graphics.setColor(0.06, 0.06, 0.06, 0.40 * card_alpha)
+                            else
+                                love.graphics.setColor(1, 1, 1, 0.90 * card_alpha)
+                            end
                             love.graphics.setLineWidth(math.floor(1.5 * scale))
                             roundedRect("line", px, pill_y, pill_w, pill_h, math.floor(8 * scale))
                         else
@@ -14763,24 +14781,24 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                             )
                         end
 
-                        -- Dog name label
+                        -- Center dog name optically using font ascent
                         local name_x = px + pad_left + icon_w + icon_text_gap
-                        local name_y = pill_y + math.floor((pill_h - font_h) / 2)
+                        local name_y = getFooterLabelY(pill_y, pill_h, font_help_label) - math.max(1, math.floor(1 * scale))
 
                         if is_active then
-                            local r_k, g_k, b_k = help_key_color[1] or 1, help_key_color[2] or 1, help_key_color[3] or 1
-                            local k_lum = 0.299 * r_k + 0.587 * g_k + 0.114 * b_k
-                            if k_lum > 0.6 then
-                                love.graphics.setColor(0.08, 0.08, 0.08, 1.0 * card_alpha)
+                            if _G.theme ~= "matrix" and hl_wcag_lum > 0.19 then
+                                love.graphics.setColor(0.06, 0.06, 0.06, 1.0 * card_alpha)
                             else
                                 love.graphics.setColor(1, 1, 1, 1.0 * card_alpha)
                             end
                             love.graphics.print(breed.name, name_x, name_y)
                         else
-                            love.graphics.setColor(0, 0, 0, 0.4 * card_alpha)
-                            love.graphics.print(breed.name, name_x + 1, name_y + 1)
+                            if inactive_is_light then
+                                love.graphics.setColor(0, 0, 0, 0.4 * card_alpha)
+                                love.graphics.print(breed.name, name_x + 1, name_y + 1)
+                            end
 
-                            love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.95 * card_alpha)
+                            love.graphics.setColor(inactive_text_col[1], inactive_text_col[2], inactive_text_col[3], 0.95 * card_alpha)
                             love.graphics.print(breed.name, name_x, name_y)
                         end
                     end
