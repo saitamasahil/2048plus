@@ -294,7 +294,7 @@ index 1d96eb1..ff3d702 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13616,7 +13653,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
+@@ -13633,7 +13670,7 @@ function renderer.drawAchievements(scroll, skip_transition, static_only, overrid
  
              -- Badge
              right_x = right_x - label_gap
@@ -303,7 +303,7 @@ index 1d96eb1..ff3d702 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -13854,7 +13891,7 @@ function renderer.drawAbout(skip_transition)
+@@ -13871,7 +13908,7 @@ function renderer.drawAbout(skip_transition)
  
              -- Badge
              right_x = right_x - label_gap
@@ -312,7 +312,7 @@ index 1d96eb1..ff3d702 100644
              right_x = right_x - key_w
              drawKeyBadge(action.key, right_x, footer_y, key_w, badge_h)
  
-@@ -14954,7 +14991,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
+@@ -14971,7 +15008,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
          love.graphics.print(action.label, right_x, lbl_y)
  
          right_x = right_x - label_gap
@@ -321,7 +321,7 @@ index 1d96eb1..ff3d702 100644
          right_x = right_x - key_w
          drawKeyBadge(action.key, right_x, badge_y, key_w, badge_h)
  
-@@ -15783,7 +15820,7 @@ function renderer.drawJukebox(selection, skip_transition)
+@@ -15800,7 +15837,7 @@ function renderer.drawJukebox(selection, skip_transition)
          love.graphics.setColor(ui_text)
          love.graphics.print(action.label, right_x, getFooterLabelY(badge_y, badge_h, font_help_label))
          right_x = right_x - label_gap

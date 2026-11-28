@@ -12842,6 +12842,82 @@ function renderer.startAchievementsTabTransition(from_tab, to_tab, dir)
     _G.achievements_tab_ready = false
 end
 
+renderer._text = renderer._text or {}
+
+-- Truncate UTF-8 text to fit max_w pixels with ellipsis
+function renderer._text.truncateToWidth(text, font, max_w)
+    if not text or max_w <= 0 or font:getWidth(text) <= max_w then
+        return text
+    end
+    local display = text
+    while #display > 1 and font:getWidth(display .. "...") > max_w do
+        local last = display:byte(#display)
+        while #display > 1 and last >= 128 and last < 192 do
+            display = display:sub(1, -2)
+            last = display:byte(#display)
+        end
+        display = display:sub(1, -2)
+    end
+    return display .. "..."
+end
+
+-- Scroll overflowing single-line text horizontally within clipped bounds
+function renderer._text.drawMarquee(text, text_x, text_y, max_w, font, scale)
+    local clip_w = math.floor(max_w)
+    if clip_w <= 0 then
+        return
+    end
+    love.graphics.setFont(font)
+    local text_w = font:getWidth(text)
+    if text_w <= max_w then
+        love.graphics.print(text, text_x, text_y)
+        return
+    end
+
+    local overflow = text_w - max_w
+    local speed = math.max(1, math.floor(30 * scale))
+    local scroll_dur = overflow / speed
+    local pause_dur = 1.6
+    local return_dur = math.min(1.2, scroll_dur * 0.6)
+    local cycle = pause_dur * 2 + scroll_dur + return_dur
+    local ct = love.timer.getTime() % cycle
+
+    local offset_x = 0
+    if ct > pause_dur and ct <= pause_dur + scroll_dur then
+        local p = (ct - pause_dur) / scroll_dur
+        local ease_p = p * p * (3 - 2 * p)
+        offset_x = math.floor(overflow * ease_p)
+    elseif ct > pause_dur + scroll_dur and ct <= pause_dur * 2 + scroll_dur then
+        offset_x = overflow
+    elseif ct > pause_dur * 2 + scroll_dur then
+        local p = (ct - (pause_dur * 2 + scroll_dur)) / return_dur
+        local ease_p = p * p * (3 - 2 * p)
+        offset_x = math.floor(overflow * (1 - ease_p))
+    end
+
+    local font_h = font:getHeight()
+    local prev_sc_x, prev_sc_y, prev_sc_w, prev_sc_h = love.graphics.getScissor()
+    local clip_x = math.floor(text_x)
+    local clip_y = math.floor(text_y - 2 * scale)
+    local clip_h = math.floor(font_h + 4 * scale)
+
+    if clip_h > 0 then
+        if prev_sc_x then
+            love.graphics.intersectScissor(clip_x, clip_y, clip_w, clip_h)
+        else
+            love.graphics.setScissor(clip_x, clip_y, clip_w, clip_h)
+        end
+
+        love.graphics.print(text, text_x - offset_x, text_y)
+
+        if prev_sc_x then
+            love.graphics.setScissor(prev_sc_x, prev_sc_y, prev_sc_w, prev_sc_h)
+        else
+            love.graphics.setScissor()
+        end
+    end
+end
+
 function renderer.drawAchievementsTabContent(tab, scroll)
     local w, h = love.graphics.getDimensions()
     local scale = _G.scale
@@ -13084,19 +13160,8 @@ function renderer.drawAchievementsTabContent(tab, scroll)
                 end
 
                 local max_title_w = (has_reward and rew_box_x or right_margin) - text_x - math.floor(10 * scale)
-                local display_name = ach.name
                 love.graphics.setFont(font_label)
-                if max_title_w > 0 and font_label:getWidth(display_name) > max_title_w then
-                    while #display_name > 1 and font_label:getWidth(display_name .. "...") > max_title_w do
-                        local last = display_name:byte(#display_name)
-                        while #display_name > 1 and last >= 128 and last < 192 do
-                            display_name = display_name:sub(1, -2)
-                            last = display_name:byte(#display_name)
-                        end
-                        display_name = display_name:sub(1, -2)
-                    end
-                    display_name = display_name .. "..."
-                end
+                local display_name = renderer._text.truncateToWidth(ach.name, font_label, max_title_w)
 
                 if isUnlocked then
                     love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 1.0)
@@ -13107,62 +13172,14 @@ function renderer.drawAchievementsTabContent(tab, scroll)
 
                 local desc_limit_x = (has_coins and coin_box_x) or (has_reward and rew_box_x) or right_margin
                 local max_desc_w = desc_limit_x - text_x - math.floor(10 * scale)
-                local display_desc = ach.desc
+                local desc_y = current_y + math.floor(41 * scale)
 
-                love.graphics.setFont(font_help_label)
                 if isUnlocked then
                     love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.85)
                 else
                     love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], 0.45)
                 end
-
-                local desc_w = font_help_label:getWidth(display_desc)
-                local desc_y = current_y + math.floor(41 * scale)
-
-                if max_desc_w > 0 and desc_w > max_desc_w then
-                    local overflow = desc_w - max_desc_w
-                    local speed = math.max(1, math.floor(30 * scale))
-                    local scroll_dur = overflow / speed
-                    local pause_dur = 1.6
-                    local return_dur = math.min(1.2, scroll_dur * 0.6)
-                    local cycle = pause_dur * 2 + scroll_dur + return_dur
-                    local ct = love.timer.getTime() % cycle
-
-                    local offset_x = 0
-                    if ct > pause_dur and ct <= pause_dur + scroll_dur then
-                        local p = (ct - pause_dur) / scroll_dur
-                        local ease_p = p * p * (3 - 2 * p)
-                        offset_x = math.floor(overflow * ease_p)
-                    elseif ct > pause_dur + scroll_dur and ct <= pause_dur * 2 + scroll_dur then
-                        offset_x = overflow
-                    elseif ct > pause_dur * 2 + scroll_dur then
-                        local p = (ct - (pause_dur * 2 + scroll_dur)) / return_dur
-                        local ease_p = p * p * (3 - 2 * p)
-                        offset_x = math.floor(overflow * (1 - ease_p))
-                    end
-
-                    local prev_sc_x, prev_sc_y, prev_sc_w, prev_sc_h = love.graphics.getScissor()
-                    local clip_x = math.floor(text_x)
-                    local clip_y = math.floor(desc_y - 2 * scale)
-                    local clip_w = math.floor(max_desc_w)
-                    local clip_h = math.floor(font_h + 4 * scale)
-
-                    if prev_sc_x then
-                        love.graphics.intersectScissor(clip_x, clip_y, clip_w, clip_h)
-                    else
-                        love.graphics.setScissor(clip_x, clip_y, clip_w, clip_h)
-                    end
-
-                    love.graphics.print(display_desc, text_x - offset_x, desc_y)
-
-                    if prev_sc_x then
-                        love.graphics.setScissor(prev_sc_x, prev_sc_y, prev_sc_w, prev_sc_h)
-                    else
-                        love.graphics.setScissor()
-                    end
-                else
-                    love.graphics.print(display_desc, text_x, desc_y)
-                end
+                renderer._text.drawMarquee(ach.desc, text_x, desc_y, max_desc_w, font_help_label, scale)
 
                 if has_reward then
                     if isUnlocked then
@@ -14696,13 +14713,53 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                 local text_x = icon_cx + icon_radius + math.floor(14 * scale)
                 local base_text_col = renderer.getContrastTextColor(board_color, ui_text, dark_text)
 
-                love.graphics.setFont(font_label)
-                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 1.0 or 0.88) * card_alpha)
-                love.graphics.print(item.name, text_x, y + math.floor(5 * scale))
-
+                -- Compute pill width first so title and description clip before it
                 love.graphics.setFont(font_help_label)
+                local tag_text_color = base_text_col
+                local std_pill_w = math.floor(95 * scale)
+                local pill_font_h = font_help_label:getHeight()
+                local tag_h = pill_font_h + math.floor(8 * scale)
+                local tag_txt, is_equipped, pill_tw, c_icon_sz, content_w, pill_w
+                if purchased then
+                    tag_txt = "PURCHASED"
+                    is_equipped = false
+                    if item.id:match("^skin_") then
+                        local s_name = item.id:gsub("^skin_", "")
+                        if _G.board_skin == s_name then
+                            tag_txt = "EQUIPPED"
+                            is_equipped = true
+                        else
+                            tag_txt = "EQUIP"
+                        end
+                    elseif item.id:match("^mascot_") or item.id:match("^companion_") then
+                        local m_name = item.id:gsub("^mascot_", ""):gsub("^companion_", "")
+                        if _G.active_companion == m_name then
+                            tag_txt = "EQUIPPED"
+                            is_equipped = true
+                        else
+                            tag_txt = "EQUIP"
+                        end
+                    end
+                    pill_tw = font_help_label:getWidth(tag_txt)
+                    pill_w = math.max(std_pill_w, pill_tw + math.floor(16 * scale))
+                else
+                    tag_txt = tostring(item.cost)
+                    c_icon_sz = math.floor(15 * scale)
+                    pill_tw = font_help_label:getWidth(tag_txt)
+                    content_w = pill_tw + (coin_icon and (c_icon_sz + 4 * scale) or 0)
+                    pill_w = math.max(std_pill_w, content_w + math.floor(16 * scale))
+                end
+                local box_x = w - padding - pill_w - math.floor(15 * scale)
+                local box_y = y + math.floor((card_h - tag_h) / 2)
+                local max_text_w = box_x - text_x - math.floor(10 * scale)
+
+                love.graphics.setFont(font_label)
+                local display_name = renderer._text.truncateToWidth(item.name, font_label, max_text_w)
+                love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 1.0 or 0.88) * card_alpha)
+                love.graphics.print(display_name, text_x, y + math.floor(5 * scale))
+
                 love.graphics.setColor(base_text_col[1], base_text_col[2], base_text_col[3], (is_sel and 0.88 or 0.70) * card_alpha)
-                love.graphics.print(item.desc, text_x, y + math.floor(28 * scale))
+                renderer._text.drawMarquee(item.desc, text_x, y + math.floor(28 * scale), max_text_w, font_help_label, scale)
 
                 -- 4 Dog Breed Pills when Dog Companion is purchased
                 if item.id == "mascot_dog" and purchased then
@@ -14818,38 +14875,9 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
 
                 -- Price and purchase tag
                 love.graphics.setFont(font_help_label)
-                local tag_text_color = base_text_col
-
                 if purchased then
-                    local tag_txt = "PURCHASED"
-                    local is_equipped = false
-                    if item.id:match("^skin_") then
-                        local s_name = item.id:gsub("^skin_", "")
-                        if _G.board_skin == s_name then
-                            tag_txt = "EQUIPPED"
-                            is_equipped = true
-                        else
-                            tag_txt = "EQUIP"
-                        end
-                    elseif item.id:match("^mascot_") or item.id:match("^companion_") then
-                        local m_name = item.id:gsub("^mascot_", ""):gsub("^companion_", "")
-                        if _G.active_companion == m_name then
-                            tag_txt = "EQUIPPED"
-                            is_equipped = true
-                        else
-                            tag_txt = "EQUIP"
-                        end
-                    end
-
-                    local std_pill_w = math.floor(95 * scale)
-                    local tw = font_help_label:getWidth(tag_txt)
-                    local font_h = font_help_label:getHeight()
-                    local tag_h = font_h + math.floor(8 * scale)
-                    local pill_w = math.max(std_pill_w, tw + math.floor(16 * scale))
-                    local box_x = w - padding - pill_w - math.floor(15 * scale)
-                    local box_y = y + math.floor((card_h - tag_h) / 2)
-                    local text_x = box_x + math.floor((pill_w - tw) / 2)
-                    local text_y = box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
+                    local pill_text_x = box_x + math.floor((pill_w - pill_tw) / 2)
+                    local pill_text_y = box_y + math.floor((tag_h - pill_font_h) / 2) - math.floor(1 * scale)
 
                     if is_equipped then
                         love.graphics.setColor(help_key_color[1], help_key_color[2], help_key_color[3], 0.35 * card_alpha)
@@ -14859,21 +14887,10 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                     roundedRect("fill", box_x, box_y, pill_w, tag_h, math.floor(6 * scale))
 
                     love.graphics.setColor(tag_text_color[1], tag_text_color[2], tag_text_color[3], 1.0 * card_alpha)
-                    love.graphics.print(tag_txt, text_x, text_y)
+                    love.graphics.print(tag_txt, pill_text_x, pill_text_y)
                 else
-                    local std_pill_w = math.floor(95 * scale)
-                    local tag_txt = tostring(item.cost)
-                    local font_h = font_help_label:getHeight()
-                    local c_icon_sz = math.floor(15 * scale)
-                    local tw = font_help_label:getWidth(tag_txt)
-                    local content_w = tw + (coin_icon and (c_icon_sz + 4 * scale) or 0)
-                    local tag_h = font_h + math.floor(8 * scale)
-                    local pill_w = math.max(std_pill_w, content_w + math.floor(16 * scale))
-                    local box_x = w - padding - pill_w - math.floor(15 * scale)
-                    local box_y = y + math.floor((card_h - tag_h) / 2)
-
                     local content_x = box_x + math.floor((pill_w - content_w) / 2)
-                    local text_y = box_y + math.floor((tag_h - font_h) / 2) - math.floor(1 * scale)
+                    local text_y = box_y + math.floor((tag_h - pill_font_h) / 2) - math.floor(1 * scale)
                     local icon_y = box_y + math.floor((tag_h - c_icon_sz) / 2) + 0.5 * scale
 
                     local can_afford = (coins >= item.cost)
@@ -14900,7 +14917,7 @@ function renderer.drawStoreMenu(selection, skip_transition, content_only)
                         love.graphics.setShader(icon_shader)
                         local sw = c_icon_sz / coin_icon:getWidth()
                         local sh = c_icon_sz / coin_icon:getHeight()
-                        love.graphics.draw(coin_icon, content_x + tw + 4 * scale, icon_y, 0, sw, sh)
+                        love.graphics.draw(coin_icon, content_x + pill_tw + 4 * scale, icon_y, 0, sw, sh)
                         love.graphics.setShader()
                     end
                 end
